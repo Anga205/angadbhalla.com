@@ -77,6 +77,9 @@ const ModelViewer: Component = () => {
     const aboutCopy = document.querySelector<HTMLElement>("[data-about-copy]");
 
     let controlsActive = false;
+    let viewportHeight = window.innerHeight || 1;
+    let viewportWidth = window.innerWidth || 1;
+    let scrollProgress = 0;
 
     const clamp = (value: number, min: number, max: number) =>
       Math.min(Math.max(value, min), max);
@@ -85,18 +88,16 @@ const ModelViewer: Component = () => {
       from + (to - from) * amount;
 
     const applyScrollState = () => {
-      const viewportHeight = window.innerHeight || 1;
-      const progress = clamp(window.scrollY / viewportHeight, 0, 1);
-      const viewportWidth = window.innerWidth || 1;
+      const progress = scrollProgress;
 
       if (heroCopy) {
-        const heroProgress = clamp(progress * 2, 0, 1);
+        const heroProgress = clamp(progress / 0.25, 0, 1);
         heroCopy.style.opacity = String(1 - heroProgress);
         heroCopy.style.transform = `translateY(${-40 * heroProgress}px)`;
       }
 
       if (aboutCopy) {
-        const aboutProgress = clamp((progress - 0.5) * 2, 0, 1);
+        const aboutProgress = clamp((progress - 0.72) / 0.2, 0, 1);
         aboutCopy.style.opacity = String(aboutProgress);
         aboutCopy.style.transform = `translateY(${40 * (1 - aboutProgress)}px)`;
       }
@@ -170,6 +171,8 @@ const ModelViewer: Component = () => {
     );
 
     const handleResize = () => {
+      viewportHeight = window.innerHeight || 1;
+      viewportWidth = window.innerWidth || 1;
       const width = containerRef.clientWidth;
       const height = containerRef.clientHeight;
 
@@ -180,11 +183,18 @@ const ModelViewer: Component = () => {
 
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(width, height);
+      scrollProgress = clamp(window.scrollY / viewportHeight, 0, 1);
       applyScrollState();
     };
 
-    window.addEventListener("resize", handleResize);
+    const handleScroll = () => {
+      scrollProgress = clamp(window.scrollY / viewportHeight, 0, 1);
+    };
 
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    scrollProgress = clamp(window.scrollY / viewportHeight, 0, 1);
     applyScrollState();
 
     let animationFrameId = 0;
@@ -210,6 +220,7 @@ const ModelViewer: Component = () => {
       cancelAnimationFrame(animationFrameId);
 
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll);
 
       controls.dispose();
 

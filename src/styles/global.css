@@ -4,6 +4,7 @@
 	html,
 	body {
 		height: 100%;
+		scroll-snap-type: y mandatory;
 		scrollbar-width: thin;
 		scrollbar-color: rgba(255, 255, 255, 0.22) #171717;
 	}
