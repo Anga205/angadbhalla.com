@@ -1,5 +1,5 @@
 import type { Component } from "solid-js";
-import { createSignal, onCleanup, onMount } from "solid-js";
+import { onCleanup, onMount } from "solid-js";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
@@ -7,17 +7,10 @@ import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 
 const ModelViewer: Component = () => {
   let containerRef!: HTMLDivElement;
-  const [hintVisible, setHintVisible] = createSignal(false);
 
   onMount(() => {
-    // -------------------------------------------------------------------------
-    // Scene
-    // -------------------------------------------------------------------------
     const scene = new THREE.Scene();
 
-    // -------------------------------------------------------------------------
-    // Camera
-    // -------------------------------------------------------------------------
     const camera = new THREE.PerspectiveCamera(
       45,
       containerRef.clientWidth / containerRef.clientHeight,
@@ -26,11 +19,7 @@ const ModelViewer: Component = () => {
     );
 
     camera.position.set(1.25, 1, -0.75);
-    camera.lookAt(0, 1, 0);
 
-    // -------------------------------------------------------------------------
-    // Renderer
-    // -------------------------------------------------------------------------
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
@@ -46,9 +35,6 @@ const ModelViewer: Component = () => {
 
     containerRef.appendChild(renderer.domElement);
 
-    // -------------------------------------------------------------------------
-    // Lighting
-    // -------------------------------------------------------------------------
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
@@ -60,9 +46,6 @@ const ModelViewer: Component = () => {
     fillLight.position.set(-4, 3, -2);
     scene.add(fillLight);
 
-    // -------------------------------------------------------------------------
-    // Orbit Controls
-    // -------------------------------------------------------------------------
     const controls = new OrbitControls(camera, renderer.domElement);
 
     controls.enablePan = false;
@@ -82,127 +65,74 @@ const ModelViewer: Component = () => {
 
     renderer.domElement.style.cursor = "grab";
 
-    const setGrabCursor = () => {
-      renderer.domElement.style.cursor = "grab";
-    };
-
-    const setGrabbingCursor = () => {
-      renderer.domElement.style.cursor = "grabbing";
-    };
-
-    const handleControlStart = () => {
-      cancelIntro();
-      setGrabbingCursor();
-    };
-
-    const handleControlEnd = () => {
-      setGrabCursor();
-    };
-
-    controls.addEventListener("start", handleControlStart);
-    controls.addEventListener("end", handleControlEnd);
-
-    // -------------------------------------------------------------------------
-    // Model Loading
-    // -------------------------------------------------------------------------
     const loader = new GLTFLoader();
     loader.setMeshoptDecoder(MeshoptDecoder);
 
     let loadedModel: THREE.Object3D | null = null;
+    let modelTarget = new THREE.Vector3(0, 1, 0);
+    const startCameraPosition = new THREE.Vector3(1.25, 1, -0.75);
+    const midCameraPosition = new THREE.Vector3(1.5, 1, 0);
+    const endCameraPosition = new THREE.Vector3(1.25, 1, 0.75);
+    const heroCopy = document.querySelector<HTMLElement>("[data-hero-copy]");
+    const aboutCopy = document.querySelector<HTMLElement>("[data-about-copy]");
 
-    const INTRO_DELAY = 1500;
-    const INTRO_FORWARD_DURATION = 1000;
-    const INTRO_PAUSE_DURATION = 220;
-    const INTRO_RETURN_DURATION = 1000;
-    const INTRO_ROTATION = THREE.MathUtils.degToRad(12);
+    let controlsActive = false;
 
-    let introPhase: "idle" | "forward" | "pause" | "reverse" | "done" = "idle";
-    let introBlocked = false;
-    let introTimerId: number | undefined;
-    let introPhaseStart = 0;
-    let introAppliedOffset = 0;
-    let previousDamping = controls.enableDamping;
+    const clamp = (value: number, min: number, max: number) =>
+      Math.min(Math.max(value, min), max);
 
-    const easeInOutCubic = (value: number) =>
-      value < 0.5
-        ? 4 * value * value * value
-        : 1 - Math.pow(-2 * value + 2, 3) / 2;
+    const lerp = (from: number, to: number, amount: number) =>
+      from + (to - from) * amount;
 
-    const finishIntro = () => {
-      introPhase = "done";
-      introAppliedOffset = 0;
-      setHintVisible(false);
-      controls.enableDamping = previousDamping;
-    };
+    const applyScrollState = () => {
+      const viewportHeight = window.innerHeight || 1;
+      const progress = clamp(window.scrollY / viewportHeight, 0, 1);
+      const viewportWidth = window.innerWidth || 1;
 
-    const cancelIntro = () => {
-      if (introPhase === "done") return;
-
-      introBlocked = true;
-
-      if (introTimerId !== undefined) {
-        window.clearTimeout(introTimerId);
-        introTimerId = undefined;
+      if (heroCopy) {
+        const heroProgress = clamp(progress * 2, 0, 1);
+        heroCopy.style.opacity = String(1 - heroProgress);
+        heroCopy.style.transform = `translateY(${-40 * heroProgress}px)`;
       }
 
-      finishIntro();
-    };
-
-    const startIntro = () => {
-      if (introBlocked || introPhase !== "idle") return;
-
-      introPhase = "forward";
-      introPhaseStart = performance.now();
-      introAppliedOffset = 0;
-      previousDamping = controls.enableDamping;
-      controls.enableDamping = false;
-      setHintVisible(true);
-    };
-
-    const scheduleIntro = () => {
-      if (introBlocked || introPhase !== "idle") return;
-
-      if (introTimerId !== undefined) {
-        window.clearTimeout(introTimerId);
+      if (aboutCopy) {
+        const aboutProgress = clamp((progress - 0.5) * 2, 0, 1);
+        aboutCopy.style.opacity = String(aboutProgress);
+        aboutCopy.style.transform = `translateY(${40 * (1 - aboutProgress)}px)`;
       }
 
-      introTimerId = window.setTimeout(startIntro, INTRO_DELAY);
-    };
+      containerRef.style.transform = `translate3d(${lerp(-viewportWidth * 0.2, -viewportWidth * 0.6, progress)}px, 0, 0)`;
 
-    const updateIntro = (now: number) => {
-      if (introPhase === "forward") {
-        const progress = Math.min((now - introPhaseStart) / INTRO_FORWARD_DURATION, 1);
-        const offset = INTRO_ROTATION * easeInOutCubic(progress);
-        const delta = offset - introAppliedOffset;
+      if (progress < 0.5) {
+        const localProgress = progress * 2;
+        camera.position.set(
+          lerp(startCameraPosition.x, midCameraPosition.x, localProgress),
+          lerp(startCameraPosition.y, midCameraPosition.y, localProgress),
+          lerp(startCameraPosition.z, midCameraPosition.z, localProgress)
+        );
+        camera.lookAt(modelTarget);
+        controlsActive = false;
+        controls.enabled = false;
+      } else {
+        const localProgress = (progress - 0.5) * 2;
+        camera.position.set(
+          lerp(midCameraPosition.x, endCameraPosition.x, localProgress),
+          lerp(midCameraPosition.y, endCameraPosition.y, localProgress),
+          lerp(midCameraPosition.z, endCameraPosition.z, localProgress)
+        );
 
-        if (delta !== 0) {
-          controls.rotateLeft(delta);
+        if (progress >= 1 && !controlsActive) {
+          controls.enabled = true;
+          controls.target.copy(modelTarget);
+          camera.position.copy(endCameraPosition);
+          controls.update();
+          controlsActive = true;
         }
 
-        introAppliedOffset = offset;
-
-        if (progress >= 1) {
-          introPhase = "pause";
-          introPhaseStart = now;
-        }
-      } else if (introPhase === "pause") {
-        if (now - introPhaseStart >= INTRO_PAUSE_DURATION) {
-          introPhase = "reverse";
-          introPhaseStart = now;
-        }
-      } else if (introPhase === "reverse") {
-        const progress = Math.min((now - introPhaseStart) / INTRO_RETURN_DURATION, 1);
-        const offset = INTRO_ROTATION * (1 - easeInOutCubic(progress));
-        const delta = offset - introAppliedOffset;
-
-        if (delta !== 0) {
-          controls.rotateLeft(delta);
-        }
-
-        introAppliedOffset = offset;
-
-        if (progress >= 1) {
-          finishIntro();
+        if (progress < 1) {
+          controlsActive = false;
+          controls.enabled = false;
+          camera.lookAt(modelTarget);
         }
       }
     };
@@ -229,10 +159,9 @@ const ModelViewer: Component = () => {
         const finalBox = new THREE.Box3().setFromObject(loadedModel);
         const target = finalBox.getCenter(new THREE.Vector3());
 
+        modelTarget = target;
         controls.target.copy(target);
         controls.update();
-
-        scheduleIntro();
       },
       undefined,
       (error: unknown) => {
@@ -240,9 +169,6 @@ const ModelViewer: Component = () => {
       }
     );
 
-    // -------------------------------------------------------------------------
-    // Resize Handling
-    // -------------------------------------------------------------------------
     const handleResize = () => {
       const width = containerRef.clientWidth;
       const height = containerRef.clientHeight;
@@ -254,20 +180,24 @@ const ModelViewer: Component = () => {
 
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(width, height);
+      applyScrollState();
     };
 
     window.addEventListener("resize", handleResize);
 
-    // -------------------------------------------------------------------------
-    // Render Loop
-    // -------------------------------------------------------------------------
+    applyScrollState();
+
     let animationFrameId = 0;
 
     const render = () => {
       animationFrameId = requestAnimationFrame(render);
 
-      updateIntro(performance.now());
-      controls.update();
+      applyScrollState();
+
+      if (controlsActive) {
+        controls.update();
+      }
+
       renderer.render(scene, camera);
     };
 
@@ -279,14 +209,7 @@ const ModelViewer: Component = () => {
     onCleanup(() => {
       cancelAnimationFrame(animationFrameId);
 
-      if (introTimerId !== undefined) {
-        window.clearTimeout(introTimerId);
-      }
-
       window.removeEventListener("resize", handleResize);
-
-      controls.removeEventListener("start", handleControlStart);
-      controls.removeEventListener("end", handleControlEnd);
 
       controls.dispose();
 
@@ -325,17 +248,11 @@ const ModelViewer: Component = () => {
   });
 
   return (
-    <div ref={containerRef} class="relative h-full w-full">
-      <div
-        aria-hidden="true"
-        classList={{
-          "opacity-0": !hintVisible(),
-          "opacity-50": hintVisible(),
-        }}
-        class="pointer-events-none absolute bottom-4 right-4 select-none text-[13px] text-white transition-opacity duration-300"
-      >
-        Drag to rotate
-      </div>
+    <div
+      ref={containerRef}
+      class="fixed right-0 top-0 z-10 h-screen w-1/5"
+      style="will-change: transform;"
+    >
     </div>
   );
 };
