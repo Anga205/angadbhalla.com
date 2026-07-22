@@ -1,19 +1,23 @@
 ---
 import Layout from "../components/static/layout.astro";
-import HeroText from "@/components/dynamic/HeroText.tsx";
+import HeroText from "@/components/dynamic/HeroText";
+import ModelViewer from "@/components/dynamic/ModelViewer";
 ---
 
 <Layout>
 	<div class="h-full w-full flex">
 		<div class="h-full w-3/5 justify-center items-center flex">
 			<div>
-				<p class="text-lg">Hello!</p>
-				<h1 class="text-6xl font-bold">
-					I'm <HeroText initial="Angad Bhalla" client:visible />
+				<p class="text-4xl"><HeroText initial="Hello!" client:visible /></p>
+				<h1 class="text-8xl font-bold">
+					I'm Angad Bhalla
 				</h1>
 			</div>
 		</div>
-		<div class="h-full w-2/5">
+		<div class="h-full w-2/5 flex items-center justify-center">
+			<div class="h-full w-full">
+				<ModelViewer client:visible />
+			</div>
 		</div>
 	</div>
 </Layout>

@@ -5,10 +5,9 @@ interface HeroTextProps {
 }
 
 const aliases = [
-	"Angad Bhalla",
-	"Anga205",
-	"Angad Bhalla",
-	"Anga",
+	"Hello!",
+	"Namaskāra!",
+	"Assalamualaikum!"
 ];
 
 const TYPE_DELAY = 70;
