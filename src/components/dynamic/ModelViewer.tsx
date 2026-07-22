@@ -1,5 +1,5 @@
 import type { Component } from "solid-js";
-import { onMount, onCleanup } from "solid-js";
+import { createSignal, onCleanup, onMount } from "solid-js";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
@@ -7,6 +7,7 @@ import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 
 const ModelViewer: Component = () => {
   let containerRef!: HTMLDivElement;
+  const [hintVisible, setHintVisible] = createSignal(false);
 
   onMount(() => {
     // -------------------------------------------------------------------------
@@ -24,7 +25,7 @@ const ModelViewer: Component = () => {
       100
     );
 
-    camera.position.set(1.5, 1, -1);
+    camera.position.set(1.25, 1, -0.75);
     camera.lookAt(0, 1, 0);
 
     // -------------------------------------------------------------------------
@@ -79,6 +80,28 @@ const ModelViewer: Component = () => {
     controls.target.set(0, 1, 0);
     controls.update();
 
+    renderer.domElement.style.cursor = "grab";
+
+    const setGrabCursor = () => {
+      renderer.domElement.style.cursor = "grab";
+    };
+
+    const setGrabbingCursor = () => {
+      renderer.domElement.style.cursor = "grabbing";
+    };
+
+    const handleControlStart = () => {
+      cancelIntro();
+      setGrabbingCursor();
+    };
+
+    const handleControlEnd = () => {
+      setGrabCursor();
+    };
+
+    controls.addEventListener("start", handleControlStart);
+    controls.addEventListener("end", handleControlEnd);
+
     // -------------------------------------------------------------------------
     // Model Loading
     // -------------------------------------------------------------------------
@@ -86,6 +109,103 @@ const ModelViewer: Component = () => {
     loader.setMeshoptDecoder(MeshoptDecoder);
 
     let loadedModel: THREE.Object3D | null = null;
+
+    const INTRO_DELAY = 1500;
+    const INTRO_FORWARD_DURATION = 1000;
+    const INTRO_PAUSE_DURATION = 220;
+    const INTRO_RETURN_DURATION = 1000;
+    const INTRO_ROTATION = THREE.MathUtils.degToRad(12);
+
+    let introPhase: "idle" | "forward" | "pause" | "reverse" | "done" = "idle";
+    let introBlocked = false;
+    let introTimerId: number | undefined;
+    let introPhaseStart = 0;
+    let introAppliedOffset = 0;
+    let previousDamping = controls.enableDamping;
+
+    const easeInOutCubic = (value: number) =>
+      value < 0.5
+        ? 4 * value * value * value
+        : 1 - Math.pow(-2 * value + 2, 3) / 2;
+
+    const finishIntro = () => {
+      introPhase = "done";
+      introAppliedOffset = 0;
+      setHintVisible(false);
+      controls.enableDamping = previousDamping;
+    };
+
+    const cancelIntro = () => {
+      if (introPhase === "done") return;
+
+      introBlocked = true;
+
+      if (introTimerId !== undefined) {
+        window.clearTimeout(introTimerId);
+        introTimerId = undefined;
+      }
+
+      finishIntro();
+    };
+
+    const startIntro = () => {
+      if (introBlocked || introPhase !== "idle") return;
+
+      introPhase = "forward";
+      introPhaseStart = performance.now();
+      introAppliedOffset = 0;
+      previousDamping = controls.enableDamping;
+      controls.enableDamping = false;
+      setHintVisible(true);
+    };
+
+    const scheduleIntro = () => {
+      if (introBlocked || introPhase !== "idle") return;
+
+      if (introTimerId !== undefined) {
+        window.clearTimeout(introTimerId);
+      }
+
+      introTimerId = window.setTimeout(startIntro, INTRO_DELAY);
+    };
+
+    const updateIntro = (now: number) => {
+      if (introPhase === "forward") {
+        const progress = Math.min((now - introPhaseStart) / INTRO_FORWARD_DURATION, 1);
+        const offset = INTRO_ROTATION * easeInOutCubic(progress);
+        const delta = offset - introAppliedOffset;
+
+        if (delta !== 0) {
+          controls.rotateLeft(delta);
+        }
+
+        introAppliedOffset = offset;
+
+        if (progress >= 1) {
+          introPhase = "pause";
+          introPhaseStart = now;
+        }
+      } else if (introPhase === "pause") {
+        if (now - introPhaseStart >= INTRO_PAUSE_DURATION) {
+          introPhase = "reverse";
+          introPhaseStart = now;
+        }
+      } else if (introPhase === "reverse") {
+        const progress = Math.min((now - introPhaseStart) / INTRO_RETURN_DURATION, 1);
+        const offset = INTRO_ROTATION * (1 - easeInOutCubic(progress));
+        const delta = offset - introAppliedOffset;
+
+        if (delta !== 0) {
+          controls.rotateLeft(delta);
+        }
+
+        introAppliedOffset = offset;
+
+        if (progress >= 1) {
+          finishIntro();
+        }
+      }
+    };
 
     loader.load(
       "/models/anga.glb",
@@ -111,6 +231,8 @@ const ModelViewer: Component = () => {
 
         controls.target.copy(target);
         controls.update();
+
+        scheduleIntro();
       },
       undefined,
       (error: unknown) => {
@@ -144,6 +266,7 @@ const ModelViewer: Component = () => {
     const render = () => {
       animationFrameId = requestAnimationFrame(render);
 
+      updateIntro(performance.now());
       controls.update();
       renderer.render(scene, camera);
     };
@@ -156,7 +279,14 @@ const ModelViewer: Component = () => {
     onCleanup(() => {
       cancelAnimationFrame(animationFrameId);
 
+      if (introTimerId !== undefined) {
+        window.clearTimeout(introTimerId);
+      }
+
       window.removeEventListener("resize", handleResize);
+
+      controls.removeEventListener("start", handleControlStart);
+      controls.removeEventListener("end", handleControlEnd);
 
       controls.dispose();
 
@@ -194,7 +324,20 @@ const ModelViewer: Component = () => {
     });
   });
 
-  return <div ref={containerRef} class="w-full h-full" />;
+  return (
+    <div ref={containerRef} class="relative h-full w-full">
+      <div
+        aria-hidden="true"
+        classList={{
+          "opacity-0": !hintVisible(),
+          "opacity-50": hintVisible(),
+        }}
+        class="pointer-events-none absolute bottom-4 right-4 select-none text-[13px] text-white transition-opacity duration-300"
+      >
+        Drag to rotate
+      </div>
+    </div>
+  );
 };
 
 export default ModelViewer;
