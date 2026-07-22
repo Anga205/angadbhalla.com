@@ -1,0 +1,13 @@
+---
+import Header from "./header.astro";
+import "@/styles/global.css";
+---
+
+<html lang="en">
+	<Header />
+	<body>
+		<div class="w-screen h-screen bg-neutral-900">
+			<slot />
+		</div>
+	</body>
+</html>
