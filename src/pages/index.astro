@@ -1,17 +1,13 @@
 ---
-
+import Header from "../components/header.astro";
+import "../styles/global.css";
 ---
 
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
+	<Header />
 	<body>
-		<h1>Astro</h1>
+		<div class="w-screen h-screen bg-neutral-900">
+			<p class="bg-black">hello</p>
+		</div>
 	</body>
 </html>
