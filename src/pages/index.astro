@@ -5,18 +5,25 @@ import GreetingText from "@/components/dynamic/GreetingText";
 ---
 
 <Layout>
-    <main class="snap-y snap-mandatory">
-        <section class="h-screen snap-start">
-            <div class="flex h-full w-full">
-                <div class="w-1/5"></div>
-                <div class="flex w-2/5 items-center">
-                    <div data-hero-copy>
-						<p class="mb-4 text-lg text-white/80 sm:text-xl"><GreetingText initial="Hello!" client:visible/></p>
-						<h1 class="max-w-4xl text-5xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl">
+	<main class="snap-y snap-mandatory">
+		<section class="h-screen snap-start">
+			<div class="flex h-full w-full">
+				<div class="w-1/5"></div>
+				<div class="flex w-2/5 items-center">
+					<div data-hero-copy>
+						<p class="mb-4 text-lg text-white/80 sm:text-xl">
+							<GreetingText initial="Hello!" client:visible />
+						</p>
+						<h1
+							class="max-w-4xl text-5xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl"
+						>
 							I&apos;m Angad Bhalla
 						</h1>
-						<p class="mt-5 max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
-							I build operating systems, cloud infrastructure, developer tools, and high-performance software.
+						<p
+							class="mt-5 max-w-2xl text-base leading-8 text-white/70 sm:text-lg"
+						>
+							I build operating systems, cloud infrastructure,
+							developer tools, and high-performance software.
 						</p>
 
 						<div class="mt-8 flex flex-wrap gap-4 text-sm">
@@ -34,51 +41,70 @@ import GreetingText from "@/components/dynamic/GreetingText";
 							</a>
 						</div>
 
-						<dl class="mt-8 flex flex-wrap gap-x-6 gap-y-4 text-sm text-white/60">
+						<dl
+							class="mt-8 flex flex-wrap gap-x-6 gap-y-4 text-sm text-white/60"
+						>
 							<div class="flex items-center gap-3">
-								<span class="h-2 w-2 rounded-full bg-white/70"></span>
+								<span class="h-2 w-2 rounded-full bg-white/70"
+								></span>
 								<dt>Bengaluru, India</dt>
 							</div>
 							<div class="flex items-center gap-3">
-								<span class="h-2 w-2 rounded-full bg-white/70"></span>
+								<span class="h-2 w-2 rounded-full bg-white/70"
+								></span>
 								<dt>Computer Science @ PES University</dt>
 							</div>
 							<div class="flex items-center gap-3">
-								<span class="h-2 w-2 rounded-full bg-white/70"></span>
+								<span class="h-2 w-2 rounded-full bg-white/70"
+								></span>
 								<dt>Available for opportunities</dt>
 							</div>
 						</dl>
-                    </div>
-                </div>
-                <div class="w-1/5"></div>
-                <div class="w-1/5"></div>
-            </div>
-        </section>
+					</div>
+				</div>
+				<div class="w-1/5"></div>
+				<div class="w-1/5"></div>
+			</div>
+		</section>
 
-        <section id="about" class="h-screen snap-start">
-            <div class="flex h-full w-full">
-                <div class="w-1/5"></div>
-                <div class="flex w-1/5 items-center"></div>
-                <div class="flex w-2/5 items-center justify-start pl-6">
-                    <div data-about-copy class="max-w-2xl">
-						<p class="mb-4 text-lg text-white/80 sm:text-xl">About me</p>
-						<div class="space-y-5 text-base leading-8 text-white/70 sm:text-lg">
+		<section id="about" class="h-screen snap-start">
+			<div class="flex h-full w-full">
+				<div class="w-1/5"></div>
+				<div class="flex w-1/5 items-center"></div>
+				<div class="flex w-2/5 items-center justify-start pl-6">
+					<div data-about-copy class="max-w-2xl">
+						<p class="mb-4 text-lg text-white/80 sm:text-xl">
+							About me
+						</p>
+						<div
+							class="space-y-5 text-base leading-8 text-white/70 sm:text-lg"
+						>
 							<p>
-								I&apos;m a 21 year old guy from India who likes understanding how things work.
+								I&apos;m a 21 year old guy from India who likes
+								understanding how things work.
 							</p>
 							<p>
-								Most of the time that means programming, systems, and building things that feel simple on the surface but honest underneath. Outside that, I usually end up talking about Marvel, Minecraft, chicken wings, open source, or whatever new technology I&apos;m trying to understand next.
+								Most of the time that means programming,
+								systems, and building things that feel simple on
+								the surface but honest underneath. Outside that,
+								I usually end up talking about Marvel,
+								Minecraft, chicken wings, open source, or
+								whatever new technology I&apos;m trying to
+								understand next.
 							</p>
 							<p>
-								I like making software that is useful, calm, and technically interesting. The kind of work I enjoy most is the sort that teaches me something while I&apos;m building it.
+								I like making software that is useful, calm, and
+								technically interesting. The kind of work I
+								enjoy most is the sort that teaches me something
+								while I&apos;m building it.
 							</p>
 						</div>
-                    </div>
-                </div>
-                <div class="w-1/5"></div>
-            </div>
-        </section>
+					</div>
+				</div>
+				<div class="w-1/5"></div>
+			</div>
+		</section>
 
-        <ModelViewer client:visible />
-    </main>
+		<ModelViewer client:visible />
+	</main>
 </Layout>
