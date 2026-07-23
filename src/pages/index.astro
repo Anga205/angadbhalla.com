@@ -1,7 +1,7 @@
 ---
 import Layout from "../components/static/layout.astro";
 import ModelViewer from "@/components/dynamic/ModelViewer";
-import HeroText from "@/components/dynamic/HeroText";
+import GreetingText from "@/components/dynamic/GreetingText";
 ---
 
 <Layout>
@@ -11,7 +11,7 @@ import HeroText from "@/components/dynamic/HeroText";
                 <div class="w-1/5"></div>
                 <div class="flex w-2/5 items-center">
                     <div data-hero-copy>
-						<p class="mb-4 text-lg text-white/80 sm:text-xl"><HeroText initial="Hello!" client:visible/></p>
+						<p class="mb-4 text-lg text-white/80 sm:text-xl"><GreetingText initial="Hello!" client:visible/></p>
 						<h1 class="max-w-4xl text-5xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl">
 							I&apos;m Angad Bhalla
 						</h1>

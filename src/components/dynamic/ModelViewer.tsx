@@ -65,18 +65,39 @@ const ModelViewer: Component = () => {
 
     renderer.domElement.style.cursor = "grab";
 
+    const savedCameraPosition = window.localStorage.getItem("model-camera-position");
+    const savedCameraTarget = window.localStorage.getItem("model-camera-target");
+
+    if (savedCameraPosition) {
+      try {
+        const parsedPosition = JSON.parse(savedCameraPosition) as [number, number, number];
+        camera.position.set(parsedPosition[0], parsedPosition[1], parsedPosition[2]);
+      } catch {
+        window.localStorage.removeItem("model-camera-position");
+      }
+    }
+
+    if (savedCameraTarget) {
+      try {
+        const parsedTarget = JSON.parse(savedCameraTarget) as [number, number, number];
+        controls.target.set(parsedTarget[0], parsedTarget[1], parsedTarget[2]);
+      } catch {
+        window.localStorage.removeItem("model-camera-target");
+      }
+    }
+
+    controls.update();
+
     const loader = new GLTFLoader();
     loader.setMeshoptDecoder(MeshoptDecoder);
 
     let loadedModel: THREE.Object3D | null = null;
     let modelTarget = new THREE.Vector3(0, 1, 0);
-    const startCameraPosition = new THREE.Vector3(1.25, 1, -0.75);
+    const startCameraPosition = camera.position.clone();
     const midCameraPosition = new THREE.Vector3(1.5, 1, 0);
     const endCameraPosition = new THREE.Vector3(1.25, 1, 0.75);
     const heroCopy = document.querySelector<HTMLElement>("[data-hero-copy]");
     const aboutCopy = document.querySelector<HTMLElement>("[data-about-copy]");
-
-    let controlsActive = false;
     let viewportHeight = window.innerHeight || 1;
     let viewportWidth = window.innerWidth || 1;
     let scrollProgress = 0;
@@ -87,8 +108,20 @@ const ModelViewer: Component = () => {
     const lerp = (from: number, to: number, amount: number) =>
       from + (to - from) * amount;
 
+    const saveControlState = () => {
+      window.localStorage.setItem(
+        "model-camera-position",
+        JSON.stringify([camera.position.x, camera.position.y, camera.position.z])
+      );
+      window.localStorage.setItem(
+        "model-camera-target",
+        JSON.stringify([controls.target.x, controls.target.y, controls.target.z])
+      );
+    };
+
     const applyScrollState = () => {
       const progress = scrollProgress;
+      const inTransition = progress > 0.05 && progress < 0.95;
 
       if (heroCopy) {
         const heroProgress = clamp(progress / 0.25, 0, 1);
@@ -97,44 +130,35 @@ const ModelViewer: Component = () => {
       }
 
       if (aboutCopy) {
-        const aboutProgress = clamp((progress - 0.72) / 0.2, 0, 1);
+        const aboutProgress = clamp((progress - 0.78) / 0.16, 0, 1);
         aboutCopy.style.opacity = String(aboutProgress);
         aboutCopy.style.transform = `translateY(${40 * (1 - aboutProgress)}px)`;
       }
 
       containerRef.style.transform = `translate3d(${lerp(-viewportWidth * 0.2, -viewportWidth * 0.6, progress)}px, 0, 0)`;
 
-      if (progress < 0.5) {
-        const localProgress = progress * 2;
-        camera.position.set(
-          lerp(startCameraPosition.x, midCameraPosition.x, localProgress),
-          lerp(startCameraPosition.y, midCameraPosition.y, localProgress),
-          lerp(startCameraPosition.z, midCameraPosition.z, localProgress)
-        );
-        camera.lookAt(modelTarget);
-        controlsActive = false;
+      if (inTransition) {
         controls.enabled = false;
+
+        if (progress < 0.5) {
+          const localProgress = progress * 2;
+          camera.position.set(
+            lerp(startCameraPosition.x, midCameraPosition.x, localProgress),
+            lerp(startCameraPosition.y, midCameraPosition.y, localProgress),
+            lerp(startCameraPosition.z, midCameraPosition.z, localProgress)
+          );
+        } else {
+          const localProgress = (progress - 0.5) * 2;
+          camera.position.set(
+            lerp(midCameraPosition.x, endCameraPosition.x, localProgress),
+            lerp(midCameraPosition.y, endCameraPosition.y, localProgress),
+            lerp(midCameraPosition.z, endCameraPosition.z, localProgress)
+          );
+        }
+
+        camera.lookAt(modelTarget);
       } else {
-        const localProgress = (progress - 0.5) * 2;
-        camera.position.set(
-          lerp(midCameraPosition.x, endCameraPosition.x, localProgress),
-          lerp(midCameraPosition.y, endCameraPosition.y, localProgress),
-          lerp(midCameraPosition.z, endCameraPosition.z, localProgress)
-        );
-
-        if (progress >= 1 && !controlsActive) {
-          controls.enabled = true;
-          controls.target.copy(modelTarget);
-          camera.position.copy(endCameraPosition);
-          controls.update();
-          controlsActive = true;
-        }
-
-        if (progress < 1) {
-          controlsActive = false;
-          controls.enabled = false;
-          camera.lookAt(modelTarget);
-        }
+        controls.enabled = true;
       }
     };
 
@@ -163,6 +187,7 @@ const ModelViewer: Component = () => {
         modelTarget = target;
         controls.target.copy(target);
         controls.update();
+        startCameraPosition.copy(camera.position);
       },
       undefined,
       (error: unknown) => {
@@ -191,8 +216,13 @@ const ModelViewer: Component = () => {
       scrollProgress = clamp(window.scrollY / viewportHeight, 0, 1);
     };
 
+    const handleControlEnd = () => {
+      saveControlState();
+    };
+
     window.addEventListener("resize", handleResize);
     window.addEventListener("scroll", handleScroll, { passive: true });
+    controls.addEventListener("end", handleControlEnd);
 
     scrollProgress = clamp(window.scrollY / viewportHeight, 0, 1);
     applyScrollState();
@@ -204,7 +234,7 @@ const ModelViewer: Component = () => {
 
       applyScrollState();
 
-      if (controlsActive) {
+      if (controls.enabled) {
         controls.update();
       }
 
@@ -221,6 +251,7 @@ const ModelViewer: Component = () => {
 
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("scroll", handleScroll);
+      controls.removeEventListener("end", handleControlEnd);
 
       controls.dispose();
 
