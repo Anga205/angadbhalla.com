@@ -1,8 +1,14 @@
 ---
 import GreetingText from "../dynamic/GreetingText";
+import { Mouse, ChevronDown } from "lucide-astro";
+import ScrollReminderScript from "./HeroSection/ScrollReminderScript.astro";
+
+const birthday = 1117650600;
+const currentTime = Date.now() / 1000;
+const age = Math.floor((currentTime - birthday) / (365.25 * 24 * 3600));
 ---
 
-<section class="h-screen snap-start">
+<section class="relative h-screen snap-start">
     <div class="flex h-full w-full">
         <div class="w-1/5"></div>
         <div class="flex w-2/5 items-center">
@@ -18,44 +24,24 @@ import GreetingText from "../dynamic/GreetingText";
                 <p
                     class="mt-5 max-w-2xl text-base leading-8 text-white/70 sm:text-lg"
                 >
-                    I build operating systems, cloud infrastructure, developer
-                    tools, and high-performance software.
+                    I'm {age}. I like playing Minecraft, watching Marvel &amp;
+                    DC, drinking coffee and building cool things for me and my
+                    friends. I'm also lactose intolerant.
                 </p>
-
-                <div class="mt-8 flex flex-wrap gap-4 text-sm">
-                    <a
-                        href="#about"
-                        class="inline-flex items-center justify-center rounded-lg border border-white/20 px-5 py-3 text-white transition hover:border-white/35 hover:bg-white/5"
-                    >
-                        About Me
-                    </a>
-                    <a
-                        href="#contact"
-                        class="inline-flex items-center justify-center rounded-lg border border-white/20 px-5 py-3 text-white/90 transition hover:border-white/35 hover:bg-white/5"
-                    >
-                        Contact
-                    </a>
-                </div>
-
-                <dl
-                    class="mt-8 flex flex-wrap gap-x-6 gap-y-4 text-sm text-white/60"
-                >
-                    <div class="flex items-center gap-3">
-                        <span class="h-2 w-2 rounded-full bg-white/70"></span>
-                        <dt>Bengaluru, India</dt>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="h-2 w-2 rounded-full bg-white/70"></span>
-                        <dt>Computer Science @ PES University</dt>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span class="h-2 w-2 rounded-full bg-white/70"></span>
-                        <dt>Available for opportunities</dt>
-                    </div>
-                </dl>
             </div>
         </div>
         <div class="w-1/5"></div>
         <div class="w-1/5"></div>
     </div>
+    <div
+        id="scroll-indicator"
+        class="pointer-events-none absolute bottom-8 left-1/2 flex -translate-x-1/2 items-center text-white/40 opacity-0 transition-opacity duration-700 gap-x-5"
+    >
+        <Mouse class="h-7 w-7" />
+
+        <span class="mt-1 text-xs tracking-wide"> Scroll </span>
+
+        <ChevronDown id="scroll-arrow" class="mt-1 h-4 w-4" />
+    </div>
+    <ScrollReminderScript />
 </section>
