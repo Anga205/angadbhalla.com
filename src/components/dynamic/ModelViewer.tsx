@@ -100,9 +100,6 @@ const ModelViewer: Component = () => {
 
 		camera.position.copy(heroCameraPosition);
 
-		//
-		// Loader
-		//
 		const loader = new GLTFLoader();
 		loader.setMeshoptDecoder(MeshoptDecoder);
 
@@ -143,13 +140,8 @@ const ModelViewer: Component = () => {
 				console.error("Failed to load model:", error);
 			}
 		);
-		//
-		// Scene update
-		//
+
 		const updateScene = () => {
-			//
-			// Camera
-			//
 			camera.position.lerpVectors(
 				heroCameraPosition,
 				aboutCameraPosition,
@@ -158,17 +150,8 @@ const ModelViewer: Component = () => {
 
 			camera.lookAt(modelTarget);
 
-			//
-			// Orbit controls are only enabled
-			// at the endpoints.
-			//
-			controls.enabled =
-				currentProgress < 0.02 ||
-				currentProgress > 0.98;
+			controls.enabled = currentProgress < 0.02 || currentProgress > 0.98;
 
-			//
-			// Hero copy
-			//
 			if (heroCopy) {
 				const progress = clamp(
 					currentProgress / 0.25,
@@ -181,9 +164,6 @@ const ModelViewer: Component = () => {
 					`translateY(${-40 * progress}px)`;
 			}
 
-			//
-			// About copy
-			//
 			if (aboutCopy) {
 				const progress = clamp(
 					(currentProgress - 0.75) / 0.25,
@@ -196,22 +176,28 @@ const ModelViewer: Component = () => {
 					`translateY(${40 * (1 - progress)}px)`;
 			}
 
-			//
-			// Viewer position
-			//
 			const x = THREE.MathUtils.lerp(
 				-viewportWidth * 0.2,
 				-viewportWidth * 0.6,
 				currentProgress
 			);
 
+			const navbarProgress = clamp(
+				currentProgress / 0.25,
+				0,
+				1
+			);
+
+			const y = THREE.MathUtils.lerp(
+				0,
+				64,
+				navbarProgress
+			);
+
 			containerRef.style.transform =
-				`translate3d(${x}px,0,0)`;
+				`translate3d(${x}px, ${y}px, 0)`;
 		};
 
-		//
-		// Events
-		//
 		const handleScroll = () => {
 			targetProgress = clamp(
 				window.scrollY / viewportHeight,
@@ -254,9 +240,6 @@ const ModelViewer: Component = () => {
 			handleResize
 		);
 
-		//
-		// Render loop
-		//
 		let animationFrameId = 0;
 
 		const render = () => {
@@ -283,9 +266,7 @@ const ModelViewer: Component = () => {
 
 		updateScene();
 		render();
-		//
-		// Cleanup
-		//
+
 		onCleanup(() => {
 			cancelAnimationFrame(animationFrameId);
 
