@@ -3,9 +3,11 @@ import Layout from "../components/static/layout.astro";
 import HeroSection from "../components/views/HeroSection.astro";
 import AboutSection from "../components/views/AboutSection.astro";
 import ModelViewer from "@/components/dynamic/ModelViewer";
+import Navbar from "@/components/dynamic/Navbar";
 ---
 
 <Layout>
+	<Navbar client:visible />
 	<main class="snap-y snap-mandatory">
 		<HeroSection />
 		<AboutSection />
