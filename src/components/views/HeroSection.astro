@@ -1,0 +1,61 @@
+---
+import GreetingText from "../dynamic/GreetingText";
+---
+
+<section class="h-screen snap-start">
+    <div class="flex h-full w-full">
+        <div class="w-1/5"></div>
+        <div class="flex w-2/5 items-center">
+            <div data-hero-copy>
+                <p class="mb-4 text-lg text-white/80 sm:text-xl">
+                    <GreetingText initial="Hello!" client:visible />
+                </p>
+                <h1
+                    class="max-w-4xl text-5xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl"
+                >
+                    I&apos;m Angad Bhalla
+                </h1>
+                <p
+                    class="mt-5 max-w-2xl text-base leading-8 text-white/70 sm:text-lg"
+                >
+                    I build operating systems, cloud infrastructure, developer
+                    tools, and high-performance software.
+                </p>
+
+                <div class="mt-8 flex flex-wrap gap-4 text-sm">
+                    <a
+                        href="#about"
+                        class="inline-flex items-center justify-center rounded-lg border border-white/20 px-5 py-3 text-white transition hover:border-white/35 hover:bg-white/5"
+                    >
+                        About Me
+                    </a>
+                    <a
+                        href="#contact"
+                        class="inline-flex items-center justify-center rounded-lg border border-white/20 px-5 py-3 text-white/90 transition hover:border-white/35 hover:bg-white/5"
+                    >
+                        Contact
+                    </a>
+                </div>
+
+                <dl
+                    class="mt-8 flex flex-wrap gap-x-6 gap-y-4 text-sm text-white/60"
+                >
+                    <div class="flex items-center gap-3">
+                        <span class="h-2 w-2 rounded-full bg-white/70"></span>
+                        <dt>Bengaluru, India</dt>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="h-2 w-2 rounded-full bg-white/70"></span>
+                        <dt>Computer Science @ PES University</dt>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="h-2 w-2 rounded-full bg-white/70"></span>
+                        <dt>Available for opportunities</dt>
+                    </div>
+                </dl>
+            </div>
+        </div>
+        <div class="w-1/5"></div>
+        <div class="w-1/5"></div>
+    </div>
+</section>
