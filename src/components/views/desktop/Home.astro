@@ -1,0 +1,17 @@
+---
+import Layout from "@/components/static/layout.astro";
+import HeroSection from "@/components/views/desktop/HeroSection.astro";
+import PhilosophySection from "@/components/views/desktop/Philosophy.astro";
+import Navbar from "@/components/dynamic/Navbar";
+import ModelViewer from "@/components/dynamic/desktop/ModelViewer";
+---
+
+<Layout>
+	<Navbar client:visible />
+	<main class="snap-y snap-mandatory">
+		<HeroSection />
+		<PhilosophySection />
+
+		<ModelViewer client:visible />
+	</main>
+</Layout>
