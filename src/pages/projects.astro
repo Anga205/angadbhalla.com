@@ -1,0 +1,62 @@
+---
+import StaticLayout from "@/components/static/StaticLayout.astro";
+import { ArrowRight, Clock3, FileText, LayoutList, PlayCircle, Search, Video } from "lucide-astro";
+
+const title = "Projects | Angad Bhalla";
+const description = "Projects are currently being documented. A focused archive of systems work, implementation notes, benchmarks, and technical writeups.";
+---
+
+<StaticLayout title={title} description={description} canonicalPath="/projects">
+	<main class="py-12 lg:py-16">
+		<section class="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+			<div class="space-y-6">
+				<p class="text-xs uppercase tracking-[0.36em] text-white/40">Projects</p>
+				<h1 class="max-w-2xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+					Projects are currently being documented.
+				</h1>
+				<p class="max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
+					This page is being assembled with the same care I put into the systems and tooling I build. The finished archive will be more than a gallery: it will explain what each project does, why it was built, and what was learned along the way.
+				</p>
+				<a href="/contact" class="inline-flex items-center gap-2 text-sm text-white/80 transition hover:text-white">
+					If you want to discuss a project, reach out
+					<ArrowRight class="h-4 w-4" />
+				</a>
+			</div>
+
+			<aside class="border border-white/10 bg-white/3 p-6 sm:p-7">
+				<p class="text-xs uppercase tracking-[0.34em] text-white/40">What will appear here</p>
+				<ul class="mt-6 space-y-4 text-sm leading-7 text-white/70">
+					<li class="flex gap-3">
+						<PlayCircle class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
+						<span>Interactive demos</span>
+					</li>
+					<li class="flex gap-3">
+						<FileText class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
+						<span>Architecture writeups</span>
+					</li>
+					<li class="flex gap-3">
+						<LayoutList class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
+						<span>Implementation notes</span>
+					</li>
+					<li class="flex gap-3">
+						<Search class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
+						<span>Performance analysis</span>
+					</li>
+					<li class="flex gap-3">
+						<Clock3 class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
+						<span>Development stories</span>
+					</li>
+					<li class="flex gap-3">
+						<Video class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
+						<span>Videos and demos</span>
+					</li>
+				</ul>
+
+				<div class="mt-8 border-t border-white/10 pt-6">
+					<p class="text-xs uppercase tracking-[0.34em] text-white/40">Expected completion</p>
+					<p class="mt-3 text-lg font-medium text-white">August 15th, 2026</p>
+				</div>
+			</aside>
+		</section>
+	</main>
+</StaticLayout>

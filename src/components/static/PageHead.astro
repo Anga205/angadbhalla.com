@@ -1,0 +1,53 @@
+---
+const SITE_URL = "https://angadbhalla.com";
+
+const {
+	title,
+	description,
+	canonicalPath = "/",
+	ogImagePath = "/og.png",
+} = Astro.props;
+
+const canonicalUrl = new URL(canonicalPath, SITE_URL).toString();
+const ogImageUrl = new URL(ogImagePath, SITE_URL).toString();
+---
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta name="generator" content={Astro.generator} />
+
+	<title>{title}</title>
+	<meta name="description" content={description} />
+	<meta
+		name="keywords"
+		content="systems engineering, backend engineering, distributed systems, infrastructure software, performance optimisation, compilers, operating systems, developer tools, low level programming"
+	/>
+	<meta name="author" content="Angad Bhalla" />
+	<meta name="creator" content="Angad Bhalla" />
+	<meta name="publisher" content="Angad Bhalla" />
+	<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+	<link rel="canonical" href={canonicalUrl} />
+
+	<link rel="icon" href="/favicon.ico" sizes="any" />
+	<link rel="icon" type="image/svg+xml" href="/anga.svg" />
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+	<meta name="theme-color" content="#0a0a0a" />
+	<meta name="color-scheme" content="dark" />
+
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:title" content={title} />
+	<meta property="og:description" content={description} />
+	<meta property="og:site_name" content="Angad Bhalla" />
+	<meta property="og:image" content={ogImageUrl} />
+
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={title} />
+	<meta name="twitter:description" content={description} />
+	<meta name="twitter:image" content={ogImageUrl} />
+
+	<meta name="format-detection" content="telephone=no" />
+</head>
