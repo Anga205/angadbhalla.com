@@ -12,9 +12,9 @@ interface StatusDialogProps {
 }
 
 const toneStyles: Record<StatusTone, string> = {
-	sending: "border-white/10 bg-neutral-950",
-	success: "border-white/15 bg-neutral-950",
-	error: "border-white/15 bg-neutral-950",
+	sending: "border-white/10 bg-neutral-900",
+	success: "border-white/15 bg-neutral-900",
+	error: "border-white/15 bg-neutral-900",
 };
 
 const ToneIcon = (props: { tone: StatusTone }) => {

@@ -1,37 +1,61 @@
 ---
-import StaticLayout from "@/components/static/StaticLayout.astro";
+import Layout from "@/components/static/layout.astro";
 import ResumeRequestForm from "@/components/static/forms/ResumeRequestForm";
 import { ExternalLink, ShieldCheck } from "lucide-astro";
+import StaticNavbar from "@/components/static/StaticNavbar.astro";
 
-const title = "Resume | Angad Bhalla";
-const description = "Request a copy of Angad Bhalla’s resume. A short explanation of why it is not publicly hosted, plus a simple request form.";
+// const title = "Resume | Angad Bhalla";
+// const description =
+	"Request a copy of Angad Bhalla’s resume. A short explanation of why it is not publicly hosted, plus a simple request form.";
 ---
 
-<StaticLayout title={title} description={description} canonicalPath="/resume">
+<Layout>
+	<StaticNavbar />
+	<div class="mx-auto max-h-screen w-full max-w-6xl px-6 pb-16 pt-8 sm:px-8 lg:px-12">
 	<main class="grid gap-12 py-12 lg:grid-cols-[1.1fr_0.9fr] lg:py-16">
 		<section class="space-y-6">
-			<p class="text-xs uppercase tracking-[0.36em] text-white/40">Resume</p>
-			<h1 class="max-w-2xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+			<p class="text-xs uppercase tracking-[0.36em] text-white/40">
+				Resume
+			</p>
+			<h1
+				class="max-w-2xl text-4xl font-semibold tracking-tight text-white sm:text-5xl"
+			>
 				My resume is not publicly hosted.
 			</h1>
-			<div class="max-w-2xl space-y-5 text-base leading-8 text-white/70 sm:text-lg">
+			<div
+				class="max-w-2xl space-y-5 text-base leading-8 text-white/70 sm:text-lg"
+			>
 				<p>
-					Some of my past work is governed by client, employer, or contractual constraints, so I keep the full resume out of public search results and permanent indexing.
+					I don't keep my resume publicly available online. A fair
+					amount of my previous work was done under client and
+					employer agreements, so the full version isn't something I
+					can upload for search engines to index.
 				</p>
 				<p>
-					If you would like a copy, send a request below. Depending on the purpose, I may share the latest version, a redacted version, or follow up before releasing anything further.
+					If you would like a copy, please feel free to send a request
+					below. Depending on the circumstance, I may be able to share
+					the latest version, a redacted version, or follow up before
+					releasing anything further.
 				</p>
 				<p>
-					If you only need a public overview, my LinkedIn profile is the quickest place to start.
+					If you're just interested in my background, my LinkedIn is
+					probably the quickest place to start.
 				</p>
 			</div>
 
 			<div class="flex flex-wrap gap-4">
-				<a href="https://www.linkedin.com/in/anga" target="_blank" rel="noreferrer" class="inline-flex items-center gap-2 border border-white/10 bg-white/4 px-5 py-3 text-sm text-white transition hover:border-white/20 hover:bg-white/7">
+				<a
+					href="https://www.linkedin.com/in/anga"
+					target="_blank"
+					rel="noreferrer"
+					class="inline-flex items-center gap-2 border border-white/10 bg-white/4 px-5 py-3 text-sm text-white transition hover:border-white/20 hover:bg-white/7"
+				>
 					LinkedIn Profile
 					<ExternalLink class="h-4 w-4" />
 				</a>
-				<div class="inline-flex items-center gap-2 border border-white/10 px-5 py-3 text-sm text-white/55">
+				<div
+					class="inline-flex items-center gap-2 border border-white/10 px-5 py-3 text-sm text-white/55"
+				>
 					<ShieldCheck class="h-4 w-4" />
 					Handled on request
 				</div>
@@ -39,14 +63,21 @@ const description = "Request a copy of Angad Bhalla’s resume. A short explanat
 		</section>
 
 		<aside class="border border-white/10 bg-white/3 p-6 sm:p-7">
-			<p class="text-xs uppercase tracking-[0.34em] text-white/40">Request a copy</p>
-			<h2 class="mt-4 text-2xl font-medium tracking-tight text-white">Request resume access</h2>
+			<p class="text-xs uppercase tracking-[0.34em] text-white/40">
+				Request a copy
+			</p>
+			<h2 class="mt-4 text-2xl font-medium tracking-tight text-white">
+				Request resume access
+			</h2>
 			<p class="mt-3 max-w-xl text-sm leading-7 text-white/65">
-				Share an email address and I will review the request in context. Some requests may receive the latest resume, while others may receive a redacted version or a follow-up first.
+				Share an email address and I will review the request in context.
+				Some requests may receive the latest resume, while others may
+				receive a redacted version or a follow-up first.
 			</p>
 			<div class="mt-8">
 				<ResumeRequestForm client:load />
 			</div>
 		</aside>
 	</main>
-</StaticLayout>
+	</div>
+</Layout>

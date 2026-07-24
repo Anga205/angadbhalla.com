@@ -90,7 +90,7 @@ export default function ContactForm() {
 						required
 						value={name()}
 						onInput={(event) => setName(event.currentTarget.value)}
-						className="w-full border border-white/10 bg-neutral-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
+						className="w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
 						placeholder="Your name"
 					/>
 				</div>
@@ -107,7 +107,7 @@ export default function ContactForm() {
 						required
 						value={email()}
 						onInput={(event) => setEmail(event.currentTarget.value)}
-						className="w-full border border-white/10 bg-neutral-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
+						className="w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
 						placeholder="you@example.com"
 					/>
 				</div>
@@ -122,7 +122,7 @@ export default function ContactForm() {
 						required
 						value={message()}
 						onInput={(event) => setMessage(event.currentTarget.value)}
-						className="min-h-40 w-full border border-white/10 bg-neutral-950 px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
+						className="min-h-40 w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
 						placeholder="Tell me a little about what you are working on."
 					/>
 				</div>

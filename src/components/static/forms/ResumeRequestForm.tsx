@@ -82,7 +82,7 @@ export default function ResumeRequestForm() {
 						required
 						value={email()}
 						onInput={(event) => setEmail(event.currentTarget.value)}
-						className="w-full border border-white/10 bg-neutral-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
+						className="w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
 						placeholder="you@example.com"
 					/>
 				</div>

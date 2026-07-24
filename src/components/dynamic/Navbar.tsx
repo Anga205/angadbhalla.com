@@ -57,10 +57,10 @@ const Navbar: Component = () => {
 
 				<nav class="flex items-center gap-8 text-sm text-white/60">
 					<a
-						href="#about"
-						class="transition-colors hover:text-white"
+						href="/"
+						class="transition-colors text-white"
 					>
-						About
+						Home
 					</a>
 
 					<a
@@ -71,10 +71,10 @@ const Navbar: Component = () => {
 					</a>
 
 					<a
-						href="/notes"
+						href="/resume"
 						class="transition-colors hover:text-white"
 					>
-						Notes
+						Resume
 					</a>
 
 					<a

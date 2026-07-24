@@ -1,6 +1,7 @@
 ---
-import StaticLayout from "@/components/static/StaticLayout.astro";
+import Layout from "@/components/static/layout.astro";
 import ContactForm from "@/components/static/forms/ContactForm";
+import StaticNavbar from "@/components/static/StaticNavbar.astro";
 import {
 	ArrowRight,
 	Github,
@@ -12,61 +13,120 @@ import {
 } from "lucide-astro";
 
 const title = "Contact | Angad Bhalla";
-const description = "Contact Angad Bhalla about systems engineering, backend engineering, infrastructure software, performance-focused software, or developer tools.";
+const description =
+	"Contact Angad Bhalla about systems engineering, backend engineering, infrastructure software, performance-focused software, or developer tools.";
 
 const links = [
 	{ label: "GitHub", href: "https://github.com/Anga205/", icon: Github },
-	{ label: "LinkedIn", href: "https://www.linkedin.com/in/anga", icon: Linkedin },
-	{ label: "Reddit", href: "https://www.reddit.com/u/anga205", icon: MessageSquare },
-	{ label: "Instagram", href: "https://www.instagram.com/_anga205/", icon: Instagram },
-	{ label: "Discord", href: "https://discord.com/users/477680545271250944", icon: MessageCircle },
+	{
+		label: "LinkedIn",
+		href: "https://www.linkedin.com/in/anga",
+		icon: Linkedin,
+	},
+	{
+		label: "Reddit",
+		href: "https://www.reddit.com/u/anga205",
+		icon: MessageSquare,
+	},
+	{
+		label: "Instagram",
+		href: "https://www.instagram.com/_anga205/",
+		icon: Instagram,
+	},
+	{
+		label: "Discord",
+		href: "https://discord.com/users/477680545271250944",
+		icon: MessageCircle,
+	},
 	{ label: "Email", href: "mailto:sayhi@angadbhalla.com", icon: Mail },
 ];
 ---
 
-<StaticLayout title={title} description={description} canonicalPath="/contact">
-	<main class="grid gap-12 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:py-16">
-		<section class="space-y-6">
-			<p class="text-xs uppercase tracking-[0.36em] text-white/40">Contact</p>
-			<h1 class="max-w-2xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-				Start a conversation.
-			</h1>
-			<p class="max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
-				If you want to talk about systems engineering, backend work, infrastructure, performance, or developer tooling, send a message and I’ll reply directly.
-			</p>
+<Layout title={title} description={description} canonicalPath="/contact">
+	<StaticNavbar />
+	<div
+		class="mx-auto max-h-screen w-full max-w-6xl px-6 pb-16 pt-8 sm:px-8 lg:px-12"
+	>
+		<main class="grid gap-12 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:py-16">
+			<section class="space-y-6">
+				<p class="text-xs uppercase tracking-[0.36em] text-white/40">
+					Contact
+				</p>
+				<h1
+					class="max-w-2xl text-4xl font-semibold tracking-tight text-white sm:text-5xl"
+				>
+					Start a conversation.
+				</h1>
+				<p
+					class="max-w-2xl text-base leading-8 text-white/70 sm:text-lg"
+				>
+					If you want to talk about systems engineering, backend work,
+					infrastructure, performance, or developer tooling, send a
+					message and I’ll reply directly.
+				</p>
 
-			<div class="border border-white/10 bg-white/3 p-6 sm:p-7">
-				<p class="text-xs uppercase tracking-[0.34em] text-white/40">Direct links</p>
-				<ul class="mt-5 space-y-1">
-					{links.map(({ label, href, icon: Icon }) => (
-						<li>
-							<a href={href} target={href.startsWith("mailto:") ? undefined : "_blank"} rel={href.startsWith("mailto:") ? undefined : "noreferrer"} class="flex items-center justify-between gap-4 border-b border-white/6 py-3 text-sm text-white/70 transition hover:text-white">
-								<span class="flex items-center gap-3">
-									<Icon class="h-4 w-4 text-white/45" />
-									<span>{label}</span>
-								</span>
-								<ArrowRight class="h-4 w-4 text-white/30" />
-							</a>
-						</li>
-					))}
-				</ul>
-			</div>
-		</section>
-
-			<aside class="border border-white/10 bg-white/3 p-6 sm:p-7">
-			<div class="mb-7 flex items-start gap-3 border-b border-white/10 pb-6">
-				<span class="inline-flex h-10 w-10 items-center justify-center border border-white/10 bg-white/3">
-					<MessageSquare class="h-4 w-4 text-white/70" />
-				</span>
-				<div>
-					<h2 class="text-2xl font-medium tracking-tight text-white">Send a message</h2>
-					<p class="mt-2 text-sm leading-7 text-white/65">
-						This form uses EmailJS. Fill in the service details in the source and it will send without needing a backend.
+				<div class="border border-white/10 bg-neutral-900 p-6 sm:p-7">
+					<p
+						class="text-xs uppercase tracking-[0.34em] text-white/40"
+					>
+						Direct links
 					</p>
+					<ul class="mt-5 space-y-1">
+						{
+							links.map(({ label, href, icon: Icon }) => (
+								<li>
+									<a
+										href={href}
+										target={
+											href.startsWith("mailto:")
+												? undefined
+												: "_blank"
+										}
+										rel={
+											href.startsWith("mailto:")
+												? undefined
+												: "noreferrer"
+										}
+										class="flex items-center justify-between gap-4 border-b border-white/6 py-3 text-sm text-white/70 transition hover:text-white"
+									>
+										<span class="flex items-center gap-3">
+											<Icon class="h-4 w-4 text-white/45" />
+											<span>{label}</span>
+										</span>
+										<ArrowRight class="h-4 w-4 text-white/30" />
+									</a>
+								</li>
+							))
+						}
+					</ul>
 				</div>
-			</div>
+			</section>
 
-			<ContactForm client:load />
-		</aside>
-	</main>
-</StaticLayout>
+			<aside class="border border-white/10 bg-neutral-900 p-6 sm:p-7">
+				<div
+					class="mb-7 flex items-start gap-3 border-b border-white/10 pb-6"
+				>
+					<span
+						class="inline-flex h-10 w-10 items-center justify-center border border-white/10 bg-neutral-900"
+					>
+						<MessageSquare class="h-4 w-4 text-white/70" />
+					</span>
+					<div>
+						<h2
+							class="text-2xl font-medium tracking-tight text-white"
+						>
+							Send a message
+						</h2>
+						<p class="mt-2 text-sm leading-7 text-white/65">
+							This form uses EmailJS. Fill in the service details
+							in the source and it will send without needing a
+							backend.
+						</p>
+					</div>
+				</div>
+
+				<ContactForm client:load />
+			</aside>
+		</main>
+	</div>
+</Layout>
