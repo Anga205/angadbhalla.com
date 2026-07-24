@@ -47,11 +47,12 @@ const Navbar: Component = () => {
 			class="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-neutral-900/80 backdrop-blur-xl"
 		>
 			<div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-8">
-				<a
-					href="/"
-					class="text-sm font-medium tracking-wide text-white"
-				>
-					Angad
+				<a href="/" class="h-full p-2 flex items-center gap-2" >
+					<img
+						src="/anga.svg"
+						alt="Anga Logo"
+						class="spin-scale-hover h-full aspect-square"
+					/>
 				</a>
 
 				<nav class="flex items-center gap-8 text-sm text-white/60">
