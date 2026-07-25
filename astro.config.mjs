@@ -15,6 +15,22 @@ export default defineConfig({
                 '@': new URL('./src', import.meta.url).pathname
             }
         },
+        build: {
+            rollupOptions: {
+                output: {
+                    assetFileNames: (assetInfo) => {
+                        const assetName = assetInfo.name ?? '';
+
+                        if (assetName.startsWith('.')) {
+                            const safeName = assetName.slice(1).replace(/\.css$/, '');
+                            return `_astro/${safeName}-[hash][extname]`;
+                        }
+
+                        return '[name].[hash][extname]';
+                    }
+                }
+            }
+        },
         plugins: [
             tailwindcss()
         ]
