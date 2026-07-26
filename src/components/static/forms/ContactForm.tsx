@@ -2,9 +2,9 @@ import { createSignal, type Component } from "solid-js";
 import emailjs from "@emailjs/browser";
 import StatusDialog from "./StatusDialog";
 
-const EMAILJS_SERVICE_ID = "TODO_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "TODO_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY = "TODO_PUBLIC_KEY";
+const EMAILJS_SERVICE_ID = import.meta.env.EMAILJS_SERVICE_ID || "TODO_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = import.meta.env.EMAILJS_TEMPLATE_ID || "TODO_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY = import.meta.env.EMAILJS_PUBLIC_KEY || "TODO_PUBLIC_KEY";
 
 type DialogState = {
 	open: boolean;
