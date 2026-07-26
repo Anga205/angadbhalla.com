@@ -1,8 +1,10 @@
 import { createSignal } from "solid-js";
+import emailjs from "@emailjs/browser";
 import StatusDialog from "./StatusDialog";
 
-const RESUME_REQUEST_ENDPOINT = "/api/resume-request";
-// TODO: This will eventually call a Vercel Serverless Function.
+const EMAILJS_SERVICE_ID = import.meta.env.PUBLIC_EMAILJS_SERVICE_ID || "TODO_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = import.meta.env.PUBLIC_EMAILJS_TEMPLATE_ID || "TODO_TEMPLATE_ID";
+const EMAILJS_PUBLIC_KEY = import.meta.env.PUBLIC_EMAILJS_PUBLIC_KEY || "TODO_PUBLIC_KEY";
 
 type DialogState = {
 	open: boolean;
@@ -36,17 +38,19 @@ export default function ResumeRequestForm() {
 		});
 
 		try {
-			const response = await fetch(RESUME_REQUEST_ENDPOINT, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
+			await emailjs.send(
+				EMAILJS_SERVICE_ID,
+				EMAILJS_TEMPLATE_ID,
+				{
+					email: email(),
+					time: new Date().toISOString(),
+					intent: "resume request",
+					message: "This is a resume request"
 				},
-				body: JSON.stringify({ email: email() }),
-			});
-
-			if (!response.ok) {
-				throw new Error("Request failed");
-			}
+				{
+					publicKey: EMAILJS_PUBLIC_KEY,
+				}
+			);
 
 			setEmail("");
 			setDialog({

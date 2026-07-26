@@ -47,7 +47,8 @@ export default function ContactForm() {
 					name: name(),
 					email: email(),
 					message: message(),
-					reply_to: email(),
+					time: new Date().toISOString(),
+					intent: "message"
 				},
 				{
 					publicKey: EMAILJS_PUBLIC_KEY,

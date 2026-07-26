@@ -23,7 +23,7 @@ const ToneIcon = (props: { tone: StatusTone }) => {
 	}
 
 	if (props.tone === "success") {
-		return <CheckCircle2 class="h-5 w-5 text-white/80" />;
+		return <CheckCircle2 class="h-5 w-5 text-green-500" />;
 	}
 
 	return <AlertTriangle class="h-5 w-5 text-white/80" />;
@@ -71,8 +71,8 @@ const StatusDialog: Component<StatusDialogProps> = (props) => {
 					}}
 				>
 					<div class="flex items-start justify-between gap-4">
-						<div class="flex items-start gap-3">
-							<span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center border border-white/10 bg-white/3">
+						<div class="flex items-center gap-3">
+							<span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center">
 								<ToneIcon tone={props.tone} />
 							</span>
 							<div>
@@ -89,7 +89,7 @@ const StatusDialog: Component<StatusDialogProps> = (props) => {
 							<button
 								type="button"
 								onClick={props.onClose}
-								class="inline-flex h-9 w-9 items-center justify-center border border-white/10 text-white/60 transition hover:border-white/20 hover:text-white"
+								class="inline-flex h-9 w-9 items-center justify-center text-white/60 transition hover:border-white/20 hover:text-white"
 								aria-label="Close dialog"
 							>
 								<X class="h-4 w-4" />
