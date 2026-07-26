@@ -53,7 +53,7 @@ export default function ResumeRequestForm() {
 				open: true,
 				tone: "success",
 				title: "Request received successfully.",
-				message: "I’ll review it and follow up if a copy is appropriate.",
+				message: "I'll review it and follow up with an appropriate copy.",
 			});
 		} catch {
 			setDialog({

@@ -44,8 +44,8 @@ export default function ContactForm() {
 				EMAILJS_SERVICE_ID,
 				EMAILJS_TEMPLATE_ID,
 				{
-					from_name: name(),
-					from_email: email(),
+					name: name(),
+					email: email(),
 					message: message(),
 					reply_to: email(),
 				},
@@ -61,7 +61,7 @@ export default function ContactForm() {
 				open: true,
 				tone: "success",
 				title: "Message sent successfully.",
-				message: "I'll review it and reply as soon as I can.",
+				message: "I'll reply as soon as I can.",
 			});
 		} catch {
 			setDialog({
@@ -108,7 +108,7 @@ export default function ContactForm() {
 						value={email()}
 						onInput={(event) => setEmail(event.currentTarget.value)}
 						class="w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
-						placeholder="you@example.com"
+						placeholder="youremail@example.com"
 					/>
 				</div>
 
@@ -123,7 +123,7 @@ export default function ContactForm() {
 						value={message()}
 						onInput={(event) => setMessage(event.currentTarget.value)}
 						class="min-h-40 w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
-						placeholder="Tell me a little about what you are working on."
+						placeholder="Doesnt have to be deep, I love hearing from people. Just say hi!"
 					/>
 				</div>
 

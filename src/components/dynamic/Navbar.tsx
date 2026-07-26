@@ -70,12 +70,12 @@ const Navbar: Component = () => {
 						Projects
 					</a>
 
-					<a
+					{/* <a
 						href="/resume"
 						class="transition-colors hover:text-white"
 					>
 						Resume
-					</a>
+					</a> */}
 
 					<a
 						href="/contact"
