@@ -19,14 +19,14 @@ const toneStyles: Record<StatusTone, string> = {
 
 const ToneIcon = (props: { tone: StatusTone }) => {
 	if (props.tone === "sending") {
-		return <Loader2 className="h-5 w-5 animate-spin text-white/70" />;
+		return <Loader2 class="h-5 w-5 animate-spin text-white/70" />;
 	}
 
 	if (props.tone === "success") {
-		return <CheckCircle2 className="h-5 w-5 text-white/80" />;
+		return <CheckCircle2 class="h-5 w-5 text-white/80" />;
 	}
 
-	return <AlertTriangle className="h-5 w-5 text-white/80" />;
+	return <AlertTriangle class="h-5 w-5 text-white/80" />;
 };
 
 const StatusDialog: Component<StatusDialogProps> = (props) => {
@@ -52,7 +52,7 @@ const StatusDialog: Component<StatusDialogProps> = (props) => {
 	return (
 		<Show when={props.open}>
 			<div
-				className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
+				class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
 				role="presentation"
 				onClick={() => {
 					if (props.tone !== "sending") {
@@ -65,21 +65,21 @@ const StatusDialog: Component<StatusDialogProps> = (props) => {
 					aria-modal="true"
 					aria-labelledby="status-dialog-title"
 					aria-describedby="status-dialog-message"
-					className={`w-full max-w-md border px-5 py-5 text-white shadow-none ${toneStyles[props.tone]}`}
+					class={`w-full max-w-md border px-5 py-5 text-white shadow-none ${toneStyles[props.tone]}`}
 					onClick={(event) => {
 						event.stopPropagation();
 					}}
 				>
-					<div className="flex items-start justify-between gap-4">
-						<div className="flex items-start gap-3">
-							<span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center border border-white/10 bg-white/3">
+					<div class="flex items-start justify-between gap-4">
+						<div class="flex items-start gap-3">
+							<span class="mt-0.5 inline-flex h-9 w-9 items-center justify-center border border-white/10 bg-white/3">
 								<ToneIcon tone={props.tone} />
 							</span>
 							<div>
-								<h2 id="status-dialog-title" className="text-base font-medium text-white">
+								<h2 id="status-dialog-title" class="text-base font-medium text-white">
 									{props.title}
 								</h2>
-								<p id="status-dialog-message" className="mt-2 text-sm leading-6 text-white/70">
+								<p id="status-dialog-message" class="mt-2 text-sm leading-6 text-white/70">
 									{props.message}
 								</p>
 							</div>
@@ -89,10 +89,10 @@ const StatusDialog: Component<StatusDialogProps> = (props) => {
 							<button
 								type="button"
 								onClick={props.onClose}
-								className="inline-flex h-9 w-9 items-center justify-center border border-white/10 text-white/60 transition hover:border-white/20 hover:text-white"
+								class="inline-flex h-9 w-9 items-center justify-center border border-white/10 text-white/60 transition hover:border-white/20 hover:text-white"
 								aria-label="Close dialog"
 							>
-								<X className="h-4 w-4" />
+								<X class="h-4 w-4" />
 							</button>
 						) : null}
 					</div>

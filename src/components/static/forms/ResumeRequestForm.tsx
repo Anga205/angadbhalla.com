@@ -69,20 +69,20 @@ export default function ResumeRequestForm() {
 
 	return (
 		<>
-			<form className="space-y-5" onSubmit={handleSubmit}>
-				<div className="space-y-2">
-					<label htmlFor="resume-email" className="text-xs uppercase tracking-[0.32em] text-white/45">
+			<form class="space-y-5" onSubmit={handleSubmit}>
+				<div class="space-y-2">
+					<label for="resume-email" class="text-xs uppercase tracking-[0.32em] text-white/45">
 						Email
 					</label>
 					<input
 						id="resume-email"
 						name="email"
 						type="email"
-						autoComplete="email"
+						autocomplete="email"
 						required
 						value={email()}
 						onInput={(event) => setEmail(event.currentTarget.value)}
-						className="w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
+						class="w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
 						placeholder="you@example.com"
 					/>
 				</div>
@@ -90,7 +90,7 @@ export default function ResumeRequestForm() {
 				<button
 					type="submit"
 						disabled={isSubmitting()}
-					className="inline-flex items-center justify-center border border-white/10 bg-transparent px-5 py-3 text-sm text-white transition hover:border-white/20 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+					class="inline-flex items-center justify-center border border-white/10 bg-transparent px-5 py-3 text-sm text-white transition hover:border-white/20 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
 				>
 					Request Resume
 				</button>

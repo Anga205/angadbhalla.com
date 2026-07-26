@@ -61,7 +61,7 @@ export default function ContactForm() {
 				open: true,
 				tone: "success",
 				title: "Message sent successfully.",
-				message: "I’ll review it and reply as soon as I can.",
+				message: "I'll review it and reply as soon as I can.",
 			});
 		} catch {
 			setDialog({
@@ -77,43 +77,43 @@ export default function ContactForm() {
 
 	return (
 		<>
-			<form className="space-y-5" onSubmit={handleSubmit}>
-				<div className="space-y-2">
-					<label htmlFor="contact-name" className="text-xs uppercase tracking-[0.32em] text-white/45">
+			<form class="space-y-5" onSubmit={handleSubmit}>
+				<div class="space-y-2">
+					<label for="contact-name" class="text-xs uppercase tracking-[0.32em] text-white/45">
 						Name
 					</label>
 					<input
 						id="contact-name"
 						name="name"
 						type="text"
-						autoComplete="name"
+						autocomplete="name"
 						required
 						value={name()}
 						onInput={(event) => setName(event.currentTarget.value)}
-						className="w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
+						class="w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
 						placeholder="Your name"
 					/>
 				</div>
 
-				<div className="space-y-2">
-					<label htmlFor="contact-email" className="text-xs uppercase tracking-[0.32em] text-white/45">
+				<div class="space-y-2">
+					<label for="contact-email" class="text-xs uppercase tracking-[0.32em] text-white/45">
 						Email
 					</label>
 					<input
 						id="contact-email"
 						name="email"
 						type="email"
-						autoComplete="email"
+						autocomplete="email"
 						required
 						value={email()}
 						onInput={(event) => setEmail(event.currentTarget.value)}
-						className="w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
+						class="w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
 						placeholder="you@example.com"
 					/>
 				</div>
 
-				<div className="space-y-2">
-					<label htmlFor="contact-message" className="text-xs uppercase tracking-[0.32em] text-white/45">
+				<div class="space-y-2">
+					<label for="contact-message" class="text-xs uppercase tracking-[0.32em] text-white/45">
 						Message
 					</label>
 					<textarea
@@ -122,7 +122,7 @@ export default function ContactForm() {
 						required
 						value={message()}
 						onInput={(event) => setMessage(event.currentTarget.value)}
-						className="min-h-40 w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
+						class="min-h-40 w-full border border-white/10 bg-neutral-900 px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-white/30 focus:border-white/25"
 						placeholder="Tell me a little about what you are working on."
 					/>
 				</div>
@@ -130,7 +130,7 @@ export default function ContactForm() {
 				<button
 					type="submit"
 					disabled={isSubmitting()}
-					className="inline-flex items-center justify-center border border-white/10 bg-white/4 px-5 py-3 text-sm text-white transition hover:border-white/20 hover:bg-white/7 disabled:cursor-not-allowed disabled:opacity-60"
+					class="inline-flex items-center justify-center border border-white/10 bg-white/4 px-5 py-3 text-sm text-white transition hover:border-white/20 hover:bg-white/7 disabled:cursor-not-allowed disabled:opacity-60"
 				>
 					Send
 				</button>

@@ -16,10 +16,10 @@ const GreetingText: Component<GreetingTextProps> = (props) => {
 	let greetingIndex = 0;
 	let charIndex = props.initial.length;
 	let deleting = false;
-	let timeoutId: ReturnType<typeof setTimeout> | undefined;
+	let timeoutId: ReturnType<typeof setTimeout> | NodeJS.Timeout | undefined;
 
 	const scheduleNextTick = (delay: number) => {
-		timeoutId = window.setTimeout(tick, delay);
+		timeoutId = window.setTimeout(tick, delay) as unknown as ReturnType<typeof setTimeout>;
 	};
 
 	const tick = () => {
