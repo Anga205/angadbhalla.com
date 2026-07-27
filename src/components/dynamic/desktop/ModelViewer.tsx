@@ -5,11 +5,18 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 
+type ModelViewerProps = {
+	class?: string;
+	style?: string;
+	mode?: "desktop" | "mobile";
+};
+
 const clamp = (value: number, min: number, max: number) =>
 	Math.min(Math.max(value, min), max);
 
-const ModelViewer: Component = () => {
+const ModelViewer: Component<ModelViewerProps> = (props) => {
 	let containerRef!: HTMLDivElement;
+	const isMobile = props.mode === "mobile";
 
 	onMount(() => {
 		const scene = new THREE.Scene();
@@ -98,7 +105,11 @@ const ModelViewer: Component = () => {
 			0.75
 		);
 
-		camera.position.copy(heroCameraPosition);
+		if (isMobile) {
+			camera.position.set(0, 1.2, 3.25);
+		} else {
+			camera.position.copy(heroCameraPosition);
+		}
 
 		const loader = new GLTFLoader();
 		loader.setMeshoptDecoder(MeshoptDecoder);
@@ -142,15 +153,43 @@ const ModelViewer: Component = () => {
 		);
 
 		const updateScene = () => {
-			camera.position.lerpVectors(
-				heroCameraPosition,
-				aboutCameraPosition,
-				currentProgress
-			);
+			if (isMobile) {
+				camera.position.set(0, 1.2, 3.25);
+				camera.lookAt(0, 1.1, 0);
+				controls.enabled = false;
+				containerRef.style.transform = "translate3d(0, 0, 0)";
+			} else {
+				camera.position.lerpVectors(
+					heroCameraPosition,
+					aboutCameraPosition,
+					currentProgress
+				);
 
-			camera.lookAt(modelTarget);
+				camera.lookAt(modelTarget);
 
-			controls.enabled = currentProgress < 0.02 || currentProgress > 0.98;
+				controls.enabled = currentProgress < 0.02 || currentProgress > 0.98;
+
+				const x = THREE.MathUtils.lerp(
+					-viewportWidth * 0.2,
+					-viewportWidth * 0.6,
+					currentProgress
+				);
+
+				const navbarProgress = clamp(
+					currentProgress / 0.25,
+					0,
+					1
+				);
+
+				const y = THREE.MathUtils.lerp(
+					0,
+					64,
+					navbarProgress
+				);
+
+				containerRef.style.transform =
+					`translate3d(${x}px, ${y}px, 0)`;
+			}
 
 			if (heroCopy) {
 				const progress = clamp(
@@ -176,26 +215,6 @@ const ModelViewer: Component = () => {
 					`translateY(${40 * (1 - progress)}px)`;
 			}
 
-			const x = THREE.MathUtils.lerp(
-				-viewportWidth * 0.2,
-				-viewportWidth * 0.6,
-				currentProgress
-			);
-
-			const navbarProgress = clamp(
-				currentProgress / 0.25,
-				0,
-				1
-			);
-
-			const y = THREE.MathUtils.lerp(
-				0,
-				64,
-				navbarProgress
-			);
-
-			containerRef.style.transform =
-				`translate3d(${x}px, ${y}px, 0)`;
 		};
 
 		const handleScroll = () => {
@@ -316,8 +335,8 @@ const ModelViewer: Component = () => {
 	return (
 		<div
 			ref={containerRef}
-			class="fixed right-0 top-0 z-10 h-screen w-1/5"
-			style="will-change: transform;"
+			class={props.class ?? "fixed right-0 top-0 z-10 h-screen w-1/5"}
+			style={props.style ?? "will-change: transform;"}
 		/>
 	);
 };
