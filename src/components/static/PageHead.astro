@@ -6,10 +6,38 @@ const {
 	description,
 	canonicalPath = "/",
 	ogImagePath = "/og.png",
+	type = "website",
 } = Astro.props;
 
 const canonicalUrl = new URL(canonicalPath, SITE_URL).toString();
 const ogImageUrl = new URL(ogImagePath, SITE_URL).toString();
+
+const jsonLd = {
+	"@context": "https://schema.org",
+	"@type": "Person",
+	name: "Angad Bhalla",
+	url: SITE_URL,
+	image: ogImageUrl,
+	jobTitle: "Software Engineer",
+	description,
+	knowsAbout: [
+		"Systems Programming",
+		"Backend Engineering",
+		"Operating Systems",
+		"Linux",
+		"Go",
+		"Distributed Systems",
+		"Infrastructure Engineering",
+		"Containerization",
+		"Compiler Design",
+	],
+	sameAs: [
+		"https://github.com/Anga205/",
+		"https://www.linkedin.com/in/anga",
+		"https://www.reddit.com/u/anga205",
+		"https://www.instagram.com/_anga205/",
+	],
+};
 ---
 
 <head>
@@ -21,7 +49,7 @@ const ogImageUrl = new URL(ogImagePath, SITE_URL).toString();
 	<meta name="description" content={description} />
 	<meta
 		name="keywords"
-		content="systems engineering, backend engineering, distributed systems, infrastructure software, performance optimisation, compilers, operating systems, developer tools, low level programming"
+		content="systems engineering, backend engineering, distributed systems, infrastructure software, performance optimisation, compilers, operating systems, developer tools, low level programming, Go, Linux, cloud storage, containerization"
 	/>
 	<meta name="author" content="Angad Bhalla" />
 	<meta name="creator" content="Angad Bhalla" />
@@ -37,7 +65,7 @@ const ogImageUrl = new URL(ogImagePath, SITE_URL).toString();
 	<meta name="theme-color" content="#0a0a0a" />
 	<meta name="color-scheme" content="dark" />
 
-	<meta property="og:type" content="website" />
+	<meta property="og:type" content={type} />
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:title" content={title} />
 	<meta property="og:description" content={description} />
@@ -50,4 +78,6 @@ const ogImageUrl = new URL(ogImagePath, SITE_URL).toString();
 	<meta name="twitter:image" content={ogImageUrl} />
 
 	<meta name="format-detection" content="telephone=no" />
+
+	<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </head>

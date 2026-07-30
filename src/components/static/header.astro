@@ -1,11 +1,13 @@
 ---
 const SITE_URL = "https://angadbhalla.com";
 
-const TITLE =
-	"Angad Bhalla | Software Engineer • Systems Programming • Go • Linux • Backend Engineering";
+const {
+	title = "Angad Bhalla",
+	description = "Angad Bhalla is a Software Engineer and Computer Science student at PES University specializing in systems programming, backend engineering, operating systems, Linux, distributed systems, infrastructure software, cloud storage, compiler design, robotics, and high-performance software.",
+	canonicalPath = "/",
+} = Astro.props;
 
-const DESCRIPTION =
-	"Angad Bhalla is a Software Engineer and Computer Science student at PES University specializing in systems programming, backend engineering, operating systems, Linux, distributed systems, infrastructure software, cloud storage, compiler design, robotics, and high-performance software.";
+const canonicalUrl = new URL(canonicalPath, SITE_URL).toString();
 
 const KEYWORDS = [
 	"Angad Bhalla",
@@ -41,6 +43,33 @@ const KEYWORDS = [
 	"PES University",
 	"Bengaluru"
 ].join(", ");
+
+const jsonLd = {
+	"@context": "https://schema.org",
+	"@type": "Person",
+	name: "Angad Bhalla",
+	url: SITE_URL,
+	image: `${SITE_URL}/og.png`,
+	jobTitle: "Software Engineer",
+	description,
+	knowsAbout: [
+		"Systems Programming",
+		"Backend Engineering",
+		"Operating Systems",
+		"Linux",
+		"Go",
+		"Distributed Systems",
+		"Infrastructure Engineering",
+		"Containerization",
+		"Compiler Design",
+	],
+	sameAs: [
+		"https://github.com/Anga205/",
+		"https://www.linkedin.com/in/anga",
+		"https://www.reddit.com/u/anga205",
+		"https://www.instagram.com/_anga205/",
+	],
+};
 ---
 
 <head>
@@ -48,9 +77,9 @@ const KEYWORDS = [
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta name="generator" content={Astro.generator} />
 
-	<title>Angad Bhalla</title>
+	<title>{title}</title>
 
-	<meta name="description" content={DESCRIPTION} />
+	<meta name="description" content={description} />
 	<meta name="keywords" content={KEYWORDS} />
 	<meta name="author" content="Angad Bhalla" />
 	<meta name="creator" content="Angad Bhalla" />
@@ -58,7 +87,7 @@ const KEYWORDS = [
 
 	<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
 
-	<link rel="canonical" href={SITE_URL} />
+	<link rel="canonical" href={canonicalUrl} />
 
 	<link rel="icon" href="/favicon.ico" sizes="any" />
 	<link rel="icon" type="image/svg+xml" href="/anga.svg" />
@@ -68,16 +97,18 @@ const KEYWORDS = [
 	<meta name="color-scheme" content="dark" />
 
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content={SITE_URL} />
-	<meta property="og:title" content={TITLE} />
-	<meta property="og:description" content={DESCRIPTION} />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:title" content={title} />
+	<meta property="og:description" content={description} />
 	<meta property="og:site_name" content="Angad Bhalla" />
 	<meta property="og:image" content={`${SITE_URL}/og.png`} />
 
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content={TITLE} />
-	<meta name="twitter:description" content={DESCRIPTION} />
+	<meta name="twitter:title" content={title} />
+	<meta name="twitter:description" content={description} />
 	<meta name="twitter:image" content={`${SITE_URL}/og.png`} />
 
 	<meta name="format-detection" content="telephone=no" />
+
+	<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </head>

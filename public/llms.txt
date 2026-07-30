@@ -36,9 +36,16 @@
 
 ## Site Structure
 - **Home Page** (`/`): Main portfolio and projects showcase
-- **Projects** (`/projects`): Collection of technical projects
+- **Projects** (`/projects`): Archive of systems engineering projects
 - **Resume** (`/resume`): Professional background and experience
 - **Contact** (`/contact`): Contact form and information
+
+## Featured Projects
+- **AngaDrive V3** (`https://drive.anga.codes/`): Self-hosted cloud drive. Go + SolidJS + SQLite. RAM-first metadata cache, 7 MB chunked gzip-compressed uploads, WebSocket real-time state, cycle-safe collection graph, SHA-256 content-addressed storage.
+- **Containerization API** (`https://compiler.anga.codes/`): Online compiler with a hand-built Linux sandbox. Go + Linux namespaces + cgroups v2 + seccomp-BPF + chroot. No Docker.
+- **AngaOS**: 32-bit x86 hobby operating system from scratch. NASM + C, custom BIOS bootloader, GDT, protected-mode transition, direct VGA rendering.
+- **PPT2PDF** (`https://ppt2pdf.anga.codes/`): Fault-tolerant PowerPoint-to-PDF converter. FastAPI + LibreOffice with speculative PPTX repair and fallback ladder.
+- **LeetCode Tracker** (`https://battle.anga.codes/`): GitHub Actions as a scheduled backend. Java updater, Git as database, static React + Chart.js dashboard.
 
 ## Technologies
 - Go, C, x86 Assembly

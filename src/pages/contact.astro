@@ -2,6 +2,7 @@
 import Layout from "@/components/static/layout.astro";
 import ContactForm from "@/components/static/forms/ContactForm";
 import StaticNavbar from "@/components/static/StaticNavbar.astro";
+import ContactOrb from "@/components/dynamic/desktop/ContactOrb";
 import {
 	ArrowRight,
 	Github,
@@ -45,8 +46,13 @@ const links = [
 <Layout title={title} description={description} canonicalPath="/contact">
 	<StaticNavbar />
 	<div
-		class="mx-auto max-h-screen w-full max-w-6xl px-6 pb-16 pt-8 sm:px-8 lg:px-12"
+		class="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-8 sm:px-8 lg:px-12"
 	>
+		{/* Interactive 3D orb background */}
+		<div class="pointer-events-none absolute inset-0 -z-10 opacity-70">
+			<ContactOrb client:visible accent="#a78bfa" />
+		</div>
+
 		<main class="grid gap-12 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:py-16">
 			<section class="space-y-6">
 				<p class="text-xs uppercase tracking-[0.36em] text-white/40">
@@ -65,7 +71,7 @@ const links = [
 					message and I’ll reply directly.
 				</p>
 
-				<div class="border border-white/10 bg-neutral-900 p-6 sm:p-7">
+				<div class="border border-white/10 bg-neutral-900/70 p-6 backdrop-blur-sm sm:p-7">
 					<p
 						class="text-xs uppercase tracking-[0.34em] text-white/40"
 					>
@@ -102,7 +108,7 @@ const links = [
 				</div>
 			</section>
 
-			<aside class="border border-white/10 bg-neutral-900 p-6 sm:p-7">
+			<aside class="border border-white/10 bg-neutral-900/70 p-6 backdrop-blur-sm sm:p-7">
 				<div
 					class="mb-7 flex items-start gap-3 border-b border-white/10 pb-6"
 				>

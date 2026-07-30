@@ -1,67 +1,174 @@
 ---
-import { ArrowRight, Clock3, FileText, LayoutList, PlayCircle, Search, Video } from "lucide-astro";
+import { ArrowRight, ExternalLink, Github, Sparkles } from "lucide-astro";
 import Layout from "@/components/static/layout.astro";
 import StaticNavbar from "@/components/static/StaticNavbar.astro";
+import ParticleField from "@/components/dynamic/desktop/ParticleField";
+import TechScene from "@/components/dynamic/desktop/TechScene";
+import { projects } from "@/data/projects";
 
 const title = "Projects | Angad Bhalla";
-const description = "Projects are currently being documented. A focused archive of systems work, implementation notes, benchmarks, and technical writeups.";
+const description =
+	"An archive of systems engineering projects by Angad Bhalla — a self-hosted cloud drive, a hand-built Linux sandbox compiler, a from-scratch x86 operating system, a fault-tolerant document converter, and a GitHub-Actions-powered tracker.";
 ---
 
 <Layout title={title} description={description} canonicalPath="/projects">
-    <StaticNavbar />
+	<StaticNavbar />
 
-		<div class="mx-auto max-h-screen w-full max-w-6xl px-6 pb-16 pt-8 sm:px-8 lg:px-12">
-	<main class="py-12 lg:py-16">
-		<section class="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-			<div class="space-y-6">
-				<p class="text-xs uppercase tracking-[0.36em] text-white/40">Projects</p>
-				<h1 class="max-w-2xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-					Projects are currently being documented.
-				</h1>
-				<p class="max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
-					This page is being assembled with the same care I put into the systems and tooling I build. The finished archive will be more than a gallery: it will explain what each project does, why it was built, and what was learned along the way.
+	<div class="relative mx-auto w-full max-w-6xl px-6 pb-24 pt-8 sm:px-8 lg:px-12">
+		{/* Interactive 3D particle background */}
+		<div class="pointer-events-none absolute inset-0 -z-10 opacity-60">
+			<ParticleField client:visible accent="#a78bfa" count={700} />
+		</div>
+
+		<main class="py-12 lg:py-16">
+			{/* Header with interactive 3D scene */}
+			<section class="relative grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+				<div>
+					<p class="text-xs uppercase tracking-[0.36em] text-white/40">Projects</p>
+					<h1 class="mt-4 max-w-3xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+						Things I've built, and the stories behind them.
+					</h1>
+					<p class="mt-5 max-w-2xl text-base leading-8 text-white/70 sm:text-lg">
+						I build systems, tools, and the occasional operating system. Every project
+						here is something I'm genuinely proud of — each one has a story about
+						optimization, failure, and the fun of getting it wrong before getting it right.
+					</p>
+					<a href="/contact" class="mt-6 inline-flex items-center gap-2 text-sm text-white/80 transition hover:text-white">
+						Want to talk about one of these?
+						<ArrowRight class="h-4 w-4" />
+					</a>
+				</div>
+
+				{/* Interactive 3D tech scene — move your mouse over it */}
+				<div class="relative hidden h-80 w-full lg:block">
+					<div class="absolute inset-0">
+						<TechScene client:visible accent="#a78bfa" />
+					</div>
+					<p class="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-[0.3em] text-white/30">
+						Move your cursor
+					</p>
+				</div>
+			</section>
+
+			{/* Project cards */}
+			<section class="mt-16 grid gap-6 md:grid-cols-2">
+				{
+					projects.map((project) => (
+						<article
+							class="group relative flex flex-col overflow-hidden border border-white/10 bg-neutral-900/60 p-6 backdrop-blur-sm transition duration-300 hover:border-white/25 hover:bg-neutral-900/80 sm:p-7"
+						>
+							{/* Accent glow on hover */}
+							<div
+								class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-30"
+								style={`background: ${project.accent};`}
+							/>
+
+							<div class="flex items-start justify-between gap-4">
+								<div>
+									<p class="text-xs uppercase tracking-[0.3em] text-white/40">{project.tagline}</p>
+									<h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
+										{project.name}
+									</h2>
+								</div>
+								<span
+									class="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-widest"
+									class:list={[
+										project.status === "live"
+											? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+											: "border-amber-400/30 bg-amber-400/10 text-amber-300",
+									]}
+								>
+									<span class="h-1.5 w-1.5 rounded-full bg-current" />
+									{project.status}
+								</span>
+							</div>
+
+							<p class="mt-4 text-sm leading-7 text-white/70">
+								{project.description}
+							</p>
+
+							{/* Tech stack */}
+							<div class="mt-5 flex flex-wrap gap-2">
+								{
+									project.tech.map((tech) => (
+										<span class="border border-white/10 bg-white/4 px-2.5 py-1 text-xs text-white/60">
+											{tech}
+										</span>
+									))
+								}
+							</div>
+
+							{/* Highlights */}
+							<ul class="mt-6 space-y-2.5">
+								{
+									project.highlights.map((highlight) => (
+										<li class="flex gap-2.5 text-sm leading-6 text-white/65">
+											<Sparkles class="mt-1 h-3.5 w-3.5 shrink-0" style={`color: ${project.accent};`} />
+											<span>{highlight}</span>
+										</li>
+									))
+								}
+							</ul>
+
+							{/* Metrics */}
+							<div class="mt-6 grid grid-cols-2 gap-px border border-white/10 bg-white/10 sm:grid-cols-4">
+								{
+									project.metrics.map((metric) => (
+										<div class="bg-neutral-900 px-3 py-3">
+											<p class="text-lg font-semibold text-white">{metric.value}</p>
+											<p class="mt-0.5 text-[10px] uppercase tracking-widest text-white/40">{metric.label}</p>
+										</div>
+									))
+								}
+							</div>
+
+							{/* Links */}
+							<div class="mt-6 flex items-center gap-4">
+								{project.url ? (
+									<a
+										href={project.url}
+										target="_blank"
+										rel="noreferrer"
+										class="inline-flex items-center gap-2 text-sm text-white/80 transition hover:text-white"
+									>
+										<ExternalLink class="h-4 w-4" />
+										Visit
+									</a>
+								) : null}
+								{project.repo ? (
+									<a
+										href={project.repo}
+										target="_blank"
+										rel="noreferrer"
+										class="inline-flex items-center gap-2 text-sm text-white/80 transition hover:text-white"
+									>
+										<Github class="h-4 w-4" />
+										Source
+									</a>
+								) : null}
+							</div>
+						</article>
+					))
+				}
+			</section>
+
+			{/* CTA */}
+			<section class="mt-20 border border-white/10 bg-white/3 p-8 text-center sm:p-12">
+				<h2 class="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+					Like what you see?
+				</h2>
+				<p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-white/65">
+					I'm always up for a conversation about systems, performance, or a
+					project that sounds a little weird. Let's build something.
 				</p>
-				<a href="/contact" class="inline-flex items-center gap-2 text-sm text-white/80 transition hover:text-white">
-					If you want to discuss a project, reach out
+				<a
+					href="/contact"
+					class="mt-6 inline-flex items-center gap-2 border border-white/10 bg-white/4 px-6 py-3 text-sm text-white transition hover:border-white/25 hover:bg-white/7"
+				>
+					Get in touch
 					<ArrowRight class="h-4 w-4" />
 				</a>
-			</div>
-
-			<aside class="border border-white/10 bg-white/3 p-6 sm:p-7">
-				<p class="text-xs uppercase tracking-[0.34em] text-white/40">What will appear here</p>
-				<ul class="mt-6 space-y-4 text-sm leading-7 text-white/70">
-					<li class="flex gap-3">
-						<PlayCircle class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
-						<span>Interactive demos</span>
-					</li>
-					<li class="flex gap-3">
-						<FileText class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
-						<span>Architecture writeups</span>
-					</li>
-					<li class="flex gap-3">
-						<LayoutList class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
-						<span>Implementation notes</span>
-					</li>
-					<li class="flex gap-3">
-						<Search class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
-						<span>Performance analysis</span>
-					</li>
-					<li class="flex gap-3">
-						<Clock3 class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
-						<span>Development stories</span>
-					</li>
-					<li class="flex gap-3">
-						<Video class="mt-0.5 h-4 w-4 shrink-0 text-white/45" />
-						<span>Videos and demos</span>
-					</li>
-				</ul>
-
-				<div class="mt-8 border-t border-white/10 pt-6">
-					<p class="text-xs uppercase tracking-[0.34em] text-white/40">Expected completion</p>
-					<p class="mt-3 text-lg font-medium text-white">August 15th, 2026</p>
-				</div>
-			</aside>
-		</section>
-	</main>
-    </div>
+			</section>
+		</main>
+	</div>
 </Layout>
