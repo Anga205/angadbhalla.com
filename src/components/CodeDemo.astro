@@ -1,0 +1,748 @@
+---
+/**
+ * CodeDemo.astro
+ *
+ * The second viewport: a live demo of the code execution API, a short
+ * explanation of the sandbox, and links.
+ *
+ * ---------------------------------------------------------------------------
+ * API CONTRACT
+ * ---------------------------------------------------------------------------
+ * POST https://codeapi.anga.codes/v2/execute
+ *   request   { language, code, timeout?, max_memory?, inputs? }
+ *   response  { output, error, cpu_time, memory_used }
+ *
+ * `cpu_time` is nanoseconds and `memory_used` is kilobytes. Both are raw
+ * numbers on the wire and are formatted for display in the script below.
+ * `cpu_time` is labelled "runtime" because it reflects wall-clock time to
+ * termination, not CPU time.
+ *
+ * The API appends a suffix to its sentinel errors, so `error` for a timeout is
+ * actually "Execution Timed Out\nProcess terminated by signal SIGKILL (9):
+ * killed". Matching is done on the first line, not the whole string.
+ *
+ * ---------------------------------------------------------------------------
+ * CAPS
+ * ---------------------------------------------------------------------------
+ * The API allows up to 60s and 128MB. The demo asks for 10s and 64MB so a
+ * single visitor cannot exhaust the shared global RAM budget. See TIMEOUT_NS
+ * and MAX_MEMORY_KB in the script.
+ *
+ * ---------------------------------------------------------------------------
+ * SNIPPETS
+ * ---------------------------------------------------------------------------
+ * All starter code lives in src/data/snippets.ts, keyed by algorithm then
+ * language. Adding an algorithm means adding one entry there.
+ *
+ * ---------------------------------------------------------------------------
+ * MONACO
+ * ---------------------------------------------------------------------------
+ * Monaco is imported dynamically the first time this section scrolls into
+ * view, so it lands in its own chunk and never touches the opening sequence's
+ * first paint. A plain <script> is used rather than a framework island: Astro
+ * already scopes it to this page, and this avoids shipping a framework runtime
+ * just to get client:visible behaviour.
+ *
+ * ---------------------------------------------------------------------------
+ * EXPLANATION
+ * ---------------------------------------------------------------------------
+ * The explanation is static text styled to match the terminal voice rather
+ * than a second typing state machine. Simpler, and it cannot fight the opening
+ * sequence for attention.
+ */
+import {
+	ALGORITHMS,
+	ALGORITHM_LABELS,
+	LANGUAGES,
+	LANGUAGE_LABELS,
+	SNIPPETS,
+} from '../data/snippets';
+---
+
+<section class="demo" id="demo" tabindex="-1" hidden>
+	<div class="inner">
+		<div class="workbench">
+			<div class="pane">
+				<div class="controls">
+					<label class="field">
+						<span class="field-label">algorithm</span>
+						<select class="select" id="algorithm">
+							{ALGORITHMS.map((a) => <option value={a}>{ALGORITHM_LABELS[a]}</option>)}
+						</select>
+					</label>
+					<label class="field">
+						<span class="field-label">language</span>
+						<select class="select" id="language">
+							{LANGUAGES.map((l) => <option value={l}>{LANGUAGE_LABELS[l]}</option>)}
+						</select>
+					</label>
+				</div>
+
+				<div class="editor-shell" id="editor-shell">
+					<div class="editor" id="editor"></div>
+					<pre class="editor-fallback" id="editor-fallback">{SNIPPETS.fibonacci.python}</pre>
+				</div>
+			</div>
+
+			<div class="pane">
+				<div class="run-row">
+					<button class="run" id="run" type="button" disabled>run</button>
+					<span class="run-status" id="run-status" role="status"></span>
+				</div>
+				<div class="output" id="output" aria-live="polite">
+					<p class="output-idle">hit run to execute</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="explain">
+			<p>
+				<span class="prompt">$</span> the sandbox is built by hand. namespaces, cgroups v2, chroot,
+				seccomp-bpf, straight against the kernel. no docker, no container runtime in between.
+			</p>
+			<p>
+				less overhead per execution, and the part i actually care about is the isolation boundary,
+				not the compiler.
+			</p>
+			<p>
+				four languages, hard limits on time and memory. the point is running untrusted code without
+				it escaping, not being a general purpose compute service.
+			</p>
+			<p>
+				honest limitation: this is a demo on a shared host with a 1gb global ram budget, so heavy
+				requests may get rejected. if it says no, thats why.
+			</p>
+		</div>
+
+		<div class="links">
+			<a href="https://github.com/Anga205/CodeExecutionAPI">github.com/Anga205/CodeExecutionAPI</a>
+			<a href="https://compiler.anga.codes">compiler.anga.codes</a>
+		</div>
+
+		<div class="actions">
+			<button class="next" id="demo-next" type="button">next</button>
+		</div>
+	</div>
+</section>
+
+<section class="placeholder" id="next-placeholder" tabindex="-1" hidden>
+	<p>[third section, not built yet]</p>
+</section>
+
+<style>
+	.demo {
+		position: fixed;
+		inset: 0;
+		overflow-y: auto;
+		background: var(--bg);
+		opacity: 0;
+		transition: opacity 350ms ease;
+	}
+
+	.demo.is-visible {
+		opacity: 1;
+	}
+
+	.demo.is-leaving {
+		opacity: 0;
+	}
+
+	.demo:focus {
+		outline: none;
+	}
+
+	.inner {
+		max-width: 1080px;
+		margin: 0 auto;
+		padding: 32px 20px 40px;
+	}
+
+	/* The 1px gap over a line-coloured background is the divider between
+	   panes. No cards, no shadows. */
+	.workbench {
+		display: grid;
+		grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+		gap: 1px;
+		background: var(--line);
+		border: 1px solid var(--line);
+	}
+
+	.pane {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		background: var(--bg);
+	}
+
+	.controls {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px 20px;
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.field {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+	}
+
+	.field-label {
+		color: var(--dim);
+		font-size: 11px;
+	}
+
+	.select {
+		padding: 2px 4px;
+		border: 1px solid var(--line);
+		border-radius: 0;
+		background: var(--bg);
+		color: var(--text);
+		font: inherit;
+		font-size: 12px;
+		cursor: pointer;
+	}
+
+	.select:focus-visible {
+		outline: 1px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.editor-shell {
+		position: relative;
+		height: clamp(220px, 34vh, 340px);
+	}
+
+	.editor {
+		position: absolute;
+		inset: 0;
+	}
+
+	/* Shown until Monaco mounts, and forever if it never does. */
+	.editor-fallback {
+		position: absolute;
+		inset: 0;
+		margin: 0;
+		padding: 12px 14px;
+		overflow: auto;
+		color: var(--text);
+		font: inherit;
+		font-size: 13px;
+		line-height: 1.6;
+		white-space: pre;
+	}
+
+	.editor-shell.is-ready .editor-fallback {
+		display: none;
+	}
+
+	.run-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--line);
+	}
+
+	.run {
+		padding: 3px 12px;
+		border: 1px solid var(--line);
+		border-radius: 0;
+		background: transparent;
+		color: var(--text);
+		font: inherit;
+		font-size: 12px;
+		cursor: pointer;
+		transition:
+			border-color 120ms ease,
+			color 120ms ease;
+	}
+
+	.run:hover:not(:disabled) {
+		border-color: #3a3a3a;
+		color: #fff;
+	}
+
+	.run:disabled {
+		color: var(--dim);
+		cursor: default;
+	}
+
+	.run:focus-visible {
+		outline: 1px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.run-status {
+		color: var(--dim);
+		font-size: 11px;
+	}
+
+	.output {
+		flex: 1;
+		min-height: 160px;
+		max-height: clamp(220px, 34vh, 340px);
+		overflow: auto;
+		padding: 12px 14px;
+		font-size: 12.5px;
+		line-height: 1.6;
+	}
+
+	.output pre {
+		margin: 0 0 10px;
+		font: inherit;
+		white-space: pre-wrap;
+		overflow-wrap: break-word;
+	}
+
+	.output-stdout {
+		color: #e8e8e8;
+	}
+
+	.output-stderr {
+		color: #b06a6a;
+	}
+
+	.output-note {
+		margin: 0 0 10px;
+		color: var(--accent);
+	}
+
+	.output-meta {
+		margin: 12px 0 0;
+		color: var(--dim);
+		font-size: 11px;
+	}
+
+	.output-idle {
+		margin: 0;
+		color: var(--dim);
+	}
+
+	.output-link {
+		color: #8a8a8a;
+		text-decoration: none;
+	}
+
+	.output-link:hover {
+		color: var(--text);
+		text-decoration: underline;
+	}
+
+	.explain {
+		max-width: 62ch;
+		margin-top: 22px;
+		color: #a8a8a8;
+		font-size: 13.5px;
+		line-height: 1.7;
+	}
+
+	.explain p {
+		margin: 0 0 12px;
+	}
+
+	.explain .prompt {
+		margin-right: 0.6ch;
+		color: var(--accent);
+	}
+
+	.links {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px 24px;
+		margin-top: 18px;
+		font-size: 13px;
+	}
+
+	.links a {
+		color: #8a8a8a;
+		text-decoration: none;
+	}
+
+	.links a:hover {
+		color: var(--text);
+		text-decoration: underline;
+	}
+
+	.actions {
+		margin-top: 20px;
+	}
+
+	.next {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: #6f6f6f;
+		font: inherit;
+		font-size: 14px;
+		cursor: pointer;
+		transition: color 120ms ease;
+	}
+
+	.next:hover {
+		color: #b8b8b8;
+	}
+
+	.next:focus-visible {
+		outline: 1px solid var(--accent);
+		outline-offset: 4px;
+	}
+
+	.placeholder {
+		position: fixed;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		padding: 20px;
+		background: var(--bg);
+		color: var(--dim);
+		font-size: 13px;
+		opacity: 0;
+		transition: opacity 350ms ease;
+	}
+
+	.placeholder.is-visible {
+		opacity: 1;
+	}
+
+	.placeholder:focus {
+		outline: none;
+	}
+
+	.placeholder p {
+		margin: 0;
+	}
+
+	@media (max-width: 820px) {
+		.inner {
+			padding: 24px 12px 48px;
+		}
+
+		.workbench {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.editor-shell {
+			height: 260px;
+		}
+
+		.output {
+			max-height: 260px;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.demo,
+		.placeholder {
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	import { SNIPPETS, type Algorithm, type Language } from '../data/snippets';
+
+	const API_URL = 'https://codeapi.anga.codes/v2/execute';
+
+	// Well under the API maximums (60s / 128MB) so one visitor cannot exhaust
+	// the shared global RAM budget.
+	const TIMEOUT_NS = 10_000_000_000;
+	const MAX_MEMORY_KB = 65_536;
+
+	// Client-side guard, above the server cap so the server's own timeout wins.
+	const CLIENT_TIMEOUT_MS = 20_000;
+
+	const LEAVE_MS = 350;
+
+	const MONACO_LANGUAGE: Record<Language, string> = {
+		python: 'python',
+		cpp: 'cpp',
+		c: 'c',
+		java: 'java',
+	};
+
+	// The API appends a suffix to these, so match on the first line only.
+	const SENTINELS: Record<string, string> = {
+		'Execution Timed Out': 'it ran past the 10s limit and got killed.',
+		'Memory limit exceeded': 'it asked for more than 64mb and got killed.',
+	};
+
+	function byId<T extends HTMLElement>(id: string): T {
+		const el = document.getElementById(id);
+		if (!el) throw new Error(`CodeDemo: missing #${id}`);
+		return el as T;
+	}
+
+	const section = byId('demo');
+	const editorHost = byId('editor');
+	const editorShell = byId('editor-shell');
+	const algorithmSelect = byId<HTMLSelectElement>('algorithm');
+	const languageSelect = byId<HTMLSelectElement>('language');
+	const runBtn = byId<HTMLButtonElement>('run');
+	const runStatus = byId('run-status');
+	const output = byId('output');
+	const nextBtn = byId<HTMLButtonElement>('demo-next');
+	const placeholder = byId('next-placeholder');
+
+	const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	type Monaco = typeof import('monaco-editor/editor/editor.api');
+
+	let monaco: Monaco | null = null;
+	let editor: import('monaco-editor/editor/editor.api').editor.IStandaloneCodeEditor | null = null;
+	let running = false;
+
+	const currentAlgorithm = () => algorithmSelect.value as Algorithm;
+	const currentLanguage = () => languageSelect.value as Language;
+	const snippet = () => SNIPPETS[currentAlgorithm()][currentLanguage()];
+
+	/* ---------------------------------------------------------------- editor */
+
+	async function initEditor() {
+		if (editor) return;
+
+		// The worker has to be registered before the first editor is created.
+		const workerMod = await import('monaco-editor/editor/editor.worker?worker');
+		(self as unknown as { MonacoEnvironment: unknown }).MonacoEnvironment = {
+			getWorker: () => new workerMod.default(),
+		};
+
+		// editor.api is the lean entry: it has no language definitions and no
+		// editor contributions. The full `monaco-editor` entry pulls in all 81
+		// language stubs plus the TypeScript, CSS, HTML and JSON workers, which
+		// came to ~14MB of build output for four languages. Only the three
+		// grammars actually offered are registered below.
+		monaco = await import('monaco-editor/editor/editor.api');
+		await Promise.all([
+			import('monaco-editor/languages/definitions/python/register'),
+			// This one registers both the "c" and "cpp" language ids.
+			import('monaco-editor/languages/definitions/cpp/register'),
+			import('monaco-editor/languages/definitions/java/register'),
+		]);
+
+		monaco.editor.defineTheme('anga-dark', {
+			base: 'vs-dark',
+			inherit: true,
+			rules: [
+				{ token: '', foreground: 'cfcfcf', background: '000000' },
+				{ token: 'comment', foreground: '4a4a4a' },
+				{ token: 'keyword', foreground: '7d9b76' },
+				{ token: 'string', foreground: 'a8a8a8' },
+				{ token: 'number', foreground: 'b8b8b8' },
+			],
+			colors: {
+				'editor.background': '#000000',
+				'editor.foreground': '#cfcfcf',
+				'editorLineNumber.foreground': '#2e2e2e',
+				'editorLineNumber.activeForeground': '#5a5a5a',
+				'editorCursor.foreground': '#7d9b76',
+				'editor.selectionBackground': '#7d9b7633',
+				'editor.lineHighlightBackground': '#0b0b0b',
+				'editorIndentGuide.background1': '#141414',
+				'editorWidget.background': '#0b0b0b',
+				'editorWidget.border': '#1e1e1e',
+				'scrollbarSlider.background': '#1e1e1e',
+				'scrollbarSlider.hoverBackground': '#2e2e2e',
+			},
+		});
+
+		editor = monaco.editor.create(editorHost, {
+			value: snippet(),
+			language: MONACO_LANGUAGE[currentLanguage()],
+			theme: 'anga-dark',
+			fontFamily: getComputedStyle(document.body).fontFamily,
+			fontSize: 13,
+			lineHeight: 21,
+			minimap: { enabled: false },
+			// Breadcrumbs are off by default in the standalone editor and the
+			// option is not in the standalone options type, so nothing to set.
+			glyphMargin: false,
+			folding: false,
+			lineDecorationsWidth: 8,
+			lineNumbersMinChars: 3,
+			renderLineHighlight: 'none',
+			scrollBeyondLastLine: false,
+			automaticLayout: true,
+			wordWrap: 'on',
+			tabSize: 4,
+			padding: { top: 12, bottom: 12 },
+			scrollbar: {
+				verticalScrollbarSize: 8,
+				horizontalScrollbarSize: 8,
+				// Let the page scroll once the editor hits its own limit, so the
+				// editor does not trap touch scrolling on mobile.
+				alwaysConsumeMouseWheel: false,
+			},
+		});
+
+		editorShell.classList.add('is-ready');
+		runBtn.disabled = false;
+		section.dataset.ready = 'true';
+
+		// Test seam so the Playwright suite can read and set editor content
+		// without scraping Monaco's rendered DOM. Not used by the page itself.
+		(window as unknown as { __demo: unknown }).__demo = {
+			getCode: () => editor?.getValue() ?? '',
+			setCode: (code: string) => editor?.setValue(code),
+		};
+	}
+
+	function syncEditor() {
+		if (!editor || !monaco) return;
+		const model = editor.getModel();
+		if (!model) return;
+		editor.setValue(snippet());
+		monaco.editor.setModelLanguage(model, MONACO_LANGUAGE[currentLanguage()]);
+	}
+
+	algorithmSelect.addEventListener('change', syncEditor);
+	languageSelect.addEventListener('change', syncEditor);
+
+	/* ----------------------------------------------------------------- output */
+
+	function el(tag: string, className: string, text?: string): HTMLElement {
+		const node = document.createElement(tag);
+		node.className = className;
+		if (text !== undefined) node.textContent = text;
+		return node;
+	}
+
+	function formatRuntime(ns: number): string {
+		if (!Number.isFinite(ns) || ns < 0) return 'unknown';
+		if (ns < 1_000_000) return `${Math.round(ns / 1000)}µs`;
+		if (ns < 1_000_000_000) return `${(ns / 1_000_000).toFixed(1)}ms`;
+		return `${(ns / 1_000_000_000).toFixed(2)}s`;
+	}
+
+	function formatMemory(kb: number): string {
+		if (!Number.isFinite(kb) || kb < 0) return 'unknown';
+		if (kb < 1024) return `${Math.round(kb)}kb`;
+		return `${(kb / 1024).toFixed(1)}mb`;
+	}
+
+	function renderIdle(text: string) {
+		output.replaceChildren(el('p', 'output-idle', text));
+	}
+
+	function renderResult(data: {
+		output?: string;
+		error?: string;
+		cpu_time?: number;
+		memory_used?: number;
+	}) {
+		const stdout = (data.output ?? '').trimEnd();
+		const stderr = (data.error ?? '').trimEnd();
+		// The API appends a suffix to sentinels, so compare the first line.
+		const sentinel = SENTINELS[stderr.split('\n')[0].trim()];
+
+		const nodes: HTMLElement[] = [];
+
+		if (sentinel) {
+			nodes.push(el('p', 'output-note', sentinel));
+		} else {
+			if (stdout) nodes.push(el('pre', 'output-stdout', stdout));
+			if (stderr) nodes.push(el('pre', 'output-stderr', stderr));
+			if (!stdout && !stderr) nodes.push(el('p', 'output-idle', 'no output'));
+		}
+
+		const meta = el('p', 'output-meta');
+		meta.textContent = `runtime ${formatRuntime(data.cpu_time ?? NaN)}   memory ${formatMemory(
+			data.memory_used ?? NaN,
+		)}`;
+		nodes.push(meta);
+
+		output.replaceChildren(...nodes);
+	}
+
+	function renderUnreachable() {
+		const note = el('p', 'output-note', 'the demo is unreachable right now.');
+		const line = el('p', 'output-idle');
+		const link = document.createElement('a');
+		link.href = 'https://github.com/Anga205/CodeExecutionAPI';
+		link.textContent = 'the repo still works';
+		link.className = 'output-link';
+		line.append(link);
+		output.replaceChildren(note, line);
+	}
+
+	/* -------------------------------------------------------------------- run */
+
+	async function run() {
+		if (running || !editor) return;
+
+		running = true;
+		runBtn.disabled = true;
+		runStatus.textContent = 'running';
+		renderIdle('running...');
+
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+
+		try {
+			const res = await fetch(API_URL, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					language: currentLanguage(),
+					code: editor.getValue(),
+					timeout: TIMEOUT_NS,
+					max_memory: MAX_MEMORY_KB,
+				}),
+				signal: controller.signal,
+			});
+
+			if (!res.ok) throw new Error(`http ${res.status}`);
+
+			renderResult(await res.json());
+			runStatus.textContent = '';
+		} catch {
+			renderUnreachable();
+			runStatus.textContent = '';
+		} finally {
+			clearTimeout(timer);
+			running = false;
+			runBtn.disabled = false;
+		}
+	}
+
+	runBtn.addEventListener('click', run);
+
+	/* ------------------------------------------------------------------- next */
+
+	nextBtn.addEventListener('click', () => {
+		section.classList.add('is-leaving');
+
+		setTimeout(
+			() => {
+				section.hidden = true;
+				placeholder.hidden = false;
+				requestAnimationFrame(() => {
+					requestAnimationFrame(() => placeholder.classList.add('is-visible'));
+				});
+				placeholder.focus();
+			},
+			reduced ? 0 : LEAVE_MS,
+		);
+	});
+
+	/* --------------------------------------------------------------- lazy load */
+
+	// Monaco is only fetched once this section is actually on screen. The
+	// section starts hidden, so this fires on the first frame after the
+	// opening sequence hands off.
+	const observer = new IntersectionObserver(
+		(entries) => {
+			if (!entries.some((entry) => entry.isIntersecting)) return;
+			observer.disconnect();
+			initEditor().catch(() => {
+				// If Monaco fails, the static <pre> stays visible and run stays
+				// disabled rather than pretending to work.
+				runStatus.textContent = 'editor failed to load';
+			});
+		},
+		{ rootMargin: '200px' },
+	);
+
+	observer.observe(section);
+</script>

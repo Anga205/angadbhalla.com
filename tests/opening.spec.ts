@@ -34,8 +34,7 @@ test('types the greeting, backspaces it, and reveals next', async ({ page }, tes
 
 	await next.click();
 
-	await expect(page.locator('#placeholder')).toBeVisible();
-	await expect(page.locator('#placeholder')).toContainText('[next section, not built yet]');
+	await expect(page.locator('#demo')).toBeVisible();
 	await expect(frame).toBeHidden();
 });
 
@@ -59,5 +58,5 @@ test('reduced motion renders the text instantly', async ({ page }, testInfo) => 
 	await expect(next).toBeVisible({ timeout: 5_000 });
 	await next.click();
 
-	await expect(page.locator('#placeholder')).toBeVisible();
+	await expect(page.locator('#demo')).toBeVisible();
 });
