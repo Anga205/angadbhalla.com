@@ -1,63 +1,43 @@
+@import 'tailwindcss';
+
 /* ---------------------------------------------------------------------------
-   Global reset and canvas.
+   Theme tokens.
    Dark only, by design. There is no light mode.
+
+   The canvas is neutral-900. `--color-line` and `--color-dim` are the two
+   greys the terminal chrome needs; everything else comes from Tailwind's
+   neutral scale directly in the markup.
    --------------------------------------------------------------------------- */
-
-:root {
-	--bg: #000;
-	--line: #1e1e1e;
-	--dim: #4a4a4a;
-	--text: #cfcfcf;
-	--accent: #7d9b76;
-}
-
-*,
-*::before,
-*::after {
-	box-sizing: border-box;
+@theme {
+	--color-line: #262626; /* neutral-800 */
+	--color-dim: #737373; /* neutral-500 */
+	--color-accent: #7d9b76;
 }
 
 /* `hidden` has to win over component display rules. */
-[hidden] {
-	display: none !important;
-}
+@layer base {
+	[hidden] {
+		display: none !important;
+	}
 
-html {
-	background: var(--bg);
-	color-scheme: dark;
-	-webkit-text-size-adjust: 100%;
-}
+	html {
+		color-scheme: dark;
+		-webkit-text-size-adjust: 100%;
+	}
 
-html,
-body {
-	margin: 0;
-	padding: 0;
-	height: 100%;
-}
+	html,
+	body {
+		height: 100%;
+	}
 
-body {
-	background: var(--bg);
-	color: var(--text);
-	font-family: var(--font-mono, ui-monospace, monospace);
-	/* The opening sequence is a single viewport that gets replaced, not a
-	   scroll target. Remove this once there are real sections below the fold. */
-	overflow: hidden;
-}
+	body {
+		/* The opening sequence is a single viewport that gets replaced, not a
+		   scroll target. Each section is its own fixed, scrolling viewport. */
+		overflow: hidden;
+	}
 
-::selection {
-	background: var(--accent);
-	color: var(--bg);
-}
-
-/* Visually hidden, still announced by screen readers. */
-.sr-only {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	padding: 0;
-	margin: -1px;
-	overflow: hidden;
-	clip-path: inset(50%);
-	white-space: nowrap;
-	border: 0;
+	::selection {
+		background: var(--color-accent);
+		color: var(--color-neutral-900);
+	}
 }
