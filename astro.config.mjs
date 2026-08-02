@@ -1,8 +1,12 @@
 // @ts-check
 import { defineConfig, fontProviders } from 'astro/config';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
+	vite: {
+		plugins: [tailwindcss()],
+	},
 	// One font for the whole site: JetBrains Mono, latin subset only.
 	// The woff2 is ~40KB and is preloaded from the page head, so the black
 	// first paint is never blocked on it. Astro fingerprints and serves the

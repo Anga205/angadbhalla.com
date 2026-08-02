@@ -67,6 +67,20 @@ directly from the browser. The API allows all origins, so there is no proxy.
   The full `monaco-editor` entry pulled in all 81 languages and every worker,
   which came to ~14MB of build output; this is ~3MB.
 
+## Styling
+
+Tailwind CSS v4 via `@tailwindcss/vite`. `src/styles/global.css` holds the
+`@import 'tailwindcss'` and a small `@theme` block:
+
+- `--color-line` (neutral-800) and `--color-dim` (neutral-500) for terminal
+  chrome, plus `--color-accent` (the muted green).
+- The canvas is `bg-neutral-900`, set on `<body>`.
+
+Everything else is utility classes in the markup. The only hand-written CSS
+left is in the two components' `<style>` blocks, and only for state classes
+Tailwind cannot express: `.is-visible`, `.is-leaving`, `.is-ready`, and the
+cursor blink keyframes.
+
 ## Notes
 
 - Bun only. `bun.lock` is the lockfile.
@@ -75,6 +89,7 @@ directly from the browser. The API allows all origins, so there is no proxy.
   the head. No third-party font requests.
 - `body { overflow: hidden }` is scoped to the opening sequence. Each section
   is its own fixed, internally scrolling viewport.
+- Monaco uses VS Code's built-in `vs-dark` theme, unmodified.
 
 
 ## 👀 Want to learn more?

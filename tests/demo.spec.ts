@@ -98,9 +98,9 @@ test('run posts the documented caps and renders output', async ({ page }) => {
 	await openDemo(page);
 	await page.click('#run');
 
-	await expect(page.locator('.output-stdout')).toContainText('0 1 1 2 3 5 8 13 21 34');
-	await expect(page.locator('.output-meta')).toContainText('runtime 12.4ms');
-	await expect(page.locator('.output-meta')).toContainText('memory 3.1mb');
+	await expect(page.locator('[data-output="stdout"]')).toContainText('0 1 1 2 3 5 8 13 21 34');
+	await expect(page.locator('[data-output="meta"]')).toContainText('runtime 12.4ms');
+	await expect(page.locator('[data-output="meta"]')).toContainText('memory 3.1mb');
 
 	expect(sent).toMatchObject({
 		language: 'python',
@@ -121,7 +121,7 @@ test('timeout sentinel renders a human sentence', async ({ page }) => {
 	await openDemo(page);
 	await page.click('#run');
 
-	await expect(page.locator('.output-note')).toContainText('10s limit');
+	await expect(page.locator('[data-output="note"]')).toContainText('10s limit');
 	await expect(page.locator('#output')).not.toContainText('SIGKILL');
 });
 
@@ -136,7 +136,7 @@ test('memory sentinel renders a human sentence', async ({ page }) => {
 	await openDemo(page);
 	await page.click('#run');
 
-	await expect(page.locator('.output-note')).toContainText('64mb');
+	await expect(page.locator('[data-output="note"]')).toContainText('64mb');
 });
 
 test('network failure shows the unreachable state', async ({ page }) => {
@@ -145,8 +145,8 @@ test('network failure shows the unreachable state', async ({ page }) => {
 	await openDemo(page);
 	await page.click('#run');
 
-	await expect(page.locator('.output-note')).toContainText('unreachable');
-	await expect(page.locator('.output-link')).toHaveAttribute(
+	await expect(page.locator('[data-output="note"]')).toContainText('unreachable');
+	await expect(page.locator('#output a')).toHaveAttribute(
 		'href',
 		'https://github.com/Anga205/CodeExecutionAPI',
 	);
@@ -157,7 +157,7 @@ test('mobile layout stacks and does not overflow', async ({ page }) => {
 	await openDemo(page);
 
 	const columns = await page
-		.locator('.workbench')
+		.locator('#workbench')
 		.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
 	expect(columns.split(' ')).toHaveLength(1);
 
