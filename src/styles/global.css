@@ -1,51 +1,63 @@
-@import "tailwindcss";
+/* ---------------------------------------------------------------------------
+   Global reset and canvas.
+   Dark only, by design. There is no light mode.
+   --------------------------------------------------------------------------- */
 
-@layer base {
-	html,
-	body {
-		height: 100%;
-		scroll-snap-type: y mandatory;
-		scrollbar-width: thin;
-		scrollbar-color: rgba(255, 255, 255, 0.22) #171717;
-	}
-
-	html::-webkit-scrollbar,
-	body::-webkit-scrollbar {
-		width: 10px;
-	}
-
-	html::-webkit-scrollbar-track,
-	body::-webkit-scrollbar-track {
-		background: #171717;
-	}
-
-	html::-webkit-scrollbar-thumb,
-	body::-webkit-scrollbar-thumb {
-		border-radius: 9999px;
-		border: 2px solid #171717;
-		background: rgba(255, 255, 255, 0.22);
-	}
-
-	html::-webkit-scrollbar-thumb:hover,
-	body::-webkit-scrollbar-thumb:hover {
-		background: rgba(255, 255, 255, 0.3);
-	}
+:root {
+	--bg: #000;
+	--line: #1e1e1e;
+	--dim: #4a4a4a;
+	--text: #cfcfcf;
+	--accent: #7d9b76;
 }
 
-.spin-scale-hover {
-    display: inline-block;
-    transition: transform 0.6s ease-out;
-}
-  
-.spin-scale-hover:hover {
-    animation: spinOnce 0.5s forwards;
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
 }
 
-@keyframes spinOnce {
-    0% {
-        transform: rotate(0deg) scale(1);
-    }
-    100% {
-        transform: rotate(360deg) scale(1.2);
-    }
+/* `hidden` has to win over component display rules. */
+[hidden] {
+	display: none !important;
+}
+
+html {
+	background: var(--bg);
+	color-scheme: dark;
+	-webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+}
+
+body {
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--font-mono, ui-monospace, monospace);
+	/* The opening sequence is a single viewport that gets replaced, not a
+	   scroll target. Remove this once there are real sections below the fold. */
+	overflow: hidden;
+}
+
+::selection {
+	background: var(--accent);
+	color: var(--bg);
+}
+
+/* Visually hidden, still announced by screen readers. */
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
 }

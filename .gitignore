@@ -12,6 +12,12 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 
 # environment variables
 .env
@@ -22,7 +28,3 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
-
-# Local Netlify folder
-.netlify
-.playwright-mcp/
