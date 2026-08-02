@@ -102,10 +102,6 @@ const FINAL_TEXT =
 	</style>
 </noscript>
 
-<section class="placeholder" id="placeholder" tabindex="-1" hidden>
-	<p>[next section, not built yet]</p>
-</section>
-
 <style>
 	.opening {
 		position: fixed;
@@ -225,31 +221,6 @@ const FINAL_TEXT =
 		outline-offset: 4px;
 	}
 
-	.placeholder {
-		position: fixed;
-		inset: 0;
-		display: grid;
-		place-items: center;
-		padding: 20px;
-		background: var(--bg);
-		color: var(--dim);
-		font-size: 13px;
-		opacity: 0;
-		transition: opacity 350ms ease;
-	}
-
-	.placeholder.is-visible {
-		opacity: 1;
-	}
-
-	.placeholder:focus {
-		outline: none;
-	}
-
-	.placeholder p {
-		margin: 0;
-	}
-
 	@media (max-width: 560px) {
 		.opening {
 			padding: 24px 12px;
@@ -268,8 +239,7 @@ const FINAL_TEXT =
 	@media (prefers-reduced-motion: reduce) {
 		.opening,
 		.frame,
-		.next,
-		.placeholder {
+		.next {
 			transition: none;
 		}
 
@@ -329,7 +299,8 @@ const FINAL_TEXT =
 	const cursor = byId('cursor');
 	const nextBtn = byId<HTMLButtonElement>('next');
 	const opening = byId('opening');
-	const placeholder = byId('placeholder');
+	// The second section. Owned by CodeDemo.astro; this only reveals it.
+	const demo = byId('demo');
 
 	const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -432,8 +403,8 @@ const FINAL_TEXT =
 		setTimeout(
 			() => {
 				opening.hidden = true;
-				fadeIn(placeholder);
-				placeholder.focus();
+				fadeIn(demo);
+				demo.focus();
 			},
 			reduced ? 0 : LEAVE_MS,
 		);
