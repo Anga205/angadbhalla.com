@@ -188,8 +188,8 @@ const FINAL_TEXT =
 
 	const LINE_1 = 'Hello there!';
 	const LINE_2 = 'I could write a paragraph about who I am and what I do,';
-	const LINE_3 = 'but thats what everyone does,';
-	const LINE_4 = 'so imma just show you';
+	const LINE_3 = ' but thats what everyone does,';
+	const LINE_4 = ' so imma just show you';
 
 	type Step =
 		| { kind: 'hold'; ms: number }
@@ -208,10 +208,8 @@ const FINAL_TEXT =
 		{ kind: 'hold', ms: 250 },
 		{ kind: 'type', text: LINE_2 },
 		{ kind: 'hold', ms: 1000 },
-		{ kind: 'newline' },
 		{ kind: 'type', text: LINE_3 },
 		{ kind: 'hold', ms: 700 },
-		{ kind: 'newline' },
 		{ kind: 'type', text: LINE_4 },
 		{ kind: 'hold', ms: 700 },
 		{ kind: 'button' },
