@@ -26,11 +26,22 @@ async function mockApi(page: Page, body: unknown) {
 	});
 }
 
+/**
+ * Advance past the opening sequence. Desktop uses the Enter keybind; touch
+ * devices keep the `next` button.
+ */
+async function advance(page: Page) {
+	await expect(page.locator('#opening #advance')).toBeVisible({ timeout: 25_000 });
+	if (await page.locator('#opening #next').isVisible()) {
+		await page.locator('#opening #next').click();
+	} else {
+		await page.keyboard.press('Enter');
+	}
+}
+
 async function openDemo(page: Page) {
 	await page.goto('/');
-	const next = page.locator('#opening #next');
-	await expect(next).toBeVisible({ timeout: 25_000 });
-	await next.click();
+	await advance(page);
 	await expect(page.locator('#demo')).toBeVisible();
 	await expect(page.locator('#demo')).toHaveAttribute('data-ready', 'true', { timeout: 30_000 });
 }
@@ -40,13 +51,12 @@ const getCode = (page: Page) =>
 
 test.beforeEach(async ({}, testInfo) => {
 	test.skip(testInfo.project.name === 'reduced-motion', 'demo behaviour is motion-independent');
+	test.skip(testInfo.project.name === 'mobile', 'demo behaviour is covered on desktop');
 });
 
 test('demo appears after the opening sequence', async ({ page }) => {
 	await page.goto('/');
-	const next = page.locator('#opening #next');
-	await expect(next).toBeVisible({ timeout: 25_000 });
-	await next.click();
+	await advance(page);
 
 	await expect(page.locator('#demo')).toBeVisible();
 	await expect(page.locator('#opening')).toBeHidden();

@@ -28,6 +28,10 @@ export default defineConfig({
 				reducedMotion: 'reduce',
 			},
 		},
+		{
+			name: 'mobile',
+			use: { ...devices['Pixel 5'] },
+		},
 	],
 	webServer: {
 		command: 'bun run dev',

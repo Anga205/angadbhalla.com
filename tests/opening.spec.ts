@@ -5,17 +5,17 @@ const LINE_3 = 'but thats what everyone does,';
 const LINE_4 = 'so imma just show you';
 const FINAL_TEXT = [LINE_2, LINE_3, LINE_4].join('\n');
 
-test('types the greeting, backspaces it, and reveals next', async ({ page }, testInfo) => {
+test('types the greeting, backspaces it, and reveals the advance affordance', async ({ page }, testInfo) => {
 	test.skip(testInfo.project.name === 'reduced-motion', 'covered by the reduced-motion test');
 
 	await page.goto('/');
 
 	const frame = page.locator('#frame');
 	const typed = page.locator('#typed');
-	const next = page.getByRole('button', { name: 'next' });
+	const advance = page.locator('#advance');
 
 	await expect(frame).toBeVisible();
-	await expect(next).toBeHidden();
+	await expect(advance).toBeHidden();
 
 	// The text is typed, not painted: it starts empty and grows.
 	await expect(typed).toHaveText('', { timeout: 2_000 });
@@ -26,16 +26,64 @@ test('types the greeting, backspaces it, and reveals next', async ({ page }, tes
 	await expect(typed).toHaveText('Hello there!', { timeout: 5_000 });
 
 	// The sequence runs about 9s; give it room.
-	await expect(next).toBeVisible({ timeout: 20_000 });
+	await expect(advance).toBeVisible({ timeout: 20_000 });
 
 	// Exact match, so the line breaks are asserted too.
 	await expect(typed).toHaveText(FINAL_TEXT);
 	expect(await typed.textContent()).not.toContain('Hello there!');
 
-	await next.click();
+	if (testInfo.project.name === 'mobile') {
+		// Touch devices keep the button.
+		await expect(page.locator('#hint')).toBeHidden();
+		await page.getByRole('button', { name: 'next' }).click();
+	} else {
+		// Desktop advances with a keybind, not a button.
+		await expect(page.locator('#hint')).toBeVisible();
+		await expect(page.getByRole('button', { name: 'next' })).toBeHidden();
+		await page.keyboard.press('Enter');
+	}
 
 	await expect(page.locator('#demo')).toBeVisible();
 	await expect(frame).toBeHidden();
+});
+
+test('space also advances on desktop', async ({ page }, testInfo) => {
+	test.skip(testInfo.project.name !== 'default', 'desktop keybind only');
+
+	await page.goto('/');
+	await expect(page.locator('#advance')).toBeVisible({ timeout: 20_000 });
+
+	await page.keyboard.press(' ');
+	await expect(page.locator('#demo')).toBeVisible();
+});
+
+test('the window can be dragged and stays on screen', async ({ page }, testInfo) => {
+	test.skip(testInfo.project.name !== 'default', 'pointer drag is desktop-only coverage');
+
+	await page.goto('/');
+	await expect(page.locator('#frame')).toBeVisible();
+
+	const titlebar = page.locator('#titlebar');
+	const box = (await titlebar.boundingBox())!;
+
+	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(box.x + box.width / 2 + 100, box.y + box.height / 2 + 60, { steps: 8 });
+	await page.mouse.up();
+
+	await expect(page.locator('#window')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 100, 60)');
+
+	// Dragging far past the edge clamps instead of losing the window.
+	const moved = (await titlebar.boundingBox())!;
+	await page.mouse.move(moved.x + moved.width / 2, moved.y + moved.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(5000, 5000, { steps: 8 });
+	await page.mouse.up();
+
+	const rect = (await page.locator('#window').boundingBox())!;
+	const viewport = page.viewportSize()!;
+	expect(rect.x + rect.width).toBeLessThanOrEqual(viewport.width + 1);
+	expect(rect.y + rect.height).toBeLessThanOrEqual(viewport.height + 1);
 });
 
 test('reduced motion renders the text instantly', async ({ page }, testInfo) => {
@@ -44,7 +92,7 @@ test('reduced motion renders the text instantly', async ({ page }, testInfo) => 
 	await page.goto('/');
 
 	const typed = page.locator('#typed');
-	const next = page.getByRole('button', { name: 'next' });
+	const advance = page.locator('#advance');
 
 	// No typing animation: the full message is there almost immediately.
 	await expect(typed).toContainText('imma just show you', { timeout: 2_000 });
@@ -55,8 +103,8 @@ test('reduced motion renders the text instantly', async ({ page }, testInfo) => 
 		.evaluate((el) => getComputedStyle(el).animationName);
 	expect(animation).toBe('none');
 
-	await expect(next).toBeVisible({ timeout: 5_000 });
-	await next.click();
+	await expect(advance).toBeVisible({ timeout: 5_000 });
+	await page.keyboard.press('Enter');
 
 	await expect(page.locator('#demo')).toBeVisible();
 });

@@ -2,8 +2,9 @@
 /**
  * OpeningSequence.astro
  *
- * The first thing a visitor sees: a black screen, then a terminal frame that
- * types a short greeting, backspaces it, and types the real message.
+ * The first thing a visitor sees: a black screen, then a GNOME-style terminal
+ * window that types a short greeting, backspaces it, and types the real
+ * message. The window can be dragged around by its title bar.
  *
  * ---------------------------------------------------------------------------
  * SEQUENCE STATES
@@ -16,25 +17,38 @@
  *   type    append one character at a time, BASE_MS +/- JITTER_MS apart.
  *   delete  remove one character at a time, BACKSPACE_MS apart (no jitter).
  *   newline append a hard line break (instant, no delay).
- *   button  reveal the `next` button.
+ *   button  reveal the advance affordance and start listening for keys.
  *
  * The order is:
  *
  *   hold 600      black screen, nothing on it
  *   frame         frame fades in
  *   type          "Hello there!"
- *   hold 900      cursor blinks on the greeting
+ *   hold 1500     cursor blinks on the greeting
  *   delete        backspace the greeting at roughly 2x typing speed
  *   hold 250      empty line, cursor blinks
  *   type          "I could write a paragraph about who I am and what I do,"
- *   hold 700      the comma lands, then a beat
+ *   hold 1000     the comma lands, then a beat
  *   newline       cursor drops to line two
  *   type          "but thats what everyone does,"
- *   hold 450      the second comma lands, then a beat
+ *   hold 700      the second comma lands, then a beat
  *   newline       cursor drops to line three
  *   type          "so imma just show you"
- *   hold 400
- *   button        `next` fades in
+ *   hold 700
+ *   button        the advance affordance fades in
+ *
+ * ---------------------------------------------------------------------------
+ * ADVANCING
+ * ---------------------------------------------------------------------------
+ * Desktop shows a "press enter to continue" hint and listens for Enter or
+ * Space. Touch devices keep a `next` button, styled like a terminal key. Both
+ * routes call `advanceSequence()`.
+ *
+ * ---------------------------------------------------------------------------
+ * DRAGGING
+ * ---------------------------------------------------------------------------
+ * The title bar is a pointer-event drag handle. The window is clamped to the
+ * viewport so it can never be dragged off screen.
  *
  * ---------------------------------------------------------------------------
  * CHANGING TIMINGS
@@ -46,14 +60,7 @@
  * REDUCED MOTION
  * ---------------------------------------------------------------------------
  * If the visitor prefers reduced motion, the typing is skipped entirely: the
- * final text is rendered at once and the button appears after 1s.
- *
- * ---------------------------------------------------------------------------
- * SKIP (not built)
- * ---------------------------------------------------------------------------
- * `renderFinal()` + `showButton()` jump straight to the end state. Wiring a
- * keypress or click to those two calls is all a skip needs. It is left out
- * because an accidental keypress during load would kill the sequence.
+ * final text is rendered at once and the advance affordance appears after 1s.
  */
 
 // Server-rendered into the frame so the page still reads without JS. The
@@ -68,23 +75,31 @@ const FINAL_TEXT =
 	class="fixed inset-0 flex overflow-y-auto bg-neutral-900 px-3 py-6 transition-opacity duration-[350ms] sm:px-5 sm:py-10"
 	id="opening"
 >
-	<div class="m-auto w-full max-w-[720px]">
+	<div class="m-auto w-full max-w-[720px]" id="window">
 		<div
-			class="border border-line opacity-0 transition-opacity duration-300"
+			class="overflow-hidden rounded-md border border-[#3d3846] bg-black opacity-0 shadow-2xl transition-opacity duration-300"
 			id="frame"
 			aria-hidden="true"
 		>
+			{/* GNOME header bar. Also the drag handle for the whole window. */}
 			<div
-				class="select-none border-b border-line px-3.5 py-2 text-xs leading-snug tracking-[0.02em] text-dim sm:px-4 sm:py-[9px]"
+				class="grid cursor-grab touch-none grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-xs leading-snug tracking-[0.02em] text-[#deddda] select-none active:cursor-grabbing sm:px-4 sm:py-[9px]"
+				id="titlebar"
 			>
-				anga@portfolio
+				<span class="flex items-center gap-1.5" aria-hidden="true">
+					<span class="h-2.5 w-2.5 rounded-full bg-[#e01b24]"></span>
+					<span class="h-2.5 w-2.5 rounded-full bg-[#e5a50a]"></span>
+					<span class="h-2.5 w-2.5 rounded-full bg-[#33d17a]"></span>
+				</span>
+				<span>anga@portfolio</span>
+				<span></span>
 			</div>
-			<div class="px-3.5 py-5 text-sm leading-[1.75] sm:px-5 sm:py-[26px] sm:pb-[30px] sm:text-[15px]">
+			<div class="px-3.5 py-5 text-sm leading-[1.75] text-[#ffffff] sm:px-5 sm:py-[26px] sm:pb-[30px] sm:text-[15px]">
 				<div class="flex gap-[0.9ch]">
-					<span class="shrink-0 select-none text-accent">$</span>
+					<span class="shrink-0 select-none text-[#26a269]">$</span>
 					<span class="min-w-0 flex-1 whitespace-pre-wrap break-words"
 						><span id="typed">{FINAL_TEXT}</span><span
-							class="ml-[0.1em] inline-block h-[1.05em] w-[0.55em] translate-y-[0.16em] bg-accent"
+							class="ml-[0.1em] inline-block h-[1.05em] w-[0.55em] translate-y-[0.16em] bg-[#ffffff]"
 							id="cursor"></span
 						></span
 					>
@@ -92,13 +107,22 @@ const FINAL_TEXT =
 			</div>
 		</div>
 
-		{/* Reserves the button's space so the frame does not jump when it appears. */}
-		<div class="mt-3.5 h-10">
+		{/* Reserves the affordance's space so the frame does not jump when it appears. */}
+		<div class="mt-3.5 h-10 opacity-0 transition-opacity duration-200" id="advance" hidden>
+			{/* Desktop: a keybind hint, not a control. */}
+			<p class="hidden items-center gap-2 text-sm text-[#a5a3a9] sm:flex" id="hint">
+				press
+				<kbd
+					class="rounded border border-[#3d3846] bg-[#303030] px-1.5 py-0.5 text-xs text-[#deddda]"
+					>enter</kbd
+				>
+				to continue
+			</p>
+			{/* Mobile: the same action as a terminal-styled key. */}
 			<button
-				class="inline-flex items-center gap-2 border border-line px-3 py-1.5 text-sm text-neutral-400 opacity-0 transition-[opacity,color,border-color] duration-200 hover:border-neutral-600 hover:text-neutral-100 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-accent"
+				class="inline-flex items-center gap-2 rounded border border-[#3d3846] bg-[#303030] px-3 py-1.5 text-sm text-[#deddda] transition-colors active:bg-[#3d3846] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-[#26a269] sm:hidden"
 				id="next"
 				type="button"
-				hidden
 			>
 				next
 				<svg
@@ -131,7 +155,7 @@ const FINAL_TEXT =
 		}
 
 		#cursor,
-		#next {
+		#advance {
 			display: none;
 		}
 	</style>
@@ -161,14 +185,14 @@ const FINAL_TEXT =
 		opacity: 1;
 	}
 
-	#next.is-visible {
+	#advance.is-visible {
 		opacity: 1;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
 		#opening,
 		#frame,
-		#next {
+		#advance {
 			transition: none;
 		}
 
@@ -188,8 +212,8 @@ const FINAL_TEXT =
 
 	const LINE_1 = 'Hello there!';
 	const LINE_2 = 'I could write a paragraph about who I am and what I do,';
-	const LINE_3 = ' but thats what everyone does,';
-	const LINE_4 = ' so imma just show you';
+	const LINE_3 = 'but that\'s what EVERYONE else does,';
+	const LINE_4 = 'so I\'m just gonna show you.';
 
 	type Step =
 		| { kind: 'hold'; ms: number }
@@ -208,8 +232,10 @@ const FINAL_TEXT =
 		{ kind: 'hold', ms: 250 },
 		{ kind: 'type', text: LINE_2 },
 		{ kind: 'hold', ms: 1000 },
+		{ kind: 'newline' },
 		{ kind: 'type', text: LINE_3 },
 		{ kind: 'hold', ms: 700 },
+		{ kind: 'newline' },
 		{ kind: 'type', text: LINE_4 },
 		{ kind: 'hold', ms: 700 },
 		{ kind: 'button' },
@@ -222,8 +248,11 @@ const FINAL_TEXT =
 	}
 
 	const frame = byId('frame');
+	const win = byId('window');
+	const titlebar = byId('titlebar');
 	const typed = byId('typed');
 	const cursor = byId('cursor');
+	const advance = byId('advance');
 	const nextBtn = byId<HTMLButtonElement>('next');
 	const opening = byId('opening');
 	// The second section. Owned by CodeDemo.astro; this only reveals it.
@@ -261,8 +290,20 @@ const FINAL_TEXT =
 		});
 	}
 
-	function showButton() {
-		fadeIn(nextBtn);
+	function showAdvance() {
+		fadeIn(advance);
+		// Test seam: the affordance is on screen, so the sequence is done.
+		opening.dataset.ready = 'true';
+		// Desktop advances with a keybind; mobile uses the button.
+		window.addEventListener('keydown', onKeydown);
+	}
+
+	function onKeydown(event: KeyboardEvent) {
+		if (event.repeat) return;
+		if (event.key !== 'Enter' && event.key !== ' ') return;
+		// Space would otherwise scroll the page.
+		event.preventDefault();
+		advanceSequence();
 	}
 
 	function renderFinal() {
@@ -314,17 +355,18 @@ const FINAL_TEXT =
 					break;
 				}
 				case 'button': {
-					showButton();
+					showAdvance();
 					break;
 				}
 			}
 		}
 	}
 
-	nextBtn.addEventListener('click', () => {
+	function advanceSequence() {
 		if (leaving) return;
 		leaving = true;
 
+		window.removeEventListener('keydown', onKeydown);
 		opening.classList.add('is-leaving');
 
 		setTimeout(
@@ -335,14 +377,56 @@ const FINAL_TEXT =
 			},
 			reduced ? 0 : LEAVE_MS,
 		);
+	}
+
+	nextBtn.addEventListener('click', advanceSequence);
+
+	// Drag the window by its title bar. Pointer events cover mouse and touch;
+	// `touch-none` on the handle stops the page scrolling mid-drag.
+	let drag: { x: number; y: number; tx: number; ty: number } | null = null;
+	let tx = 0; // where the window should be
+	let ty = 0;
+	let ax = 0; // where it currently is (the applied transform)
+	let ay = 0;
+
+	function clamp() {
+		// Keep the window inside the viewport. The rect includes the transform
+		// already applied, so subtract it to get the untranslated box.
+		const rect = win.getBoundingClientRect();
+		const left = rect.left - ax;
+		const top = rect.top - ay;
+		const maxX = Math.max(0, window.innerWidth - rect.width - left);
+		const maxY = Math.max(0, window.innerHeight - rect.height - top);
+		tx = Math.min(Math.max(tx, -left), maxX);
+		ty = Math.min(Math.max(ty, -top), maxY);
+		ax = tx;
+		ay = ty;
+		win.style.transform = `translate(${tx}px, ${ty}px)`;
+	}
+
+	titlebar.addEventListener('pointerdown', (event) => {
+		drag = { x: event.clientX, y: event.clientY, tx, ty };
+		titlebar.setPointerCapture(event.pointerId);
 	});
 
-	// Skip hook (not wired): any keypress or click jumps to the end state.
-	// window.addEventListener('keydown', () => { renderFinal(); showButton(); }, { once: true });
+	titlebar.addEventListener('pointermove', (event) => {
+		if (!drag) return;
+		tx = drag.tx + (event.clientX - drag.x);
+		ty = drag.ty + (event.clientY - drag.y);
+		clamp();
+	});
+
+	const endDrag = () => {
+		drag = null;
+	};
+
+	titlebar.addEventListener('pointerup', endDrag);
+	titlebar.addEventListener('pointercancel', endDrag);
+	window.addEventListener('resize', clamp);
 
 	if (reduced) {
 		renderFinal();
-		setTimeout(showButton, REDUCED_HOLD_MS);
+		setTimeout(showAdvance, REDUCED_HOLD_MS);
 	} else {
 		run();
 	}
