@@ -1,0 +1,512 @@
+---
+interface Props {
+	initiallyVisible?: boolean;
+}
+
+const { initiallyVisible = false } = Astro.props;
+
+const destinations = [
+	{
+		id: 'projects',
+		label: 'Projects',
+		shortLabel: 'work',
+		mark: '01',
+		icon: 'terminal',
+		description: 'things I have built, with the useful parts left in.',
+	},
+	{
+		id: 'about',
+		label: 'About me',
+		shortLabel: 'about',
+		mark: '02',
+		icon: 'person',
+		description: 'background, engineering philosophy, and the work between projects.',
+	},
+	{
+		id: 'achievements',
+		label: 'Achievements',
+		shortLabel: 'proof',
+		mark: '03',
+		icon: 'medal',
+		description: 'certificates, hackathons, and contributions worth keeping track of.',
+	},
+	{
+		id: 'find-me',
+		label: 'Find me',
+		shortLabel: 'links',
+		mark: '04',
+		icon: 'link',
+		description: 'GitHub, LinkedIn, email, and the other places I turn up.',
+	},
+] as const;
+
+const icons: Record<string, string> = {
+	terminal: '<path d="M2.5 4.5 6 8l-3.5 3.5"/><path d="M8.5 11.5h5"/>',
+	person:
+		'<circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c0-2.2 2.2-3.5 5-3.5s5 1.3 5 3.5"/>',
+	medal: '<circle cx="8" cy="9.5" r="3.5"/><path d="M5.5 6.5 4 2.5h8l-1.5 4"/>',
+	link: '<path d="M6.5 9.5 9.5 6.5"/><path d="M7 4.5 8.5 3a2.5 2.5 0 0 1 3.5 3.5L10.5 8"/><path d="M9 11.5 7.5 13A2.5 2.5 0 0 1 4 9.5L5.5 8"/>',
+};
+---
+
+<section
+	class:list={['wayfinder', !initiallyVisible && 'wayfinder--hidden']}
+	id="wayfinder"
+	tabindex="-1"
+	data-initial-visible={initiallyVisible ? 'true' : undefined}
+	hidden={!initiallyVisible}
+>
+	<div class="window">
+		<div class="headerbar">
+			<span class="dots" aria-hidden="true">
+				<span></span><span></span><span></span>
+			</span>
+			<span class="title">anga@portfolio</span>
+			<span aria-hidden="true"></span>
+		</div>
+
+		<div class="terminal">
+			<div class="command-line" aria-hidden="true">
+				<span class="prompt">$</span>
+				<span>ls ~/portfolio</span>
+			</div>
+
+			<nav aria-label="Portfolio sections" id="portfolio-nav">
+				<ol class="listing">
+					{destinations.map((destination, index) => (
+						<li class="waypoint" data-index={index} data-destination={destination.id}>
+							<button
+								class="waypoint-button"
+								type="button"
+								aria-current={index === 0 ? 'true' : undefined}
+								aria-label={`${destination.label}: ${destination.description}`}
+								data-destination={destination.id}
+								data-destination-button={destination.id}
+							>
+								<span class="waypoint-marker" aria-hidden="true">{destination.mark}</span>
+								<span
+									class="waypoint-icon"
+									data-icon={destination.icon}
+									aria-hidden="true"
+									set:html={icons[destination.icon]}
+								></span>
+								<span class="waypoint-text">
+									<span class="waypoint-label">{destination.label.toLowerCase()}/</span>
+									<span class="waypoint-description">{destination.description}</span>
+								</span>
+								<span class="waypoint-caret" aria-hidden="true">›</span>
+							</button>
+						</li>
+					))}
+				</ol>
+			</nav>
+
+			<div class="wayfinder-detail" aria-live="polite">
+				<p class="detail-status">
+					<span class="prompt">$</span>
+					<span id="wayfinder-status">ready when you are</span>
+				</p>
+				<p class="detail-text" id="wayfinder-detail-text">
+					arrow keys to move · enter to open · or click a line
+				</p>
+			</div>
+		</div>
+	</div>
+</section>
+
+<style>
+	.wayfinder {
+		position: fixed;
+		inset: 0;
+		z-index: 20;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1.5rem;
+		overflow-y: auto;
+		background: #171717;
+		opacity: 1;
+		transition: opacity 350ms;
+	}
+
+	.wayfinder--hidden {
+		opacity: 0;
+	}
+
+	.wayfinder.is-visible {
+		opacity: 1;
+	}
+
+	.window {
+		width: 100%;
+		max-width: 720px;
+		margin: auto;
+		overflow: hidden;
+		border: 1px solid #3d3846;
+		border-radius: 6px;
+		background: #000000;
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+	}
+
+	.headerbar {
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		border-bottom: 1px solid #3d3846;
+		background: #303030;
+		color: #deddda;
+		font-size: 0.75rem;
+		line-height: 1.375;
+		letter-spacing: 0.02em;
+		user-select: none;
+	}
+
+	.dots {
+		display: flex;
+		gap: 0.375rem;
+	}
+
+	.dots span {
+		width: 0.625rem;
+		height: 0.625rem;
+		border-radius: 999px;
+	}
+
+	.dots span:nth-child(1) {
+		background: #e01b24;
+	}
+
+	.dots span:nth-child(2) {
+		background: #e5a50a;
+	}
+
+	.dots span:nth-child(3) {
+		background: #33d17a;
+	}
+
+	.title {
+		text-align: center;
+		white-space: nowrap;
+	}
+
+	.terminal {
+		padding: 1.25rem 0.875rem;
+		background: #000000;
+		color: #ffffff;
+		font-size: 0.875rem;
+		line-height: 1.75;
+	}
+
+	.command-line {
+		display: flex;
+		gap: 0.9ch;
+		margin-bottom: 1rem;
+		color: #ffffff;
+	}
+
+	.prompt {
+		flex-shrink: 0;
+		color: #26a269;
+	}
+
+	.listing {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.waypoint-button {
+		display: grid;
+		grid-template-columns: 2.25rem 1.5rem minmax(0, 1fr) 1rem;
+		column-gap: 0.75rem;
+		align-items: start;
+		width: 100%;
+		margin-left: -0.5rem;
+		padding: 0.35rem 0.5rem;
+		border: 0;
+		border-radius: 3px;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.waypoint-button:hover {
+		background: #1c1c1c;
+	}
+
+	.waypoint-button:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	.waypoint-marker {
+		color: #737373;
+		font-size: 0.75rem;
+		line-height: 1.75;
+		text-align: right;
+	}
+
+	.waypoint-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 1.5rem;
+		color: #737373;
+	}
+
+	.waypoint-icon svg {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	.waypoint-text {
+		display: block;
+		min-width: 0;
+	}
+
+	.waypoint-label {
+		display: block;
+		color: #ffffff;
+		font-size: 0.875rem;
+		line-height: 1.75;
+	}
+
+	.waypoint-description {
+		display: block;
+		color: #a5a3a9;
+		font-size: 0.8125rem;
+		line-height: 1.6;
+	}
+
+	.waypoint-caret {
+		color: transparent;
+		font-size: 0.875rem;
+		line-height: 1.75;
+	}
+
+	.waypoint-button:hover .waypoint-caret,
+	.waypoint-button:focus-visible .waypoint-caret,
+	.waypoint-button[aria-current='true'] .waypoint-caret {
+		color: #26a269;
+	}
+
+	.waypoint-button[aria-current='true'] .waypoint-marker,
+	.waypoint-button[aria-current='true'] .waypoint-icon {
+		color: #26a269;
+	}
+
+	.wayfinder-detail {
+		margin-top: 1rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid #262626;
+	}
+
+	.detail-status {
+		display: flex;
+		gap: 0.9ch;
+		margin: 0 0 0.25rem;
+		color: #ffffff;
+		font-size: 0.8125rem;
+	}
+
+	.detail-text {
+		margin: 0;
+		color: #a5a3a9;
+		font-size: 0.75rem;
+		line-height: 1.6;
+	}
+
+	.wayfinder.is-minimized {
+		inset: 0 auto 0 0;
+		width: 18rem;
+		padding: 0;
+		align-items: stretch;
+		justify-content: flex-start;
+		overflow: hidden;
+		border-right: 1px solid #3d3846;
+	}
+
+	.wayfinder.is-minimized .window {
+		max-width: none;
+		height: 100%;
+		border: 0;
+		border-radius: 0;
+		box-shadow: none;
+	}
+
+	.wayfinder.is-minimized .terminal {
+		padding: 1rem 0.75rem;
+		overflow-y: auto;
+	}
+
+	.wayfinder.is-minimized .command-line {
+		margin-bottom: 0.75rem;
+		font-size: 0.75rem;
+	}
+
+	.wayfinder.is-minimized .waypoint-button {
+		grid-template-columns: 1.75rem minmax(0, 1fr);
+		column-gap: 0.5rem;
+		margin-left: -0.4rem;
+		padding: 0.3rem 0.4rem;
+	}
+
+	.wayfinder.is-minimized .waypoint-icon,
+	.wayfinder.is-minimized .waypoint-description,
+	.wayfinder.is-minimized .waypoint-caret,
+	.wayfinder.is-minimized .wayfinder-detail {
+		display: none;
+	}
+
+	.wayfinder.is-minimized .waypoint-label {
+		font-size: 0.8125rem;
+	}
+
+	@media (max-width: 639px) {
+		.wayfinder.is-minimized {
+			inset: auto 0 0;
+			width: 100%;
+			height: auto;
+			border-top: 1px solid #3d3846;
+			border-right: 0;
+		}
+
+		.wayfinder.is-minimized .headerbar,
+		.wayfinder.is-minimized .command-line,
+		.wayfinder.is-minimized .wayfinder-detail {
+			display: none;
+		}
+
+		.wayfinder.is-minimized .terminal {
+			padding: 0.5rem 0.6rem;
+		}
+
+		.wayfinder.is-minimized .listing {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 0.25rem;
+		}
+
+		.wayfinder.is-minimized .waypoint-button {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 0.2rem;
+			margin: 0;
+			padding: 0.25rem;
+			text-align: center;
+		}
+
+		.wayfinder.is-minimized .waypoint-marker {
+			display: none;
+		}
+
+		.wayfinder.is-minimized .waypoint-icon {
+			display: flex;
+			height: auto;
+		}
+
+		.wayfinder.is-minimized .waypoint-text {
+			width: 100%;
+			min-width: 0;
+		}
+
+		.wayfinder.is-minimized .waypoint-label {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			font-size: 0.6875rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.wayfinder {
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	type Destination = 'projects' | 'about' | 'achievements' | 'find-me';
+
+	const menu = document.getElementById('wayfinder');
+	const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-destination-button]')];
+	const status = document.getElementById('wayfinder-status');
+	const detail = document.getElementById('wayfinder-detail-text');
+
+	if (!menu || !status || !detail || buttons.length === 0) {
+		throw new Error('PortfolioMenu: missing menu elements');
+	}
+
+	const menuElement = menu;
+	const statusElement = status;
+	const detailElement = detail;
+
+	let activeIndex = 0;
+	let selected = false;
+
+	function selectIndex(index: number) {
+		activeIndex = (index + buttons.length) % buttons.length;
+		buttons.forEach((button, buttonIndex) => {
+			button.setAttribute('aria-current', buttonIndex === activeIndex ? 'true' : 'false');
+		});
+		buttons[activeIndex].focus();
+	}
+
+	function openDestination(destination: Destination) {
+		selected = true;
+		menuElement.classList.add('is-minimized');
+		menuElement.dataset.selected = destination;
+		statusElement.textContent = destination === 'find-me' ? 'find me' : destination;
+		detailElement.textContent = 'The menu stays here so you can move around without starting over.';
+		window.dispatchEvent(new CustomEvent('portfolio:navigate', { detail: { destination } }));
+	}
+
+	function showMenu() {
+		menuElement.hidden = false;
+		selectIndex(0);
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => menuElement.classList.add('is-visible'));
+		});
+	}
+
+	buttons.forEach((button, index) => {
+		button.addEventListener('focus', () => {
+			if (!selected) selectIndex(index);
+		});
+		button.addEventListener('click', () => {
+			selectIndex(index);
+			openDestination(button.dataset.destination as Destination);
+		});
+	});
+
+	menuElement.addEventListener('keydown', (event) => {
+		if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+			event.preventDefault();
+			selectIndex(activeIndex + 1);
+		}
+		if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+			event.preventDefault();
+			selectIndex(activeIndex - 1);
+		}
+		if (event.key === 'Home') {
+			event.preventDefault();
+			selectIndex(0);
+		}
+		if (event.key === 'End') {
+			event.preventDefault();
+			selectIndex(buttons.length - 1);
+		}
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			openDestination(buttons[activeIndex].dataset.destination as Destination);
+		}
+	});
+
+	window.addEventListener('portfolio:show-menu', showMenu);
+	if (menuElement.dataset.initialVisible === 'true') showMenu();
+</script>

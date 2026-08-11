@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
 const LINE_2 = 'I could write a paragraph about who I am and what I do,';
-const LINE_3 = 'but thats what everyone does,';
-const LINE_4 = 'so imma just show you';
+const LINE_3 = "but that's what EVERYONE else does,";
+const LINE_4 = "so I'm just gonna show you.";
 const FINAL_TEXT = [LINE_2, LINE_3, LINE_4].join('\n');
 
 test('types the greeting, backspaces it, and reveals the advance affordance', async ({ page }, testInfo) => {
@@ -43,8 +43,10 @@ test('types the greeting, backspaces it, and reveals the advance affordance', as
 		await page.keyboard.press('Enter');
 	}
 
-	await expect(page.locator('#demo')).toBeVisible();
-	await expect(frame).toBeHidden();
+	await expect(page).toHaveURL(/\/selector$/);
+	await expect(page.locator('#wayfinder')).toBeVisible();
+	await expect(page.getByRole('button', { name: /Projects:/ })).toBeFocused();
+	await expect(page.locator('#opening')).toHaveCount(0);
 });
 
 test('space also advances on desktop', async ({ page }, testInfo) => {
@@ -54,7 +56,8 @@ test('space also advances on desktop', async ({ page }, testInfo) => {
 	await expect(page.locator('#advance')).toBeVisible({ timeout: 20_000 });
 
 	await page.keyboard.press(' ');
-	await expect(page.locator('#demo')).toBeVisible();
+	await expect(page).toHaveURL(/\/selector$/);
+	await expect(page.locator('#wayfinder')).toBeVisible();
 });
 
 test('the window can be dragged and stays on screen', async ({ page }, testInfo) => {
@@ -106,5 +109,6 @@ test('reduced motion renders the text instantly', async ({ page }, testInfo) => 
 	await expect(advance).toBeVisible({ timeout: 5_000 });
 	await page.keyboard.press('Enter');
 
-	await expect(page.locator('#demo')).toBeVisible();
+	await expect(page).toHaveURL(/\/selector$/);
+	await expect(page.locator('#wayfinder')).toBeVisible();
 });

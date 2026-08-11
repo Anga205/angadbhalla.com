@@ -200,6 +200,10 @@ import {
 		opacity: 0;
 	}
 
+	#demo.with-navigation {
+		padding-left: 18rem;
+	}
+
 	/* Shown until Monaco mounts, and forever if it never does. */
 	#editor-shell.is-ready #editor-fallback {
 		display: none;
@@ -209,6 +213,13 @@ import {
 		#demo,
 		#next-placeholder {
 			transition: none;
+		}
+	}
+
+	@media (max-width: 639px) {
+		#demo.with-navigation {
+			padding-left: 0;
+			padding-bottom: 5rem;
 		}
 	}
 </style>
@@ -259,6 +270,21 @@ import {
 	const placeholder = byId('next-placeholder');
 
 	const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	function showSection() {
+		section.hidden = false;
+		section.classList.remove('is-leaving');
+		section.classList.add('with-navigation');
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => section.classList.add('is-visible'));
+		});
+		section.focus();
+	}
+
+	function hideSection() {
+		section.classList.remove('is-visible', 'with-navigation');
+		section.hidden = true;
+	}
 
 	type Monaco = typeof import('monaco-editor/editor/editor.api');
 
@@ -489,6 +515,15 @@ import {
 			},
 			reduced ? 0 : LEAVE_MS,
 		);
+	});
+
+	window.addEventListener('portfolio:navigate', (event) => {
+		const destination = (event as CustomEvent<{ destination: string }>).detail.destination;
+		if (destination === 'projects') {
+			showSection();
+		} else {
+			hideSection();
+		}
 	});
 
 	/* --------------------------------------------------------------- lazy load */

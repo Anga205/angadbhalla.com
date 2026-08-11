@@ -39,9 +39,14 @@ async function advance(page: Page) {
 	}
 }
 
+async function openProjects(page: Page) {
+	await advance(page);
+	await page.getByRole('button', { name: /Projects:/ }).click();
+}
+
 async function openDemo(page: Page) {
 	await page.goto('/');
-	await advance(page);
+	await openProjects(page);
 	await expect(page.locator('#demo')).toBeVisible();
 	await expect(page.locator('#demo')).toHaveAttribute('data-ready', 'true', { timeout: 30_000 });
 }
@@ -56,7 +61,7 @@ test.beforeEach(async ({}, testInfo) => {
 
 test('demo appears after the opening sequence', async ({ page }) => {
 	await page.goto('/');
-	await advance(page);
+	await openProjects(page);
 
 	await expect(page.locator('#demo')).toBeVisible();
 	await expect(page.locator('#opening')).toBeHidden();

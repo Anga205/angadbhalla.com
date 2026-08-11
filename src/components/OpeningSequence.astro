@@ -255,8 +255,6 @@ const FINAL_TEXT =
 	const advance = byId('advance');
 	const nextBtn = byId<HTMLButtonElement>('next');
 	const opening = byId('opening');
-	// The second section. Owned by CodeDemo.astro; this only reveals it.
-	const demo = byId('demo');
 
 	const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -372,14 +370,32 @@ const FINAL_TEXT =
 		setTimeout(
 			() => {
 				opening.hidden = true;
-				fadeIn(demo);
-				demo.focus();
+				window.location.assign('/selector');
 			},
 			reduced ? 0 : LEAVE_MS,
 		);
 	}
 
 	nextBtn.addEventListener('click', advanceSequence);
+
+	// Back/Forward can restore this page from the bfcache with the opening still
+	// hidden and `is-leaving` applied. Restore the completed state instead of
+	// showing an invisible screen.
+	window.addEventListener('pageshow', (event) => {
+		if (!event.persisted) return;
+
+		leaving = false;
+		cancelled = true;
+		opening.hidden = false;
+		opening.classList.remove('is-leaving');
+		frame.classList.add('is-visible');
+		buffer = FINAL_TEXT;
+		render();
+		setIdle(true);
+		fadeIn(advance);
+		opening.dataset.ready = 'true';
+		window.addEventListener('keydown', onKeydown);
+	});
 
 	// Drag the window by its title bar. Pointer events cover mouse and touch;
 	// `touch-none` on the handle stops the page scrolling mid-drag.

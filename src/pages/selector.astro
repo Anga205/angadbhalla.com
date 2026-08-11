@@ -1,0 +1,28 @@
+---
+import { Font } from 'astro:assets';
+import PortfolioMenu from '../components/PortfolioMenu.astro';
+import CodeDemo from '../components/CodeDemo.astro';
+import '../styles/global.css';
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#000000" />
+		<meta
+			name="description"
+			content="Choose what you want to explore about Angad Bhalla."
+		/>
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<title>anga / selector</title>
+		<Font cssVariable="--font-mono" preload />
+	</head>
+	<body class="bg-neutral-900 font-mono text-neutral-200 antialiased">
+		<PortfolioMenu initiallyVisible />
+		<CodeDemo />
+	</body>
+</html>

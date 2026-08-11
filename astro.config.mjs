@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
+	// The dev toolbar overlays the bottom navigation on mobile and intercepts
+	// clicks in Playwright. It is not part of the site, so keep it off.
+	devToolbar: { enabled: false },
 	vite: {
 		plugins: [tailwindcss()],
 	},
