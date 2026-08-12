@@ -26,28 +26,13 @@ async function mockApi(page: Page, body: unknown) {
 	});
 }
 
-/**
- * Advance past the opening sequence. Desktop uses the Enter keybind; touch
- * devices keep the `next` button.
- */
-async function advance(page: Page) {
-	await expect(page.locator('#opening #advance')).toBeVisible({ timeout: 25_000 });
-	if (await page.locator('#opening #next').isVisible()) {
-		await page.locator('#opening #next').click();
-	} else {
-		await page.keyboard.press('Enter');
-	}
-}
-
 async function openProjects(page: Page) {
-	await advance(page);
-	await page.getByRole('button', { name: /Projects:/ }).click();
+	await page.goto('/projects');
+	await expect(page.locator('#demo')).toBeVisible();
 }
 
 async function openDemo(page: Page) {
-	await page.goto('/');
 	await openProjects(page);
-	await expect(page.locator('#demo')).toBeVisible();
 	await expect(page.locator('#demo')).toHaveAttribute('data-ready', 'true', { timeout: 30_000 });
 }
 
@@ -59,12 +44,12 @@ test.beforeEach(async ({}, testInfo) => {
 	test.skip(testInfo.project.name === 'mobile', 'demo behaviour is covered on desktop');
 });
 
-test('demo appears after the opening sequence', async ({ page }) => {
-	await page.goto('/');
+test('projects route renders the editor window', async ({ page }) => {
 	await openProjects(page);
 
 	await expect(page.locator('#demo')).toBeVisible();
-	await expect(page.locator('#opening')).toBeHidden();
+	await expect(page.locator('.sidebar')).toBeVisible();
+	await expect(page.locator('.statusbar')).toBeVisible();
 });
 
 test('language picker swaps the editor content', async ({ page }) => {
@@ -171,22 +156,11 @@ test('mobile layout stacks and does not overflow', async ({ page }) => {
 	await page.setViewportSize({ width: 375, height: 667 });
 	await openDemo(page);
 
-	const columns = await page
-		.locator('#workbench')
-		.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
-	expect(columns.split(' ')).toHaveLength(1);
-
 	const overflow = await page.locator('#demo').evaluate((el) => el.scrollWidth - el.clientWidth);
 	expect(overflow).toBeLessThanOrEqual(1);
 
-	// The page must still scroll past the editor, and next must be reachable.
-	const box = await page.locator('#editor').boundingBox();
-	if (box) {
-		await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-		await page.mouse.wheel(0, 400);
-	}
-	await expect.poll(() => page.locator('#demo').evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
-
-	await page.locator('#demo-next').scrollIntoViewIfNeeded();
-	await expect(page.locator('#demo-next')).toBeVisible();
+	// The editor and output panel both remain reachable on a narrow screen.
+	await expect(page.locator('#editor')).toBeVisible();
+	await expect(page.locator('#output')).toBeVisible();
+	await expect(page.locator('#run')).toBeVisible();
 });

@@ -1,0 +1,865 @@
+---
+/**
+ * Projects.astro
+ *
+ * The /projects route: a VS Code-shaped window with an explorer, editor tabs,
+ * breadcrumbs, a Monaco editor, an output panel, and a status bar.
+ *
+ * The code execution demo is the first project. The other projects are listed
+ * in the explorer and show a short description instead of the editor.
+ *
+ * API contract, caps, and sentinels are unchanged from the original demo:
+ * POST https://codeapi.anga.codes/v2/execute with a 10s timeout and 64MB cap.
+ */
+import {
+	Files,
+	Search,
+	GitBranch,
+	Play,
+	Settings,
+	ChevronRight,
+	ChevronDown,
+	FileCode,
+	X,
+	Minus,
+	Square,
+} from 'lucide-astro';
+import {
+	ALGORITHMS,
+	ALGORITHM_LABELS,
+	LANGUAGES,
+	LANGUAGE_LABELS,
+	SNIPPETS,
+} from '../data/snippets';
+
+const PROJECTS = [
+	{
+		id: 'code-execution-api',
+		name: 'code-execution-api',
+		file: 'sandbox.py',
+		summary: 'a hand-built sandbox for running untrusted code.',
+	},
+	{
+		id: 'compiler',
+		name: 'compiler',
+		file: 'lexer.c',
+		summary: 'a small compiler front end, written to learn the boring parts.',
+	},
+	{
+		id: 'portfolio',
+		name: 'portfolio',
+		file: 'index.astro',
+		summary: 'this site. terminal first, no framework runtime.',
+	},
+] as const;
+---
+
+<section class="vscode" id="demo" tabindex="-1">
+	<div class="titlebar">
+		<span class="dots" aria-hidden="true">
+			<span></span><span></span><span></span>
+		</span>
+		<span class="command-center">
+			<span class="command-text">anga-portfolio</span>
+		</span>
+		<span class="titlebar-actions" aria-hidden="true">
+			<Minus size={14} strokeWidth={1.5} />
+			<Square size={12} strokeWidth={1.5} />
+			<X size={14} strokeWidth={1.5} />
+		</span>
+	</div>
+
+	<div class="shell">
+		<div class="activitybar" aria-hidden="true">
+			<Files size={20} strokeWidth={1.5} class="active" />
+			<Search size={20} strokeWidth={1.5} />
+			<GitBranch size={20} strokeWidth={1.5} />
+			<Play size={20} strokeWidth={1.5} />
+			<Settings size={20} strokeWidth={1.5} class="bottom" />
+		</div>
+
+		<aside class="sidebar">
+			<div class="sidebar-title">explorer</div>
+			<div class="tree">
+				<div class="tree-root">
+					<ChevronDown size={14} strokeWidth={1.5} />
+					<span>anga-portfolio</span>
+				</div>
+				{PROJECTS.map((project) => (
+					<button
+						class="tree-item"
+						type="button"
+						data-project={project.id}
+						aria-pressed={project.id === 'code-execution-api' ? 'true' : 'false'}
+					>
+						<ChevronRight size={14} strokeWidth={1.5} class="chevron" />
+						<FileCode size={14} strokeWidth={1.5} class="file-icon" />
+						<span>{project.name}</span>
+					</button>
+				))}
+			</div>
+		</aside>
+
+		<main class="editor-area">
+			<div class="tabs">
+				<div class="tab active">
+					<FileCode size={14} strokeWidth={1.5} class="file-icon" />
+					<span id="active-tab">sandbox.py</span>
+					<X size={12} strokeWidth={1.5} class="tab-close" />
+				</div>
+			</div>
+
+			<div class="breadcrumbs">
+				<span>anga-portfolio</span>
+				<ChevronRight size={12} strokeWidth={1.5} />
+				<span id="active-crumb">code-execution-api</span>
+				<ChevronRight size={12} strokeWidth={1.5} />
+				<span id="active-file">sandbox.py</span>
+			</div>
+
+			<div class="workbench" id="workbench">
+				<div class="editor-pane">
+					<div class="editor-toolbar">
+						<label>
+							<span>algorithm</span>
+							<select id="algorithm">
+								{ALGORITHMS.map((a) => <option value={a}>{ALGORITHM_LABELS[a]}</option>)}
+							</select>
+						</label>
+						<label>
+							<span>language</span>
+							<select id="language">
+								{LANGUAGES.map((l) => <option value={l}>{LANGUAGE_LABELS[l]}</option>)}
+							</select>
+						</label>
+						<button id="run" type="button" disabled>
+							<Play size={12} strokeWidth={2} />
+							run
+						</button>
+						<span id="run-status" role="status"></span>
+					</div>
+
+					<div class="editor-shell" id="editor-shell">
+						<div class="editor-host" id="editor"></div>
+						<pre class="editor-fallback" id="editor-fallback">{SNIPPETS.fibonacci.python}</pre>
+					</div>
+				</div>
+
+				<div class="panel">
+					<div class="panel-tabs">
+						<span class="panel-tab active">output</span>
+						<span class="panel-tab">terminal</span>
+					</div>
+					<div class="panel-body" id="output" aria-live="polite">
+						<p class="idle">hit run to execute</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="project-detail" id="project-detail" hidden>
+				<h2 id="detail-title"></h2>
+				<p id="detail-summary"></p>
+			</div>
+		</main>
+	</div>
+
+	<div class="statusbar">
+		<span class="status-left">
+			<GitBranch size={12} strokeWidth={1.5} />
+			<span>main</span>
+		</span>
+		<span class="status-right">
+			<span>utf-8</span>
+			<span>lf</span>
+			<span>python</span>
+		</span>
+	</div>
+</section>
+
+<style>
+	.vscode {
+		position: fixed;
+		inset: 0 0 0 18rem;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		background: #1e1e1e;
+		color: #cccccc;
+		font-size: 13px;
+	}
+
+	.titlebar {
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		gap: 0.5rem;
+		height: 2.25rem;
+		padding: 0 0.75rem;
+		background: #323233;
+		border-bottom: 1px solid #252526;
+		user-select: none;
+	}
+
+	.dots {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.dots span {
+		width: 0.75rem;
+		height: 0.75rem;
+		border-radius: 999px;
+	}
+
+	.dots span:nth-child(1) {
+		background: #ff5f57;
+	}
+
+	.dots span:nth-child(2) {
+		background: #febc2e;
+	}
+
+	.dots span:nth-child(3) {
+		background: #28c840;
+	}
+
+	.command-center {
+		display: flex;
+		justify-content: center;
+	}
+
+	.command-text {
+		min-width: 22rem;
+		padding: 0.2rem 0.75rem;
+		border: 1px solid #454545;
+		border-radius: 6px;
+		background: #2a2a2b;
+		color: #9d9d9d;
+		font-size: 0.75rem;
+		text-align: center;
+	}
+
+	.titlebar-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.75rem;
+		color: #9d9d9d;
+	}
+
+	.shell {
+		display: flex;
+		min-height: 0;
+		flex: 1;
+	}
+
+	.activitybar {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1.1rem;
+		width: 3rem;
+		padding: 0.75rem 0;
+		background: #333333;
+		color: #858585;
+	}
+
+	.activitybar .active {
+		color: #ffffff;
+	}
+
+	.activitybar .bottom {
+		margin-top: auto;
+	}
+
+	.sidebar {
+		width: 15rem;
+		flex-shrink: 0;
+		overflow-y: auto;
+		background: #252526;
+		border-right: 1px solid #1e1e1e;
+	}
+
+	.sidebar-title {
+		padding: 0.6rem 1rem;
+		color: #bbbbbb;
+		font-size: 0.6875rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.tree {
+		padding: 0 0.5rem;
+	}
+
+	.tree-root {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.2rem 0.25rem;
+		color: #cccccc;
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+	}
+
+	.tree-item {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		width: 100%;
+		padding: 0.2rem 0.25rem 0.2rem 0.75rem;
+		border: 0;
+		background: transparent;
+		color: #cccccc;
+		font: inherit;
+		font-size: 0.8125rem;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.tree-item:hover {
+		background: #2a2d2e;
+	}
+
+	.tree-item[aria-pressed='true'] {
+		background: #37373d;
+		color: #ffffff;
+	}
+
+	.chevron {
+		color: #858585;
+	}
+
+	.file-icon {
+		color: #519aba;
+	}
+
+	.editor-area {
+		display: flex;
+		min-width: 0;
+		flex: 1;
+		flex-direction: column;
+		overflow: hidden;
+		background: #1e1e1e;
+	}
+
+	.tabs {
+		display: flex;
+		background: #252526;
+	}
+
+	.tab {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.45rem 0.75rem;
+		border-right: 1px solid #1e1e1e;
+		color: #9d9d9d;
+		font-size: 0.8125rem;
+	}
+
+	.tab.active {
+		background: #1e1e1e;
+		color: #ffffff;
+		border-top: 1px solid #007acc;
+	}
+
+	.tab-close {
+		color: #9d9d9d;
+	}
+
+	.breadcrumbs {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		padding: 0.3rem 0.9rem;
+		color: #9d9d9d;
+		font-size: 0.75rem;
+	}
+
+	.workbench {
+		display: grid;
+		grid-template-rows: minmax(0, 1fr) 12rem;
+		min-width: 0;
+		min-height: 0;
+		flex: 1;
+		overflow: hidden;
+	}
+
+	.editor-pane {
+		display: flex;
+		min-height: 0;
+		flex-direction: column;
+	}
+
+	.editor-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 0.35rem 0.9rem;
+		border-bottom: 1px solid #252526;
+		font-size: 0.75rem;
+	}
+
+	.editor-toolbar label {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		color: #9d9d9d;
+	}
+
+	.editor-toolbar select {
+		border: 1px solid #454545;
+		border-radius: 3px;
+		background: #2a2a2b;
+		color: #cccccc;
+		font: inherit;
+		padding: 0.1rem 0.25rem;
+	}
+
+	#run {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		border: 1px solid #454545;
+		border-radius: 3px;
+		background: #2a2a2b;
+		color: #cccccc;
+		font: inherit;
+		padding: 0.15rem 0.5rem;
+		cursor: pointer;
+	}
+
+	#run:hover:not(:disabled) {
+		background: #37373d;
+	}
+
+	#run:disabled {
+		color: #6b6b6b;
+		cursor: default;
+	}
+
+	#run-status {
+		color: #9d9d9d;
+	}
+
+	.editor-shell {
+		position: relative;
+		min-height: 0;
+		flex: 1;
+	}
+
+	.editor-host {
+		position: absolute;
+		inset: 0;
+	}
+
+	.editor-fallback {
+		position: absolute;
+		inset: 0;
+		margin: 0;
+		overflow: auto;
+		padding: 0.75rem 1rem;
+		color: #d4d4d4;
+		font-size: 13px;
+		line-height: 1.6;
+		white-space: pre;
+	}
+
+	.editor-shell.is-ready .editor-fallback {
+		display: none;
+	}
+
+	.panel {
+		display: flex;
+		min-height: 0;
+		flex-direction: column;
+		border-top: 1px solid #252526;
+	}
+
+	.panel-tabs {
+		display: flex;
+		gap: 1rem;
+		padding: 0.4rem 0.9rem;
+		font-size: 0.6875rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.panel-tab {
+		color: #9d9d9d;
+	}
+
+	.panel-tab.active {
+		color: #ffffff;
+		border-bottom: 1px solid #007acc;
+	}
+
+	.panel-body {
+		min-height: 0;
+		flex: 1;
+		overflow: auto;
+		padding: 0.5rem 0.9rem;
+		font-size: 12.5px;
+		line-height: 1.6;
+	}
+
+	.panel-body .idle {
+		margin: 0;
+		color: #9d9d9d;
+	}
+
+	.project-detail {
+		padding: 2rem;
+		max-width: 60ch;
+	}
+
+	.project-detail h2 {
+		margin: 0 0 0.5rem;
+		color: #ffffff;
+		font-size: 1.1rem;
+		font-weight: 400;
+	}
+
+	.project-detail p {
+		margin: 0;
+		color: #9d9d9d;
+		line-height: 1.75;
+	}
+
+	.statusbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		height: 1.5rem;
+		padding: 0 0.75rem;
+		background: #007acc;
+		color: #ffffff;
+		font-size: 0.6875rem;
+	}
+
+	.status-left,
+	.status-right {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	@media (max-width: 639px) {
+		.vscode {
+			inset: 0 0 4.5rem 0;
+		}
+
+		.sidebar,
+		.activitybar {
+			display: none;
+		}
+
+		.titlebar {
+			grid-template-columns: auto minmax(0, 1fr) auto;
+		}
+
+		.command-text {
+			min-width: 0;
+			width: 100%;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.editor-toolbar {
+			flex-wrap: wrap;
+			gap: 0.5rem;
+		}
+
+		.workbench {
+			grid-template-rows: minmax(0, 1fr) 10rem;
+		}
+	}
+</style>
+
+<script>
+	import { SNIPPETS, type Algorithm, type Language } from '../data/snippets';
+
+	const API_URL = 'https://codeapi.anga.codes/v2/execute';
+	const TIMEOUT_NS = 10_000_000_000;
+	const MAX_MEMORY_KB = 65_536;
+	const CLIENT_TIMEOUT_MS = 20_000;
+
+	const MONACO_LANGUAGE: Record<Language, string> = {
+		python: 'python',
+		cpp: 'cpp',
+		c: 'c',
+		java: 'java',
+	};
+
+	const SENTINELS: Record<string, string> = {
+		'Execution Timed Out': 'it ran past the 10s limit and got killed.',
+		'Memory limit exceeded': 'it asked for more than 64mb and got killed.',
+	};
+
+	function byId<T extends HTMLElement>(id: string): T {
+		const el = document.getElementById(id);
+		if (!el) throw new Error(`Projects: missing #${id}`);
+		return el as T;
+	}
+
+	const section = byId('demo');
+	const editorHost = byId('editor');
+	const editorShell = byId('editor-shell');
+	const algorithmSelect = byId<HTMLSelectElement>('algorithm');
+	const languageSelect = byId<HTMLSelectElement>('language');
+	const runBtn = byId<HTMLButtonElement>('run');
+	const runStatus = byId('run-status');
+	const output = byId('output');
+	const workbench = byId('workbench');
+	const detail = byId('project-detail');
+	const detailTitle = byId('detail-title');
+	const detailSummary = byId('detail-summary');
+	const activeTab = byId('active-tab');
+	const activeCrumb = byId('active-crumb');
+	const activeFile = byId('active-file');
+
+	type Monaco = typeof import('monaco-editor/editor/editor.api');
+
+	let monaco: Monaco | null = null;
+	let editor: import('monaco-editor/editor/editor.api').editor.IStandaloneCodeEditor | null = null;
+	let running = false;
+
+	const currentAlgorithm = () => algorithmSelect.value as Algorithm;
+	const currentLanguage = () => languageSelect.value as Language;
+	const snippet = () => SNIPPETS[currentAlgorithm()][currentLanguage()];
+
+	async function initEditor() {
+		if (editor) return;
+
+		const workerMod = await import('monaco-editor/editor/editor.worker?worker');
+		(self as unknown as { MonacoEnvironment: unknown }).MonacoEnvironment = {
+			getWorker: () => new workerMod.default(),
+		};
+
+		monaco = await import('monaco-editor/editor/editor.api');
+		await Promise.all([
+			import('monaco-editor/languages/definitions/python/register'),
+			import('monaco-editor/languages/definitions/cpp/register'),
+			import('monaco-editor/languages/definitions/java/register'),
+		]);
+
+		editor = monaco.editor.create(editorHost, {
+			value: snippet(),
+			language: MONACO_LANGUAGE[currentLanguage()],
+			theme: 'vs-dark',
+			fontFamily: getComputedStyle(document.body).fontFamily,
+			fontSize: 13,
+			lineHeight: 21,
+			minimap: { enabled: false },
+			glyphMargin: false,
+			folding: false,
+			lineDecorationsWidth: 8,
+			lineNumbersMinChars: 3,
+			renderLineHighlight: 'none',
+			scrollBeyondLastLine: false,
+			automaticLayout: true,
+			wordWrap: 'on',
+			tabSize: 4,
+			padding: { top: 12, bottom: 12 },
+			scrollbar: {
+				verticalScrollbarSize: 8,
+				horizontalScrollbarSize: 8,
+				alwaysConsumeMouseWheel: false,
+			},
+		});
+
+		editorShell.classList.add('is-ready');
+		runBtn.disabled = false;
+		section.dataset.ready = 'true';
+
+		(window as unknown as { __demo: unknown }).__demo = {
+			getCode: () => editor?.getValue() ?? '',
+			setCode: (code: string) => editor?.setValue(code),
+		};
+	}
+
+	function syncEditor() {
+		if (!editor || !monaco) return;
+		const model = editor.getModel();
+		if (!model) return;
+		editor.setValue(snippet());
+		monaco.editor.setModelLanguage(model, MONACO_LANGUAGE[currentLanguage()]);
+	}
+
+	algorithmSelect.addEventListener('change', syncEditor);
+	languageSelect.addEventListener('change', syncEditor);
+
+	function el(tag: string, className: string, text?: string): HTMLElement {
+		const node = document.createElement(tag);
+		node.className = className;
+		if (text !== undefined) node.textContent = text;
+		return node;
+	}
+
+	function formatRuntime(ns: number): string {
+		if (!Number.isFinite(ns) || ns < 0) return 'unknown';
+		if (ns < 1_000_000) return `${Math.round(ns / 1000)}µs`;
+		if (ns < 1_000_000_000) return `${(ns / 1_000_000).toFixed(1)}ms`;
+		return `${(ns / 1_000_000_000).toFixed(2)}s`;
+	}
+
+	function formatMemory(kb: number): string {
+		if (!Number.isFinite(kb) || kb < 0) return 'unknown';
+		if (kb < 1024) return `${Math.round(kb)}kb`;
+		return `${(kb / 1024).toFixed(1)}mb`;
+	}
+
+	const CLS = {
+		idle: 'idle',
+		stdout: 'stdout',
+		stderr: 'stderr',
+		note: 'note',
+		meta: 'meta',
+		link: 'link',
+	};
+
+	function out(tag: string, kind: string, text?: string): HTMLElement {
+		const node = el(tag, CLS[kind as keyof typeof CLS], text);
+		node.dataset.output = kind;
+		return node;
+	}
+
+	function renderIdle(text: string) {
+		output.replaceChildren(out('p', 'idle', text));
+	}
+
+	function renderResult(data: {
+		output?: string;
+		error?: string;
+		cpu_time?: number;
+		memory_used?: number;
+	}) {
+		const stdout = (data.output ?? '').trimEnd();
+		const stderr = (data.error ?? '').trimEnd();
+		const sentinel = SENTINELS[stderr.split('\n')[0].trim()];
+
+		const nodes: HTMLElement[] = [];
+
+		if (sentinel) {
+			nodes.push(out('p', 'note', sentinel));
+		} else {
+			if (stdout) nodes.push(out('pre', 'stdout', stdout));
+			if (stderr) nodes.push(out('pre', 'stderr', stderr));
+			if (!stdout && !stderr) nodes.push(out('p', 'idle', 'no output'));
+		}
+
+		const meta = out('p', 'meta');
+		meta.textContent = `runtime ${formatRuntime(data.cpu_time ?? NaN)}   memory ${formatMemory(
+			data.memory_used ?? NaN,
+		)}`;
+		nodes.push(meta);
+
+		output.replaceChildren(...nodes);
+	}
+
+	function renderUnreachable() {
+		const note = out('p', 'note', 'the demo is unreachable right now.');
+		const line = out('p', 'idle');
+		const link = document.createElement('a');
+		link.href = 'https://github.com/Anga205/CodeExecutionAPI';
+		link.textContent = 'the repo still works';
+		link.className = CLS.link;
+		line.append(link);
+		output.replaceChildren(note, line);
+	}
+
+	async function run() {
+		if (running || !editor) return;
+
+		running = true;
+		runBtn.disabled = true;
+		runStatus.textContent = 'running';
+		renderIdle('running...');
+
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+
+		try {
+			const res = await fetch(API_URL, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					language: currentLanguage(),
+					code: editor.getValue(),
+					timeout: TIMEOUT_NS,
+					max_memory: MAX_MEMORY_KB,
+				}),
+				signal: controller.signal,
+			});
+
+			if (!res.ok) throw new Error(`http ${res.status}`);
+
+			renderResult(await res.json());
+			runStatus.textContent = '';
+		} catch {
+			renderUnreachable();
+			runStatus.textContent = '';
+		} finally {
+			clearTimeout(timer);
+			running = false;
+			runBtn.disabled = false;
+		}
+	}
+
+	runBtn.addEventListener('click', run);
+
+	const PROJECT_META: Record<string, { file: string; summary: string }> = {
+		'code-execution-api': {
+			file: 'sandbox.py',
+			summary: 'a hand-built sandbox for running untrusted code.',
+		},
+		compiler: {
+			file: 'lexer.c',
+			summary: 'a small compiler front end, written to learn the boring parts.',
+		},
+		portfolio: {
+			file: 'index.astro',
+			summary: 'this site. terminal first, no framework runtime.',
+		},
+	};
+
+	document.querySelectorAll<HTMLButtonElement>('[data-project]').forEach((button) => {
+		button.addEventListener('click', () => {
+			const id = button.dataset.project ?? '';
+			const meta = PROJECT_META[id];
+			if (!meta) return;
+
+			document.querySelectorAll<HTMLButtonElement>('[data-project]').forEach((item) => {
+				item.setAttribute('aria-pressed', item === button ? 'true' : 'false');
+			});
+
+			activeTab.textContent = meta.file;
+			activeCrumb.textContent = id;
+			activeFile.textContent = meta.file;
+
+			const isDemo = id === 'code-execution-api';
+			workbench.hidden = !isDemo;
+			detail.hidden = isDemo;
+
+			if (!isDemo) {
+				detailTitle.textContent = id;
+				detailSummary.textContent = meta.summary;
+			}
+		});
+	});
+
+	const observer = new IntersectionObserver(
+		(entries) => {
+			if (!entries.some((entry) => entry.isIntersecting)) return;
+			observer.disconnect();
+			initEditor().catch(() => {
+				runStatus.textContent = 'editor failed to load';
+			});
+		},
+		{ rootMargin: '200px' },
+	);
+
+	observer.observe(section);
+</script>

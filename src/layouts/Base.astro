@@ -1,0 +1,32 @@
+---
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const {
+	title = 'anga',
+	description = 'Angad Bhalla. Computer science student in Bengaluru. Systems software, small binaries, boring infrastructure.',
+} = Astro.props;
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#000000" />
+		<meta name="description" content={description} />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<title>{title}</title>
+		<Font cssVariable="--font-mono" preload />
+	</head>
+	<body class="bg-neutral-900 font-mono text-neutral-200 antialiased">
+		<slot />
+	</body>
+</html>

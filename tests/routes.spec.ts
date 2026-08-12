@@ -32,27 +32,27 @@ test('selector uses the Adwaita dark palette', async ({ page }) => {
 	await expect(page.locator('.headerbar')).toHaveCSS('background-color', 'rgb(48, 48, 48)');
 	await expect(page.locator('.terminal')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
 	await expect(
-		page.locator('.waypoint-button[aria-current="true"] .waypoint-marker'),
+		page.locator('.waypoint-link[aria-current="page"] .waypoint-icon'),
 	).toHaveCSS('color', 'rgb(38, 162, 105)');
 });
 
 test('timeline columns align across every destination', async ({ page }) => {
 	await page.goto('/selector');
 
-	const buttons = page.locator('.waypoint-button');
-	await expect(buttons).toHaveCount(4);
+	const links = page.locator('.waypoint-link');
+	await expect(links).toHaveCount(4);
 
-	const columns = await buttons.first().evaluate((el) => getComputedStyle(el).gridTemplateColumns);
-	expect(columns.split(' ')).toHaveLength(4);
+	const columns = await links.first().evaluate((el) => getComputedStyle(el).gridTemplateColumns);
+	expect(columns.split(' ')).toHaveLength(3);
 
-	const markers = await page.locator('.waypoint-marker').evaluateAll((els) =>
+	const icons = await page.locator('.waypoint-icon').evaluateAll((els) =>
 		els.map((el) => Math.round(el.getBoundingClientRect().x)),
 	);
 	const labels = await page.locator('.waypoint-label').evaluateAll((els) =>
 		els.map((el) => Math.round(el.getBoundingClientRect().x)),
 	);
 
-	expect(new Set(markers).size).toBe(1);
+	expect(new Set(icons).size).toBe(1);
 	expect(new Set(labels).size).toBe(1);
 });
 
@@ -65,26 +65,33 @@ test('selector does not overflow horizontally', async ({ page }) => {
 	expect(overflow).toBeLessThanOrEqual(1);
 });
 
-test('every destination opens and keeps the navigation available', async ({ page }) => {
-	await page.goto('/selector');
+test('every destination has its own route and keeps the navigation available', async ({ page }) => {
+	const routes = [
+		['Projects', '/projects'],
+		['About me', '/about'],
+		['Achievements', '/achievements'],
+		['Find me', '/find-me'],
+	] as const;
 
-	for (const name of ['Projects', 'About me', 'Achievements', 'Find me']) {
-		await page.getByRole('button', { name: new RegExp(`${name}:`) }).click();
+	for (const [name, route] of routes) {
+		await page.goto('/selector');
+		await page.getByRole('link', { name: new RegExp(`${name}:`) }).click();
+		await expect(page).toHaveURL(new RegExp(`${route}$`));
 		await expect(page.locator('#wayfinder')).toHaveClass(/is-minimized/);
 		await expect(page.locator('#wayfinder')).toBeVisible();
 	}
-
-	await expect(page.locator('#demo')).toBeHidden();
 });
 
-test('Projects reveals the demo and other destinations hide it', async ({ page }) => {
-	await page.goto('/selector');
+test('projects route renders the VS Code window', async ({ page }, testInfo) => {
+	await page.goto('/projects');
 
-	await page.getByRole('button', { name: /Projects:/ }).click();
 	await expect(page.locator('#demo')).toBeVisible();
+	await expect(page.locator('.statusbar')).toBeVisible();
 
-	await page.getByRole('button', { name: /About me:/ }).click();
-	await expect(page.locator('#demo')).toBeHidden();
+	if (testInfo.project.name !== 'mobile') {
+		await expect(page.locator('.sidebar')).toBeVisible();
+		await expect(page.locator('.activitybar')).toBeVisible();
+	}
 });
 
 test('mobile selector has no overflow and keeps the bottom rail usable', async ({ page }) => {
@@ -96,7 +103,7 @@ test('mobile selector has no overflow and keeps the bottom rail usable', async (
 	);
 	expect(overflow).toBeLessThanOrEqual(1);
 
-	await page.getByRole('button', { name: /Find me:/ }).click();
+	await page.getByRole('link', { name: /Find me:/ }).click();
 	await expect(page.locator('#wayfinder')).toHaveCSS('bottom', '0px');
 	await expect(page.locator('#wayfinder')).toHaveCSS('width', '375px');
 });

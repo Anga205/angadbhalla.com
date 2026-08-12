@@ -45,7 +45,7 @@ test('types the greeting, backspaces it, and reveals the advance affordance', as
 
 	await expect(page).toHaveURL(/\/selector$/);
 	await expect(page.locator('#wayfinder')).toBeVisible();
-	await expect(page.getByRole('button', { name: /Projects:/ })).toBeFocused();
+	await expect(page.getByRole('link', { name: /Projects:/ })).toBeFocused();
 	await expect(page.locator('#opening')).toHaveCount(0);
 });
 

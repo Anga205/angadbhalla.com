@@ -1,56 +1,28 @@
 ---
+import { FolderGit2, User, Trophy, Link2 } from 'lucide-astro';
+import { DESTINATIONS } from '../data/destinations';
+
 interface Props {
 	initiallyVisible?: boolean;
+	minimized?: boolean;
 }
 
-const { initiallyVisible = false } = Astro.props;
+const { initiallyVisible = false, minimized = false } = Astro.props;
 
-const destinations = [
-	{
-		id: 'projects',
-		label: 'Projects',
-		shortLabel: 'work',
-		mark: '01',
-		icon: 'terminal',
-		description: 'things I have built, with the useful parts left in.',
-	},
-	{
-		id: 'about',
-		label: 'About me',
-		shortLabel: 'about',
-		mark: '02',
-		icon: 'person',
-		description: 'background, engineering philosophy, and the work between projects.',
-	},
-	{
-		id: 'achievements',
-		label: 'Achievements',
-		shortLabel: 'proof',
-		mark: '03',
-		icon: 'medal',
-		description: 'certificates, hackathons, and contributions worth keeping track of.',
-	},
-	{
-		id: 'find-me',
-		label: 'Find me',
-		shortLabel: 'links',
-		mark: '04',
-		icon: 'link',
-		description: 'GitHub, LinkedIn, email, and the other places I turn up.',
-	},
-] as const;
-
-const icons: Record<string, string> = {
-	terminal: '<path d="M2.5 4.5 6 8l-3.5 3.5"/><path d="M8.5 11.5h5"/>',
-	person:
-		'<circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c0-2.2 2.2-3.5 5-3.5s5 1.3 5 3.5"/>',
-	medal: '<circle cx="8" cy="9.5" r="3.5"/><path d="M5.5 6.5 4 2.5h8l-1.5 4"/>',
-	link: '<path d="M6.5 9.5 9.5 6.5"/><path d="M7 4.5 8.5 3a2.5 2.5 0 0 1 3.5 3.5L10.5 8"/><path d="M9 11.5 7.5 13A2.5 2.5 0 0 1 4 9.5L5.5 8"/>',
-};
+const ICONS = {
+	projects: FolderGit2,
+	about: User,
+	achievements: Trophy,
+	'find-me': Link2,
+} as const;
 ---
 
 <section
-	class:list={['wayfinder', !initiallyVisible && 'wayfinder--hidden']}
+	class:list={[
+		'wayfinder',
+		!initiallyVisible && 'wayfinder--hidden',
+		minimized && 'is-minimized',
+	]}
 	id="wayfinder"
 	tabindex="-1"
 	data-initial-visible={initiallyVisible ? 'true' : undefined}
@@ -73,31 +45,30 @@ const icons: Record<string, string> = {
 
 			<nav aria-label="Portfolio sections" id="portfolio-nav">
 				<ol class="listing">
-					{destinations.map((destination, index) => (
-						<li class="waypoint" data-index={index} data-destination={destination.id}>
-							<button
-								class="waypoint-button"
-								type="button"
-								aria-current={index === 0 ? 'true' : undefined}
-								aria-label={`${destination.label}: ${destination.description}`}
-								data-destination={destination.id}
-								data-destination-button={destination.id}
-							>
-								<span class="waypoint-marker" aria-hidden="true">{destination.mark}</span>
-								<span
-									class="waypoint-icon"
-									data-icon={destination.icon}
-									aria-hidden="true"
-									set:html={icons[destination.icon]}
-								></span>
-								<span class="waypoint-text">
-									<span class="waypoint-label">{destination.label.toLowerCase()}/</span>
-									<span class="waypoint-description">{destination.description}</span>
-								</span>
-								<span class="waypoint-caret" aria-hidden="true">›</span>
-							</button>
-						</li>
-					))}
+					{DESTINATIONS.map((destination, index) => {
+						const Icon = ICONS[destination.icon];
+						return (
+							<li class="waypoint" data-index={index} data-destination={destination.id}>
+								<a
+									class="waypoint-link"
+									href={destination.href}
+									aria-current={index === 0 ? 'page' : undefined}
+									aria-label={`${destination.label}: ${destination.description}`}
+									data-destination={destination.id}
+									data-destination-link={destination.id}
+								>
+									<span class="waypoint-icon" aria-hidden="true">
+										<Icon size={16} strokeWidth={1.5} />
+									</span>
+									<span class="waypoint-text">
+										<span class="waypoint-label">{destination.label.toLowerCase()}/</span>
+										<span class="waypoint-description">{destination.description}</span>
+									</span>
+									<span class="waypoint-caret" aria-hidden="true">›</span>
+								</a>
+							</li>
+						);
+					})}
 				</ol>
 			</nav>
 
@@ -217,37 +188,26 @@ const icons: Record<string, string> = {
 		list-style: none;
 	}
 
-	.waypoint-button {
+	.waypoint-link {
 		display: grid;
-		grid-template-columns: 2.25rem 1.5rem minmax(0, 1fr) 1rem;
+		grid-template-columns: 1.5rem minmax(0, 1fr) 1rem;
 		column-gap: 0.75rem;
 		align-items: start;
 		width: 100%;
 		margin-left: -0.5rem;
 		padding: 0.35rem 0.5rem;
-		border: 0;
 		border-radius: 3px;
-		background: transparent;
 		color: inherit;
-		font: inherit;
-		text-align: left;
-		cursor: pointer;
+		text-decoration: none;
 	}
 
-	.waypoint-button:hover {
+	.waypoint-link:hover {
 		background: #1c1c1c;
 	}
 
-	.waypoint-button:focus-visible {
+	.waypoint-link:focus-visible {
 		outline: 1px solid #26a269;
 		outline-offset: 2px;
-	}
-
-	.waypoint-marker {
-		color: #737373;
-		font-size: 0.75rem;
-		line-height: 1.75;
-		text-align: right;
 	}
 
 	.waypoint-icon {
@@ -258,9 +218,10 @@ const icons: Record<string, string> = {
 		color: #737373;
 	}
 
-	.waypoint-icon svg {
-		width: 1rem;
-		height: 1rem;
+	.waypoint-link:hover .waypoint-icon,
+	.waypoint-link:focus-visible .waypoint-icon,
+	.waypoint-link[aria-current='page'] .waypoint-icon {
+		color: #26a269;
 	}
 
 	.waypoint-text {
@@ -288,14 +249,9 @@ const icons: Record<string, string> = {
 		line-height: 1.75;
 	}
 
-	.waypoint-button:hover .waypoint-caret,
-	.waypoint-button:focus-visible .waypoint-caret,
-	.waypoint-button[aria-current='true'] .waypoint-caret {
-		color: #26a269;
-	}
-
-	.waypoint-button[aria-current='true'] .waypoint-marker,
-	.waypoint-button[aria-current='true'] .waypoint-icon {
+	.waypoint-link:hover .waypoint-caret,
+	.waypoint-link:focus-visible .waypoint-caret,
+	.waypoint-link[aria-current='page'] .waypoint-caret {
 		color: #26a269;
 	}
 
@@ -348,14 +304,13 @@ const icons: Record<string, string> = {
 		font-size: 0.75rem;
 	}
 
-	.wayfinder.is-minimized .waypoint-button {
-		grid-template-columns: 1.75rem minmax(0, 1fr);
+	.wayfinder.is-minimized .waypoint-link {
+		grid-template-columns: 1.25rem minmax(0, 1fr);
 		column-gap: 0.5rem;
 		margin-left: -0.4rem;
 		padding: 0.3rem 0.4rem;
 	}
 
-	.wayfinder.is-minimized .waypoint-icon,
 	.wayfinder.is-minimized .waypoint-description,
 	.wayfinder.is-minimized .waypoint-caret,
 	.wayfinder.is-minimized .wayfinder-detail {
@@ -391,7 +346,7 @@ const icons: Record<string, string> = {
 			gap: 0.25rem;
 		}
 
-		.wayfinder.is-minimized .waypoint-button {
+		.wayfinder.is-minimized .waypoint-link {
 			display: flex;
 			flex-direction: column;
 			align-items: center;
@@ -401,12 +356,7 @@ const icons: Record<string, string> = {
 			text-align: center;
 		}
 
-		.wayfinder.is-minimized .waypoint-marker {
-			display: none;
-		}
-
 		.wayfinder.is-minimized .waypoint-icon {
-			display: flex;
 			height: auto;
 		}
 
@@ -431,14 +381,12 @@ const icons: Record<string, string> = {
 </style>
 
 <script>
-	type Destination = 'projects' | 'about' | 'achievements' | 'find-me';
-
 	const menu = document.getElementById('wayfinder');
-	const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-destination-button]')];
+	const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-destination-link]')];
 	const status = document.getElementById('wayfinder-status');
 	const detail = document.getElementById('wayfinder-detail-text');
 
-	if (!menu || !status || !detail || buttons.length === 0) {
+	if (!menu || !status || !detail || links.length === 0) {
 		throw new Error('PortfolioMenu: missing menu elements');
 	}
 
@@ -447,23 +395,13 @@ const icons: Record<string, string> = {
 	const detailElement = detail;
 
 	let activeIndex = 0;
-	let selected = false;
 
 	function selectIndex(index: number) {
-		activeIndex = (index + buttons.length) % buttons.length;
-		buttons.forEach((button, buttonIndex) => {
-			button.setAttribute('aria-current', buttonIndex === activeIndex ? 'true' : 'false');
+		activeIndex = (index + links.length) % links.length;
+		links.forEach((link, linkIndex) => {
+			link.setAttribute('aria-current', linkIndex === activeIndex ? 'page' : 'false');
 		});
-		buttons[activeIndex].focus();
-	}
-
-	function openDestination(destination: Destination) {
-		selected = true;
-		menuElement.classList.add('is-minimized');
-		menuElement.dataset.selected = destination;
-		statusElement.textContent = destination === 'find-me' ? 'find me' : destination;
-		detailElement.textContent = 'The menu stays here so you can move around without starting over.';
-		window.dispatchEvent(new CustomEvent('portfolio:navigate', { detail: { destination } }));
+		links[activeIndex].focus();
 	}
 
 	function showMenu() {
@@ -474,13 +412,14 @@ const icons: Record<string, string> = {
 		});
 	}
 
-	buttons.forEach((button, index) => {
-		button.addEventListener('focus', () => {
-			if (!selected) selectIndex(index);
-		});
-		button.addEventListener('click', () => {
-			selectIndex(index);
-			openDestination(button.dataset.destination as Destination);
+	links.forEach((link, index) => {
+		link.addEventListener('focus', () => {
+			activeIndex = index;
+			links.forEach((item, itemIndex) => {
+				item.setAttribute('aria-current', itemIndex === index ? 'page' : 'false');
+			});
+			statusElement.textContent = link.dataset.destination ?? '';
+			detailElement.textContent = 'enter to open · or click a line';
 		});
 	});
 
@@ -499,11 +438,11 @@ const icons: Record<string, string> = {
 		}
 		if (event.key === 'End') {
 			event.preventDefault();
-			selectIndex(buttons.length - 1);
+			selectIndex(links.length - 1);
 		}
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
-			openDestination(buttons[activeIndex].dataset.destination as Destination);
+			links[activeIndex].click();
 		}
 	});
 
