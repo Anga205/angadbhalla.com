@@ -1,22 +1,221 @@
 ---
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
+import {
+	Mail,
+	Github,
+	Linkedin,
+	Instagram,
+	MessageCircle,
+	Send,
+	Copy,
+	Check,
+	ArrowUpRight,
+} from 'lucide-astro';
+
+const contacts = [
+	{
+		id: 'email',
+		label: 'email',
+		value: 'angadbhalla2005@gmail.com',
+		href: 'mailto:angadbhalla2005@gmail.com',
+		icon: Mail,
+		copy: 'angadbhalla2005@gmail.com',
+	},
+	{
+		id: 'github',
+		label: 'github',
+		value: 'github.com/Anga205',
+		href: 'https://github.com/Anga205/',
+		icon: Github,
+	},
+	{
+		id: 'linkedin',
+		label: 'linkedin',
+		value: 'linkedin.com/in/anga',
+		href: 'https://www.linkedin.com/in/anga',
+		icon: Linkedin,
+	},
+	{
+		id: 'discord',
+		label: 'discord',
+		value: '@anga205',
+		href: 'https://discord.com/users/477680545271250944',
+		icon: MessageCircle,
+		copy: 'anga205',
+	},
+	{
+		id: 'instagram',
+		label: 'instagram',
+		value: '@_anga205',
+		href: 'https://www.instagram.com/_anga205/',
+		icon: Instagram,
+	},
+] as const;
 ---
 
 <Base title="anga / find me" description="GitHub, LinkedIn, email, and other places to find Angad Bhalla.">
 	<PortfolioMenu initiallyVisible minimized />
+
 	<main class="page">
-		<p class="prompt">$ cat find-me.txt</p>
-		<h1>find me</h1>
-		<p>This section is being written.</p>
+		<div class="window">
+			<div class="headerbar">
+				<span class="dots" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</span>
+				<span class="title">anga@portfolio — find me</span>
+				<span aria-hidden="true"></span>
+			</div>
+
+			<div class="body">
+				<p class="prompt">$ cat find-me.txt</p>
+				<h1>find me</h1>
+				<p class="lede">The fastest way to reach me is email. Everything else is here too.</p>
+
+				<ul class="contacts">
+					{contacts.map((contact) => {
+						const Icon = contact.icon;
+						const external = contact.href.startsWith('http');
+						return (
+							<li class="contact">
+								<a
+									class="contact-link"
+									href={contact.href}
+									target={external ? '_blank' : undefined}
+									rel={external ? 'noreferrer' : undefined}
+								>
+									<span class="contact-icon" aria-hidden="true">
+										<Icon size={16} strokeWidth={1.5} />
+									</span>
+									<span class="contact-text">
+										<span class="contact-label">{contact.label}</span>
+										<span class="contact-value">{contact.value}</span>
+									</span>
+									<ArrowUpRight size={14} strokeWidth={1.5} class="contact-arrow" aria-hidden="true" />
+								</a>
+								{'copy' in contact && contact.copy ? (
+									<button
+										class="copy"
+										type="button"
+										data-copy={contact.copy}
+										aria-label={`copy ${contact.label}`}
+									>
+										<Copy size={13} strokeWidth={1.5} class="copy-icon" aria-hidden="true" />
+										<Check size={13} strokeWidth={1.5} class="check-icon" aria-hidden="true" />
+									</button>
+								) : null}
+							</li>
+						);
+					})}
+				</ul>
+
+				<section class="form-section" aria-labelledby="form-heading">
+					<h2 id="form-heading">send a message</h2>
+					<p class="form-note">Or use this form. It goes straight to my inbox.</p>
+
+					<form id="contact-form" novalidate>
+						<label class="field">
+							<span>your email</span>
+							<input
+								type="email"
+								name="email"
+								id="email"
+								autocomplete="email"
+								required
+								placeholder="you@example.com"
+							/>
+						</label>
+
+						<label class="field">
+							<span>message</span>
+							<textarea
+								name="message"
+								id="message"
+								rows="5"
+								required
+								placeholder="what's on your mind?"></textarea>
+						</label>
+
+						<div class="form-actions">
+							<button type="submit" id="send">
+								<Send size={13} strokeWidth={1.5} aria-hidden="true" />
+								send
+							</button>
+							<span id="form-status" role="status"></span>
+						</div>
+					</form>
+				</section>
+			</div>
+		</div>
 	</main>
 </Base>
 
 <style>
 	.page {
 		margin-left: 18rem;
-		padding: 3rem 2rem;
-		max-width: 60ch;
+		height: 100vh;
+		overflow-y: auto;
+		padding: 2rem;
+		background: #171717;
+	}
+
+	.window {
+		max-width: 46rem;
+		margin: 0 auto;
+		overflow: hidden;
+		border: 1px solid #3d3846;
+		border-radius: 6px;
+		background: #000000;
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+	}
+
+	.headerbar {
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		border-bottom: 1px solid #3d3846;
+		background: #303030;
+		color: #deddda;
+		font-size: 0.75rem;
+		letter-spacing: 0.02em;
+		user-select: none;
+	}
+
+	.dots {
+		display: flex;
+		gap: 0.375rem;
+	}
+
+	.dots span {
+		width: 0.625rem;
+		height: 0.625rem;
+		border-radius: 999px;
+	}
+
+	.dots span:nth-child(1) {
+		background: #e01b24;
+	}
+
+	.dots span:nth-child(2) {
+		background: #e5a50a;
+	}
+
+	.dots span:nth-child(3) {
+		background: #33d17a;
+	}
+
+	.title {
+		text-align: center;
+		white-space: nowrap;
+	}
+
+	.body {
+		padding: 1.75rem;
+		color: #ffffff;
+		font-size: 0.875rem;
+		line-height: 1.75;
 	}
 
 	.prompt {
@@ -25,23 +224,316 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 		font-size: 0.75rem;
 	}
 
-	.page h1 {
-		margin: 0 0 0.75rem;
-		color: #ffffff;
-		font-size: 1.25rem;
+	h1 {
+		margin: 0 0 0.5rem;
+		font-size: 1.35rem;
 		font-weight: 400;
 	}
 
-	.page p {
-		margin: 0;
+	.lede {
+		margin: 0 0 1.5rem;
+		max-width: 52ch;
 		color: #a5a3a9;
-		line-height: 1.75;
+	}
+
+	.contacts {
+		margin: 0 0 2rem;
+		padding: 0;
+		list-style: none;
+		border-top: 1px solid #262626;
+	}
+
+	.contact {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		border-bottom: 1px solid #262626;
+	}
+
+	.contact-link {
+		display: grid;
+		grid-template-columns: 1.5rem minmax(0, 1fr) 1rem;
+		column-gap: 0.75rem;
+		align-items: center;
+		flex: 1;
+		min-width: 0;
+		margin-left: -0.5rem;
+		padding: 0.6rem 0.5rem;
+		border-radius: 3px;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.contact-link:hover {
+		background: #1c1c1c;
+	}
+
+	.contact-link:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	.contact-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #737373;
+	}
+
+	.contact-link:hover .contact-icon {
+		color: #26a269;
+	}
+
+	.contact-text {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0.75rem;
+		min-width: 0;
+	}
+
+	.contact-label {
+		min-width: 5.5rem;
+		color: #ffffff;
+	}
+
+	.contact-value {
+		color: #a5a3a9;
+		overflow-wrap: anywhere;
+	}
+
+	.contact-arrow {
+		color: transparent;
+	}
+
+	.contact-link:hover .contact-arrow {
+		color: #26a269;
+	}
+
+	.copy {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		border: 1px solid #3d3846;
+		border-radius: 3px;
+		background: transparent;
+		color: #a5a3a9;
+		cursor: pointer;
+	}
+
+	.copy:hover {
+		color: #ffffff;
+		border-color: #5a5560;
+	}
+
+	.copy:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	.copy .check-icon {
+		display: none;
+	}
+
+	.copy.is-copied {
+		color: #26a269;
+		border-color: #26a269;
+	}
+
+	.copy.is-copied .copy-icon {
+		display: none;
+	}
+
+	.copy.is-copied .check-icon {
+		display: block;
+	}
+
+	.form-section {
+		padding-top: 1.5rem;
+		border-top: 1px solid #262626;
+	}
+
+	.form-section h2 {
+		margin: 0 0 0.25rem;
+		font-size: 0.9375rem;
+		font-weight: 400;
+	}
+
+	.form-note {
+		margin: 0 0 1.25rem;
+		color: #a5a3a9;
+		font-size: 0.8125rem;
+	}
+
+	.field {
+		display: block;
+		margin-bottom: 1rem;
+	}
+
+	.field > span {
+		display: block;
+		margin-bottom: 0.35rem;
+		color: #a5a3a9;
+		font-size: 0.75rem;
+	}
+
+	.field input,
+	.field textarea {
+		display: block;
+		width: 100%;
+		padding: 0.5rem 0.6rem;
+		border: 1px solid #3d3846;
+		border-radius: 3px;
+		background: #1c1c1c;
+		color: #ffffff;
+		font: inherit;
+		font-size: 0.8125rem;
+		resize: vertical;
+	}
+
+	.field input::placeholder,
+	.field textarea::placeholder {
+		color: #6b6b6b;
+	}
+
+	.field input:focus,
+	.field textarea:focus {
+		outline: 1px solid #26a269;
+		outline-offset: 1px;
+		border-color: #26a269;
+	}
+
+	.form-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	#send {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.35rem 0.75rem;
+		border: 1px solid #3d3846;
+		border-radius: 3px;
+		background: #303030;
+		color: #deddda;
+		font: inherit;
+		font-size: 0.8125rem;
+		cursor: pointer;
+	}
+
+	#send:hover:not(:disabled) {
+		background: #3d3846;
+		color: #ffffff;
+	}
+
+	#send:disabled {
+		color: #6b6b6b;
+		cursor: default;
+	}
+
+	#send:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	#form-status {
+		color: #a5a3a9;
+		font-size: 0.75rem;
+	}
+
+	#form-status.is-error {
+		color: #ff7b72;
+	}
+
+	#form-status.is-ok {
+		color: #26a269;
 	}
 
 	@media (max-width: 639px) {
 		.page {
 			margin-left: 0;
-			padding-bottom: 6rem;
+			padding: 1rem 1rem 6rem;
+		}
+
+		.body {
+			padding: 1.25rem;
+		}
+
+		.contact-text {
+			flex-direction: column;
+			gap: 0.1rem;
+		}
+
+		.contact-label {
+			min-width: 0;
 		}
 	}
 </style>
+
+<script>
+	import emailjs from '@emailjs/browser';
+
+	// Placeholder values. Replace these with the real EmailJS ids before
+	// enabling the form in production.
+	const SERVICE_ID = 'YOUR_SERVICE_ID';
+	const TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
+	const PUBLIC_KEY = 'YOUR_PUBLIC_KEY';
+
+	const form = document.getElementById('contact-form') as HTMLFormElement | null;
+	const send = document.getElementById('send') as HTMLButtonElement | null;
+	const status = document.getElementById('form-status');
+
+	if (form && send && status) {
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+
+			const data = new FormData(form);
+			const email = String(data.get('email') ?? '').trim();
+			const message = String(data.get('message') ?? '').trim();
+
+			if (!email || !message) {
+				status.textContent = 'email and message are required.';
+				status.className = 'is-error';
+				return;
+			}
+
+			send.disabled = true;
+			status.textContent = 'sending...';
+			status.className = '';
+
+			try {
+				await emailjs.send(
+					SERVICE_ID,
+					TEMPLATE_ID,
+					{ from_email: email, message },
+					{ publicKey: PUBLIC_KEY },
+				);
+				form.reset();
+				status.textContent = 'sent. thanks.';
+				status.className = 'is-ok';
+			} catch {
+				status.textContent = 'could not send. email me directly instead.';
+				status.className = 'is-error';
+			} finally {
+				send.disabled = false;
+			}
+		});
+	}
+
+	document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((button) => {
+		button.addEventListener('click', async () => {
+			const value = button.dataset.copy ?? '';
+			try {
+				await navigator.clipboard.writeText(value);
+				button.classList.add('is-copied');
+				setTimeout(() => button.classList.remove('is-copied'), 1500);
+			} catch {
+				// Clipboard access can be denied; the value is still visible.
+			}
+		});
+	});
+</script>
