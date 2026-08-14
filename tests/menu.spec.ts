@@ -60,7 +60,7 @@ test('opens Projects and keeps the menu as a desktop rail', async ({ page }, tes
 	await page.getByRole('link', { name: /Projects:/ }).click();
 
 	await expect(page).toHaveURL(/\/projects$/);
-	await expect(page.locator('#demo')).toBeVisible();
+	await expect(page.locator('.card').first()).toBeVisible();
 	await expect(page.locator('#wayfinder')).toHaveClass(/is-minimized/);
 });
 

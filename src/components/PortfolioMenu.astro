@@ -1,6 +1,7 @@
 ---
-import { FolderGit2, User, Trophy, Link2 } from 'lucide-astro';
+import { FolderGit2, User, Trophy, Link2, ChevronDown } from 'lucide-astro';
 import { DESTINATIONS } from '../data/destinations';
+import { PROJECTS } from '../data/projects';
 
 interface Props {
 	initiallyVisible?: boolean;
@@ -15,6 +16,17 @@ const ICONS = {
 	achievements: Trophy,
 	'find-me': Link2,
 } as const;
+
+// The active destination comes from the URL, not from list position. On
+// /selector no destination matches, so the first one is the default highlight.
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const activeId =
+	DESTINATIONS.find((d) => path === d.href || path.startsWith(`${d.href}/`))?.id ??
+	DESTINATIONS[0].id;
+
+// The accordion only opens on the projects routes, not merely because projects
+// is the default highlight on /selector.
+const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 ---
 
 <section
@@ -47,12 +59,18 @@ const ICONS = {
 				<ol class="listing">
 					{DESTINATIONS.map((destination, index) => {
 						const Icon = ICONS[destination.icon];
+						const isActive = destination.id === activeId;
+						const isProjects = destination.id === 'projects';
 						return (
-							<li class="waypoint" data-index={index} data-destination={destination.id}>
+							<li
+								class:list={['waypoint', isProjects && 'has-children']}
+								data-index={index}
+								data-destination={destination.id}
+							>
 								<a
 									class="waypoint-link"
 									href={destination.href}
-									aria-current={index === 0 ? 'page' : undefined}
+									aria-current={isActive ? 'page' : undefined}
 									aria-label={`${destination.label}: ${destination.description}`}
 									data-destination={destination.id}
 									data-destination-link={destination.id}
@@ -64,8 +82,30 @@ const ICONS = {
 										<span class="waypoint-label">{destination.label.toLowerCase()}/</span>
 										<span class="waypoint-description">{destination.description}</span>
 									</span>
-									<span class="waypoint-caret" aria-hidden="true">›</span>
 								</a>
+
+								{isProjects && (
+									<div
+										class="project-list"
+										id="project-list"
+										data-open={projectsOpen ? 'true' : 'false'}
+										hidden={!projectsOpen}
+									>
+										{PROJECTS.map((project) => (
+											<a
+												class="project-link"
+												href={`/projects/${project.id}`}
+												aria-current={path === `/projects/${project.id}` ? 'page' : undefined}
+											>
+												<span class="project-dot" aria-hidden="true"></span>
+												<span class="project-name">{project.name}</span>
+												{project.status !== 'active' && (
+													<span class="project-status">{project.status}</span>
+												)}
+											</a>
+										))}
+									</div>
+								)}
 							</li>
 						);
 					})}
@@ -255,6 +295,71 @@ const ICONS = {
 		color: #26a269;
 	}
 
+	.waypoint-chevron {
+		color: #737373;
+		transition: transform 150ms ease;
+	}
+
+	.waypoint.has-children[data-expanded='true'] .waypoint-chevron {
+		transform: rotate(180deg);
+	}
+
+	.project-list {
+		margin: 0.15rem 0 0.5rem 2.25rem;
+		padding-left: 0.6rem;
+		border-left: 1px solid #262626;
+	}
+
+	.project-link {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.2rem 0.4rem;
+		border-radius: 3px;
+		color: #a5a3a9;
+		font-size: 0.75rem;
+		line-height: 1.6;
+		text-decoration: none;
+	}
+
+	.project-link:hover {
+		background: #1c1c1c;
+		color: #ffffff;
+	}
+
+	.project-link:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	.project-link[aria-current='page'] {
+		color: #26a269;
+	}
+
+	.project-dot {
+		width: 0.25rem;
+		height: 0.25rem;
+		flex-shrink: 0;
+		border-radius: 999px;
+		background: currentColor;
+		opacity: 0.6;
+	}
+
+	.project-name {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.project-status {
+		margin-left: auto;
+		color: #737373;
+		font-size: 0.625rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
 	.wayfinder-detail {
 		margin-top: 1rem;
 		padding-top: 0.75rem;
@@ -385,6 +490,8 @@ const ICONS = {
 	const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-destination-link]')];
 	const status = document.getElementById('wayfinder-status');
 	const detail = document.getElementById('wayfinder-detail-text');
+	const projectList = document.getElementById('project-list');
+	const projectsItem = document.querySelector<HTMLElement>('.waypoint.has-children');
 
 	if (!menu || !status || !detail || links.length === 0) {
 		throw new Error('PortfolioMenu: missing menu elements');
@@ -394,19 +501,37 @@ const ICONS = {
 	const statusElement = status;
 	const detailElement = detail;
 
-	let activeIndex = 0;
+	// The server already marked the current route. Keep that as the resting
+	// state instead of forcing the first item to look active.
+	const currentIndex = Math.max(
+		0,
+		links.findIndex((link) => link.getAttribute('aria-current') === 'page'),
+	);
+	let activeIndex = currentIndex;
+
+	function highlight(index: number) {
+		links.forEach((link, linkIndex) => {
+			if (linkIndex === index) link.setAttribute('aria-current', 'page');
+			else link.removeAttribute('aria-current');
+		});
+	}
 
 	function selectIndex(index: number) {
 		activeIndex = (index + links.length) % links.length;
-		links.forEach((link, linkIndex) => {
-			link.setAttribute('aria-current', linkIndex === activeIndex ? 'page' : 'false');
-		});
+		highlight(activeIndex);
 		links[activeIndex].focus();
+	}
+
+	function setProjectsOpen(open: boolean) {
+		if (!projectList || !projectsItem) return;
+		projectList.hidden = !open;
+		projectList.dataset.open = open ? 'true' : 'false';
+		projectsItem.dataset.expanded = open ? 'true' : 'false';
 	}
 
 	function showMenu() {
 		menuElement.hidden = false;
-		selectIndex(0);
+		highlight(currentIndex);
 		requestAnimationFrame(() => {
 			requestAnimationFrame(() => menuElement.classList.add('is-visible'));
 		});
@@ -415,13 +540,23 @@ const ICONS = {
 	links.forEach((link, index) => {
 		link.addEventListener('focus', () => {
 			activeIndex = index;
-			links.forEach((item, itemIndex) => {
-				item.setAttribute('aria-current', itemIndex === index ? 'page' : 'false');
-			});
+			highlight(index);
 			statusElement.textContent = link.dataset.destination ?? '';
 			detailElement.textContent = 'enter to open · or click a line';
 		});
 	});
+
+	// Clicking Projects on the projects route toggles the accordion instead of
+	// reloading the same page.
+	if (projectList && projectsItem) {
+		const projectsLink = links.find((link) => link.dataset.destination === 'projects');
+		projectsLink?.addEventListener('click', (event) => {
+			if (!window.location.pathname.startsWith('/projects')) return;
+			event.preventDefault();
+			setProjectsOpen(projectList.hidden === true);
+		});
+		setProjectsOpen(projectList.hidden !== true);
+	}
 
 	menuElement.addEventListener('keydown', (event) => {
 		if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {

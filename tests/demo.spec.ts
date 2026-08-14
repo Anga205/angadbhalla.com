@@ -27,7 +27,7 @@ async function mockApi(page: Page, body: unknown) {
 }
 
 async function openProjects(page: Page) {
-	await page.goto('/projects');
+	await page.goto('/projects/code-execution-api');
 	await expect(page.locator('#demo')).toBeVisible();
 }
 

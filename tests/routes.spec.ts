@@ -82,8 +82,19 @@ test('every destination has its own route and keeps the navigation available', a
 	}
 });
 
-test('projects route renders the VS Code window', async ({ page }, testInfo) => {
+test('projects route renders the project cards', async ({ page }) => {
 	await page.goto('/projects');
+
+	const cards = page.locator('.card');
+	await expect(cards.first()).toBeVisible();
+	expect(await cards.count()).toBeGreaterThan(1);
+
+	// Cards must not depend on having every link.
+	await expect(page.locator('.card-actions').first()).toBeVisible();
+});
+
+test('project detail route renders the VS Code window', async ({ page }, testInfo) => {
+	await page.goto('/projects/code-execution-api');
 
 	await expect(page.locator('#demo')).toBeVisible();
 	await expect(page.locator('.statusbar')).toBeVisible();
@@ -92,6 +103,33 @@ test('projects route renders the VS Code window', async ({ page }, testInfo) => 
 		await expect(page.locator('.sidebar')).toBeVisible();
 		await expect(page.locator('.activitybar')).toBeVisible();
 	}
+});
+
+test('sidebar highlights the current route, not always projects', async ({ page }) => {
+	await page.goto('/find-me');
+
+	await expect(page.locator('[data-destination-link="find-me"]')).toHaveAttribute(
+		'aria-current',
+		'page',
+	);
+	await expect(page.locator('[data-destination-link="projects"]')).not.toHaveAttribute(
+		'aria-current',
+		'page',
+	);
+});
+
+test('projects accordion lists projects and toggles', async ({ page }) => {
+	await page.goto('/projects');
+
+	const list = page.locator('#project-list');
+	await expect(list).toBeVisible();
+	expect(await list.locator('.project-link').count()).toBeGreaterThan(1);
+
+	await page.locator('[data-destination-link="projects"]').click();
+	await expect(list).toBeHidden();
+
+	await page.locator('[data-destination-link="projects"]').click();
+	await expect(list).toBeVisible();
 });
 
 test('mobile selector has no overflow and keeps the bottom rail usable', async ({ page }) => {
