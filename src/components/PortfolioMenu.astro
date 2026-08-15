@@ -533,7 +533,10 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 		menuElement.hidden = false;
 		highlight(currentIndex);
 		requestAnimationFrame(() => {
-			requestAnimationFrame(() => menuElement.classList.add('is-visible'));
+			requestAnimationFrame(() => {
+				menuElement.classList.add('is-visible');
+				links[currentIndex].focus();
+			});
 		});
 	}
 
