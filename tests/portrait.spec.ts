@@ -31,29 +31,32 @@ test('portrait can be dragged but rotation is clamped', async ({ page }, testInf
 	const cy = box.y + box.height / 2;
 
 	const shot = async () => (await portrait.screenshot()).toString('base64');
+	const drag = async (dx: number, dy: number) => {
+		await page.mouse.move(cx, cy);
+		await page.mouse.down();
+		await page.mouse.move(cx + dx, cy + dy, { steps: 20 });
+		await page.mouse.up();
+		// Let the damping inertia settle before comparing frames.
+		await page.waitForTimeout(800);
+	};
+
 	const before = await shot();
 
-	await page.mouse.move(cx, cy);
-	await page.mouse.down();
-	await page.mouse.move(cx + 90, cy + 20, { steps: 12 });
-	await page.mouse.up();
-	await page.waitForTimeout(500);
-
+	// Horizontal rotation is allowed.
+	await drag(90, 0);
 	expect(await shot()).not.toBe(before);
 
-	// Dragging far past the limit must not spin the model all the way around.
-	await page.mouse.move(cx, cy);
-	await page.mouse.down();
-	await page.mouse.move(cx + 5000, cy, { steps: 20 });
-	await page.mouse.up();
-	await page.waitForTimeout(500);
-
+	// Vertical rotation is clamped: dragging far past the limit converges to
+	// the same frame instead of flipping the model over.
+	await drag(0, 5000);
 	const clamped = await shot();
-	await page.mouse.move(cx, cy);
-	await page.mouse.down();
-	await page.mouse.move(cx + 5000, cy, { steps: 20 });
-	await page.mouse.up();
-	await page.waitForTimeout(500);
+	await drag(0, 5000);
+	expect(await shot()).toBe(clamped);
 
+	// Zoom is disabled, so the wheel must not change the frame.
+	await page.mouse.move(cx, cy);
+	await page.mouse.wheel(0, -600);
+	await page.waitForTimeout(500);
+	await portrait.scrollIntoViewIfNeeded();
 	expect(await shot()).toBe(clamped);
 });

@@ -4,7 +4,7 @@ test('about page renders the intro and philosophy', async ({ page }) => {
 	await page.goto('/about');
 
 	await expect(page.getByRole('heading', { name: 'Angad Bhalla' })).toBeVisible();
-	await expect(page.getByText('lactose intolerant')).toBeVisible();
+	await expect(page.getByText('Computer Science & Engineering')).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'my philosophy' })).toBeVisible();
 	await expect(page.getByText('The goofier the project, the better.')).toBeVisible();
 });
