@@ -23,13 +23,23 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 					<div class="intro-text">
 						<h1>Angad Bhalla</h1>
 						<p>
-							I'm an undergraduate pursuing a degree in Computer Science & Engineering at PES University, Bangalore (2023-2027), with experience across systems engineering, infrastructure, and cybersecurity.
-						
-						I've completed internships at Goldman Sachs, Frigga Cloud, and Araciv Technologies, working across infrastructure, security, and software development.
-						
-						At PES University, I led Team Alcoding, the competitive programming club, organizing hackathons and coding contests. I also conducted the competitive programming course at PESU I/O (Slot 20)
-						
-						Outside of work, I spend time learning the craft of coffee, exploring brewing techniques and refining my understanding of the process. I also volunteer in community initiatives, including fundraising for stray dogs.
+							I'm an undergraduate pursuing a degree in Computer Science &amp; Engineering at PES
+							University, Bangalore (2023-2027), with experience across systems engineering,
+							infrastructure, and cybersecurity.
+						</p>
+						<p>
+							I've completed internships at Goldman Sachs, Frigga Cloud, and Araciv Technologies,
+							working across infrastructure, security, and software development.
+						</p>
+						<p>
+							At PES University, I led Team Alcoding, the competitive programming club,
+							organizing hackathons and coding contests. I also conducted the competitive
+							programming course at PESU I/O (Slot 20).
+						</p>
+						<p>
+							Outside of work, I spend time learning the craft of coffee, exploring brewing
+							techniques and refining my understanding of the process. I also volunteer in
+							community initiatives, including fundraising for stray dogs.
 						</p>
 					</div>
 
@@ -181,9 +191,13 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 	}
 
 	.intro-text p {
-		margin: 0;
+		margin: 0 0 0.75rem;
 		max-width: 52ch;
 		color: #a5a3a9;
+	}
+
+	.intro-text p:last-child {
+		margin-bottom: 0;
 	}
 
 	.portrait {
