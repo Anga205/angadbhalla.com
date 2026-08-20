@@ -202,8 +202,9 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 
 	.portrait {
 		position: relative;
-		height: 22rem;
+		height: 30rem;
 		overflow: hidden;
+        translate: -5rem 0
 	}
 
 	.portrait-canvas {
@@ -330,14 +331,11 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 
 			const controls = new OrbitControls(camera, renderer.domElement);
 			controls.enableDamping = true;
-			controls.dampingFactor = 0.06;
-			controls.rotateSpeed = 0.6;
+			controls.dampingFactor = 0.16;
+			const baseRotateSpeed = 0.6;
+			controls.rotateSpeed = baseRotateSpeed;
 			controls.enablePan = false;
 			controls.enableZoom = false;
-			// Vertical rotation is limited to 45deg-135deg so the model can be
-			// inspected from slightly above or below, never flipped.
-			controls.minPolarAngle = THREE.MathUtils.degToRad(45);
-			controls.maxPolarAngle = THREE.MathUtils.degToRad(135);
 
 			scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2.2));
 			const key = new THREE.DirectionalLight(0xffffff, 2);
@@ -366,18 +364,92 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 			// Fixed camera: diagonally towards the model's centre from its
 			// positive-X, negative-Z side.
 			const target = new THREE.Vector3(0, size.y / 2, 0);
-			camera.position.set(1.25, 1.0, -0.75);
+			camera.position.set(1.1, 1.0, -0.55);
 			controls.target.copy(target);
 
-			// Horizontal rotation is clamped around the initial view so the
-			// user can inspect the sides but never swing behind the model.
 			const offset = camera.position.clone().sub(target);
 			const initialAzimuth = Math.atan2(offset.x, offset.z);
-			const azimuthRange = THREE.MathUtils.degToRad(50);
-			controls.minAzimuthAngle = initialAzimuth - azimuthRange;
-			controls.maxAzimuthAngle = initialAzimuth + azimuthRange;
+			const initialPolar = Math.acos(offset.y / offset.length());
+			const initialPosition = camera.position.clone();
+			controls.minPolarAngle = initialPolar;
+			controls.maxPolarAngle = initialPolar;
+			const horizontalLimit = THREE.MathUtils.degToRad(82);
+			controls.minAzimuthAngle = initialAzimuth - horizontalLimit;
+			controls.maxAzimuthAngle = initialAzimuth + horizontalLimit;
+			const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+			const resetResistance = () => {
+				controls.rotateSpeed = baseRotateSpeed;
+			};
+
+			const applyResistance = () => {
+				const distance = Math.abs(controls.getAzimuthalAngle() - initialAzimuth);
+				const progress = Math.min(distance / horizontalLimit, 1);
+				controls.rotateSpeed = baseRotateSpeed * Math.exp(-8 * progress * progress);
+			};
+
+			renderer.domElement.addEventListener('pointerdown', resetResistance, { capture: true });
+			renderer.domElement.addEventListener('pointermove', applyResistance, { capture: true });
+			renderer.domElement.addEventListener('pointerup', resetResistance, { capture: true });
+			renderer.domElement.addEventListener('pointercancel', resetResistance, { capture: true });
 
 			controls.update();
+			controls.saveState();
+
+			let snapFrame = 0;
+			let snapTimeout = 0;
+
+			const cancelSnap = () => {
+				window.clearTimeout(snapTimeout);
+				window.cancelAnimationFrame(snapFrame);
+				snapFrame = 0;
+			};
+
+			const snapBack = () => {
+				const snapStart = camera.position.clone();
+				const startOffset = snapStart.sub(target);
+				const startAzimuth = Math.atan2(startOffset.x, startOffset.z);
+				let azimuthDelta = initialAzimuth - startAzimuth;
+				if (azimuthDelta > Math.PI) azimuthDelta -= Math.PI * 2;
+				if (azimuthDelta < -Math.PI) azimuthDelta += Math.PI * 2;
+
+				const horizontalRadius = Math.hypot(startOffset.x, startOffset.z);
+				const verticalOffset = initialPosition.y - target.y;
+				const startedAt = performance.now();
+				const duration = reduced ? 0 : 420;
+				controls.enableDamping = false;
+
+				const frame = (now: number) => {
+					const progress = Math.min((now - startedAt) / duration, 1);
+					const eased = 1 - Math.pow(1 - progress, 3);
+					const azimuth = startAzimuth + azimuthDelta * eased;
+					camera.position.set(
+						target.x + Math.sin(azimuth) * horizontalRadius,
+						target.y + verticalOffset,
+						target.z + Math.cos(azimuth) * horizontalRadius,
+					);
+					controls.update();
+					renderer.render(scene, camera);
+
+					if (progress < 1) {
+						snapFrame = window.requestAnimationFrame(frame);
+						return;
+					}
+
+					camera.position.copy(initialPosition);
+					controls.update();
+					controls.enableDamping = !reduced;
+					snapFrame = 0;
+				};
+
+				snapFrame = window.requestAnimationFrame(frame);
+			};
+
+			controls.addEventListener('start', cancelSnap);
+			controls.addEventListener('end', () => {
+				window.clearTimeout(snapTimeout);
+				snapTimeout = window.setTimeout(snapBack, 140);
+			});
 
 			function resize() {
 				const width = hostElement.clientWidth;
@@ -395,8 +467,6 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 			// Only reveal the canvas once it has been sized and drawn, so the
 			// first visible frame is already correctly framed.
 			portraitElement.classList.add('is-ready');
-
-			const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 			if (reduced) {
 				// No inertia: redraw only when the user actually moves the camera.

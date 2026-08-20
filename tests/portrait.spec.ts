@@ -18,7 +18,7 @@ test('about portrait renders the compressed GLB', async ({ page }) => {
 	await portrait.screenshot({ path: 'test-results/portrait.png' });
 });
 
-test('portrait can be dragged but rotation is clamped', async ({ page }, testInfo) => {
+test('portrait rotates horizontally with damping and snaps back', async ({ page }, testInfo) => {
 	test.skip(testInfo.project.name !== 'default', 'drag interaction is desktop-only coverage');
 	await page.goto('/about');
 
@@ -35,23 +35,26 @@ test('portrait can be dragged but rotation is clamped', async ({ page }, testInf
 		await page.mouse.move(cx, cy);
 		await page.mouse.down();
 		await page.mouse.move(cx + dx, cy + dy, { steps: 20 });
+		const moved = await shot();
 		await page.mouse.up();
-		// Let the damping inertia settle before comparing frames.
-		await page.waitForTimeout(800);
+		return moved;
 	};
 
 	const before = await shot();
 
-	// Horizontal rotation is allowed.
-	await drag(90, 0);
-	expect(await shot()).not.toBe(before);
+	// Horizontal rotation is visible while the pointer is held.
+	expect(await drag(90, 0)).not.toBe(before);
 
-	// Vertical rotation is clamped: dragging far past the limit converges to
-	// the same frame instead of flipping the model over.
+	// The view returns to its authored position after the release animation.
+	await page.waitForTimeout(700);
+	expect(await shot()).toBe(before);
+
+	// Vertical rotation is locked: dragging far past the limit does not alter
+	// the authored view.
 	await drag(0, 5000);
+	await page.waitForTimeout(500);
 	const clamped = await shot();
-	await drag(0, 5000);
-	expect(await shot()).toBe(clamped);
+	expect(clamped).toBe(before);
 
 	// Zoom is disabled, so the wheel must not change the frame.
 	await page.mouse.move(cx, cy);
