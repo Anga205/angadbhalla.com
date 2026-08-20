@@ -1,0 +1,736 @@
+---
+/**
+ * AchievementCards.astro
+ *
+ * The /achievements index: every achievement as a compact card, grouped by
+ * category, inside a GNOME-style window.
+ *
+ * Each card is itself a miniature window — its own headerbar with traffic
+ * lights — so the grid reads as a stack of small windows rather than generic
+ * content tiles.
+ *
+ * Two card shapes:
+ *   medal cards   hackathons. The category icon becomes a gold or silver
+ *                 medal, and the headerbar carries the achievement's links as
+ *                 small grayscale icon buttons. Clicking the card opens a
+ *                 menu listing those same links, so the card never navigates
+ *                 away on its own.
+ *   plain cards   everything else. The whole card links to its detail page.
+ *
+ * Links are per-achievement data (`links` in src/data/achievements.ts), so
+ * each card's buttons are whatever that achievement actually has.
+ */
+import {
+	Trophy,
+	FlaskConical,
+	Accessibility,
+	Ghost,
+	Code,
+	Users,
+	GraduationCap,
+	Container,
+	Heart,
+	GitPullRequest,
+	Medal,
+	Linkedin,
+	Info,
+	Github,
+	ExternalLink,
+	Youtube,
+	ArrowUpRight,
+	X,
+} from 'lucide-astro';
+import {
+	groupByCategory,
+	hasDetailPage,
+	opensMenu,
+	type AchievementIcon,
+	type LinkIcon,
+} from '../data/achievements';
+import LeetCode from './icons/LeetCode.astro';
+
+const ICONS: Record<AchievementIcon, typeof Trophy> = {
+	trophy: Trophy,
+	flask: FlaskConical,
+	accessibility: Accessibility,
+	ghost: Ghost,
+	code: Code,
+	leetcode: LeetCode as unknown as typeof Trophy,
+	users: Users,
+	graduation: GraduationCap,
+	container: Container,
+	heart: Heart,
+	'git-pull-request': GitPullRequest,
+};
+
+const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
+	linkedin: Linkedin,
+	info: Info,
+	github: Github,
+	external: ExternalLink,
+	code: Code,
+	heart: Heart,
+	youtube: Youtube,
+};
+
+const groups = groupByCategory();
+const total = groups.reduce((sum, group) => sum + group.items.length, 0);
+---
+
+<section class="achievements" id="achievements">
+	<div class="window">
+		<div class="headerbar">
+			<span class="dots" aria-hidden="true">
+				<span></span><span></span><span></span>
+			</span>
+			<span class="title">anga@portfolio — achievements</span>
+			<span aria-hidden="true"></span>
+		</div>
+
+		<div class="body">
+			<p class="prompt">$ ls ~/achievements</p>
+			<h1>achievements</h1>
+			<p class="lede">
+				{total} entries. Hackathon results, contest milestones, things I ran, and one merged
+				pull request. Each one opens into the longer version.
+			</p>
+
+			{
+				groups.map((group) => (
+					<section class="group" aria-labelledby={`group-${group.category}`}>
+						<div class="group-head">
+							<h2 id={`group-${group.category}`}>{group.label}</h2>
+							<span class="group-count" aria-hidden="true">
+								{String(group.items.length).padStart(2, '0')}
+							</span>
+							<p class="group-blurb">{group.blurb}</p>
+						</div>
+
+						<ul class="grid">
+							{group.items.map((achievement) => {
+								const Icon = ICONS[achievement.icon];
+								const links = achievement.links ?? [];
+								const isMedal = Boolean(achievement.medal);
+								// A menu card only opens a menu when it actually has links.
+								const menuCard = opensMenu(achievement) && links.length > 0;
+								const menuId = `menu-${achievement.slug}`;
+
+								return (
+									<li class="card" data-medal={achievement.medal}>
+										<div class="card-bar">
+											<span class="card-dots" aria-hidden="true">
+												<span></span>
+												<span></span>
+												<span></span>
+											</span>
+
+											{menuCard ? (
+												<span class="card-actions">
+													{links.map((link) => {
+														const LinkIconComponent = LINK_ICONS[link.icon ?? 'external'];
+														return (
+															<a
+																class="card-action"
+																href={link.href}
+																target="_blank"
+																rel="noreferrer"
+																aria-label={link.label}
+																title={link.label}
+															>
+																<LinkIconComponent size={12} strokeWidth={1.5} aria-hidden="true" />
+															</a>
+														);
+													})}
+												</span>
+											) : (
+												<span class="card-result">{achievement.result}</span>
+											)}
+										</div>
+
+										<div class="card-body">
+											<span class="card-icon" data-medal={achievement.medal} aria-hidden="true">
+												{isMedal ? (
+													<Medal size={16} strokeWidth={1.5} />
+												) : (
+													<Icon size={16} strokeWidth={1.5} />
+												)}
+											</span>
+
+											<div class="card-text">
+												<h3>
+													{hasDetailPage(achievement) ? (
+														<a class="card-link" href={`/achievements/${achievement.slug}`}>
+															{achievement.title}
+														</a>
+													) : menuCard ? (
+														<button
+															type="button"
+															class="card-open"
+															data-menu={menuId}
+															aria-haspopup="dialog"
+														>
+															{achievement.title}
+														</button>
+													) : (
+														<span class="card-static">{achievement.title}</span>
+													)}
+												</h3>
+												<p class="card-summary">{achievement.summary}</p>
+											</div>
+										</div>
+									</li>
+								);
+							})}
+						</ul>
+					</section>
+				))
+			}
+		</div>
+	</div>
+</section>
+
+{
+	groups
+		.flatMap((group) => group.items)
+		.filter((achievement) => opensMenu(achievement) && (achievement.links?.length ?? 0) > 0)
+		.map((achievement) => {
+			const links = achievement.links ?? [];
+			return (
+				<dialog class="menu" id={`menu-${achievement.slug}`} aria-label={`${achievement.title} links`}>
+					<div class="menu-inner">
+						<div class="menu-bar">
+							<span class="menu-title">{achievement.title}</span>
+							<button type="button" class="menu-close" data-close aria-label="close">
+								<X size={13} strokeWidth={1.5} aria-hidden="true" />
+							</button>
+						</div>
+
+						<ul class="menu-list">
+							{links.map((link) => {
+								const LinkIconComponent = LINK_ICONS[link.icon ?? 'external'];
+								return (
+									<li>
+										<a href={link.href} target="_blank" rel="noreferrer">
+											<LinkIconComponent size={14} strokeWidth={1.5} aria-hidden="true" />
+											<span class="menu-label">{link.label}</span>
+											<ArrowUpRight size={12} strokeWidth={1.5} aria-hidden="true" />
+										</a>
+									</li>
+								);
+							})}
+						</ul>
+					</div>
+				</dialog>
+			);
+		})
+}
+
+<style>
+	.achievements {
+		margin-left: 18rem;
+		height: 100vh;
+		overflow-y: auto;
+		padding: 2rem;
+		background: #171717;
+	}
+
+	.window {
+		max-width: 64rem;
+		margin: 0 auto;
+		overflow: hidden;
+		border: 1px solid #3d3846;
+		border-radius: 6px;
+		background: #000000;
+		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+	}
+
+	.headerbar {
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		border-bottom: 1px solid #3d3846;
+		background: #303030;
+		color: #deddda;
+		font-size: 0.75rem;
+		letter-spacing: 0.02em;
+		user-select: none;
+	}
+
+	.dots {
+		display: flex;
+		gap: 0.375rem;
+	}
+
+	.dots span {
+		width: 0.625rem;
+		height: 0.625rem;
+		border-radius: 999px;
+	}
+
+	.dots span:nth-child(1) {
+		background: #e01b24;
+	}
+
+	.dots span:nth-child(2) {
+		background: #e5a50a;
+	}
+
+	.dots span:nth-child(3) {
+		background: #33d17a;
+	}
+
+	.title {
+		text-align: center;
+		white-space: nowrap;
+	}
+
+	.body {
+		padding: 1.75rem;
+		color: #ffffff;
+		font-size: 0.875rem;
+		line-height: 1.75;
+	}
+
+	.prompt {
+		margin: 0 0 0.75rem;
+		color: #26a269;
+		font-size: 0.75rem;
+	}
+
+	h1 {
+		margin: 0 0 0.5rem;
+		font-size: 1.35rem;
+		font-weight: 400;
+	}
+
+	.lede {
+		margin: 0 0 2rem;
+		max-width: 62ch;
+		color: #a5a3a9;
+	}
+
+	.group + .group {
+		margin-top: 2.25rem;
+		padding-top: 2rem;
+		border-top: 1px solid #262626;
+	}
+
+	.group-head {
+		display: grid;
+		grid-template-columns: auto auto minmax(0, 1fr);
+		align-items: baseline;
+		gap: 0.6rem;
+		margin-bottom: 1rem;
+	}
+
+	.group-head h2 {
+		margin: 0;
+		color: #26a269;
+		font-size: 0.75rem;
+		font-weight: 400;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.group-count {
+		color: #4a4a4a;
+		font-size: 0.6875rem;
+	}
+
+	.group-blurb {
+		margin: 0;
+		color: #737373;
+		font-size: 0.75rem;
+	}
+
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+		gap: 0.75rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	/* Each card is a miniature GNOME window. */
+	.card {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		border: 1px solid #3d3846;
+		border-radius: 6px;
+		background: #1c1c1c;
+	}
+
+	.card:hover {
+		border-color: #5a5560;
+	}
+
+	.card:focus-within {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	.card-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.3rem 0.5rem;
+		border-bottom: 1px solid #3d3846;
+		background: #303030;
+		user-select: none;
+	}
+
+	.card-dots {
+		display: flex;
+		gap: 0.25rem;
+	}
+
+	.card-dots span {
+		width: 0.375rem;
+		height: 0.375rem;
+		border-radius: 999px;
+	}
+
+	.card-dots span:nth-child(1) {
+		background: #e01b24;
+	}
+
+	.card-dots span:nth-child(2) {
+		background: #e5a50a;
+	}
+
+	.card-dots span:nth-child(3) {
+		background: #33d17a;
+	}
+
+	.card-result {
+		overflow: hidden;
+		color: #a5a3a9;
+		font-size: 0.625rem;
+		letter-spacing: 0.04em;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.card:hover .card-result {
+		color: #26a269;
+	}
+
+	/* Grayscale link buttons in the headerbar of a medal card. */
+	.card-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.card-action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.125rem;
+		height: 1.125rem;
+		border-radius: 3px;
+		color: #8a8a8a;
+		text-decoration: none;
+	}
+
+	.card-action:hover {
+		background: #3d3846;
+		color: #deddda;
+	}
+
+	.card-action:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 1px;
+	}
+
+	.card-body {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.6rem;
+		padding: 0.75rem;
+	}
+
+	.card-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		flex-shrink: 0;
+		border: 1px solid #3d3846;
+		border-radius: 4px;
+		color: #26a269;
+	}
+
+	/* Medals replace the category icon on hackathon cards. */
+	.card-icon[data-medal='gold'] {
+		border-color: #6b5a2a;
+		background: rgba(229, 165, 10, 0.08);
+		color: #e5a50a;
+	}
+
+	.card-icon[data-medal='silver'] {
+		border-color: #4a4a4a;
+		background: rgba(197, 197, 197, 0.06);
+		color: #c5c5c5;
+	}
+
+	.card-text {
+		min-width: 0;
+	}
+
+	.card-text h3 {
+		margin: 0;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		line-height: 1.4;
+	}
+
+	.card-link {
+		color: #ffffff;
+		text-decoration: none;
+	}
+
+	/* Stretch the title link over the whole card. */
+	.card-link::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 6px;
+	}
+
+	.card-link:focus-visible {
+		outline: none;
+	}
+
+	/* Medal cards open a link menu instead of navigating. */
+	.card-open {
+		padding: 0;
+		border: 0;
+		background: none;
+		color: #ffffff;
+		font: inherit;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		line-height: 1.4;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.card-open::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 6px;
+	}
+
+	.card-open:focus-visible {
+		outline: none;
+	}
+
+	.card:hover .card-open {
+		color: #26a269;
+	}
+
+	/* Medal card with no links: the title is not interactive. */
+	.card-static {
+		color: #ffffff;
+	}
+
+	.card-summary {
+		margin: 0.15rem 0 0;
+		color: #a5a3a9;
+		font-size: 0.6875rem;
+		line-height: 1.5;
+	}
+
+	/* Link menu, opened by a medal card. */
+	.menu {
+		width: min(22rem, calc(100vw - 2rem));
+		max-width: none;
+		margin: auto;
+		overflow: hidden;
+		padding: 0;
+		border: 1px solid #3d3846;
+		border-radius: 6px;
+		background: #000000;
+		color: #ffffff;
+	}
+
+	.menu::backdrop {
+		background: rgba(0, 0, 0, 0.82);
+	}
+
+	.menu-inner {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.menu-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.4rem 0.5rem;
+		border-bottom: 1px solid #3d3846;
+		background: #303030;
+		color: #deddda;
+		font-size: 0.6875rem;
+		user-select: none;
+	}
+
+	.menu-title {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.menu-close {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.15rem;
+		border: 0;
+		border-radius: 3px;
+		background: none;
+		color: #a5a3a9;
+		cursor: pointer;
+	}
+
+	.menu-close:hover {
+		background: #3d3846;
+		color: #ffffff;
+	}
+
+	.menu-close:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 1px;
+	}
+
+	.menu-list {
+		margin: 0;
+		padding: 0.35rem;
+		list-style: none;
+	}
+
+	.menu-list a {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.45rem 0.5rem;
+		border-radius: 4px;
+		color: #deddda;
+		font-size: 0.75rem;
+		text-decoration: none;
+	}
+
+	.menu-list a:hover {
+		background: #1c1c1c;
+		color: #ffffff;
+	}
+
+	.menu-list a:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: -1px;
+	}
+
+	.menu-list a > :global(svg:first-child) {
+		flex-shrink: 0;
+		color: #8a8a8a;
+	}
+
+	.menu-list a:hover > :global(svg:first-child) {
+		color: #26a269;
+	}
+
+	.menu-label {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.menu-list a > :global(svg:last-child) {
+		flex-shrink: 0;
+		color: #4a4a4a;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.menu[open] {
+			animation: menu-in 120ms ease-out;
+		}
+
+		@keyframes menu-in {
+			from {
+				opacity: 0;
+			}
+			to {
+				opacity: 1;
+			}
+		}
+	}
+
+	@media (max-width: 639px) {
+		.achievements {
+			margin-left: 0;
+			padding: 1rem 1rem 6rem;
+		}
+
+		.body {
+			padding: 1.25rem;
+		}
+
+		.group-head {
+			grid-template-columns: auto auto;
+		}
+
+		.group-blurb {
+			grid-column: 1 / -1;
+		}
+	}
+</style>
+
+<script>
+	// Medal cards open a link menu rather than navigating. The dialog is native,
+	// so focus trapping, Esc, and the backdrop come from the platform.
+	const openers = document.querySelectorAll<HTMLButtonElement>('[data-menu]');
+
+	for (const opener of openers) {
+		const id = opener.dataset.menu;
+		if (!id) continue;
+
+		const dialog = document.getElementById(id) as HTMLDialogElement | null;
+		if (!dialog) continue;
+
+		opener.addEventListener('click', () => dialog.showModal());
+
+		dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+
+		// Escape closes. The platform already does this for a modal dialog, but
+		// handling it explicitly keeps the behaviour independent of how the
+		// dialog was opened and stops the key from reaching the page.
+		dialog.addEventListener('keydown', (event) => {
+			if (event.key !== 'Escape') return;
+			event.preventDefault();
+			dialog.close();
+		});
+
+		// Clicking the backdrop closes. A backdrop click is dispatched to the
+		// dialog element itself, so compare the pointer against the dialog's own
+		// box: anything outside it is the backdrop.
+		dialog.addEventListener('click', (event) => {
+			if (event.target !== dialog) return;
+			const box = dialog.getBoundingClientRect();
+			const outside =
+				event.clientX < box.left ||
+				event.clientX > box.right ||
+				event.clientY < box.top ||
+				event.clientY > box.bottom;
+			if (outside) dialog.close();
+		});
+	}
+</script>

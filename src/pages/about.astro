@@ -51,8 +51,8 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 				</div>
 
 				<section class="philosophy">
-					<h2>my philosophy</h2>
-					<h3>on building things</h3>
+					<h3>My Philosophy</h3>
+					<h2>On building things</h2>
 
 					<p>
 						I think the best engineers treat software the same way a craftsman treats his work.
@@ -72,7 +72,7 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 						aiming for, after all, the journey is just as fun as the destination.
 					</p>
 
-					<p class="pull">The goofier the project, the better.</p>
+					<p>The goofier the project, the better.</p>
 
 					<p>
 						This field puts you into predicaments that perhaps nobody in the history of mankind
@@ -89,7 +89,7 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 						optimization, every redesign, and every mistake has a story behind it.
 					</p>
 
-					<p>
+					<p class="pull italic font-sans">
 						A project to an engineer is what jewelry is to a goldsmith. Anyone can appriciate the
 						beauty of the craft, but only the maker can truly admire the process by which it was
 						forged.
@@ -242,7 +242,7 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 	}
 
 	.philosophy h2 {
-		margin: 0 0 0.25rem;
+		margin: 0 0 0.75rem;
 		color: #26a269;
 		font-size: 0.75rem;
 		font-weight: 400;
@@ -251,14 +251,12 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 	}
 
 	.philosophy h3 {
-		margin: 0 0 1.25rem;
 		font-size: 1.05rem;
 		font-weight: 400;
 	}
 
 	.philosophy p {
 		margin: 0 0 1.1rem;
-		max-width: 68ch;
 		color: #a5a3a9;
 	}
 
@@ -364,7 +362,7 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 			// Fixed camera: diagonally towards the model's centre from its
 			// positive-X, negative-Z side.
 			const target = new THREE.Vector3(0, size.y / 2, 0);
-			camera.position.set(1.1, 1.0, -0.55);
+			camera.position.set(1.1, 0.95, -0.60);
 			controls.target.copy(target);
 
 			const offset = camera.position.clone().sub(target);

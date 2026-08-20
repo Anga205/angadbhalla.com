@@ -1,0 +1,348 @@
+---
+/**
+ * AchievementGallery.astro
+ *
+ * A thumbnail grid plus one native <dialog> lightbox per gallery.
+ *
+ * The dialog is the platform's own modal: focus trapping, Esc, and the
+ * ::backdrop come for free. The script only fills it and handles arrow keys.
+ *
+ * Images are discovered from disk by galleryFor(), so adding a screenshot is
+ * a file drop, not a code change.
+ */
+import { Image } from 'astro:assets';
+import { ArrowLeft, ArrowRight, X } from 'lucide-astro';
+import type { GalleryImage } from '../data/achievements';
+
+interface Props {
+	images: GalleryImage[];
+	/** Used for the dialog's accessible name. */
+	title: string;
+}
+
+const { images, title } = Astro.props;
+const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+---
+
+{
+	images.length > 0 && (
+		<figure class="gallery" data-gallery>
+			<ul class="thumbs">
+				{images.map((image, index) => (
+					<li>
+						<button
+							type="button"
+							class="thumb"
+							data-index={index}
+							data-caption={image.caption}
+							aria-label={`expand image ${index + 1}: ${image.caption}`}
+						>
+							<Image
+								src={image.src}
+								alt={image.alt}
+								widths={[320, 640]}
+								sizes="(max-width: 639px) 45vw, 14rem"
+								loading="lazy"
+								decoding="async"
+							/>
+							<span class="thumb-index" aria-hidden="true">
+								{String(index + 1).padStart(2, '0')}
+							</span>
+						</button>
+					</li>
+				))}
+			</ul>
+
+			<dialog class="lightbox" id={dialogId} aria-label={`${title} gallery`}>
+				<div class="lightbox-inner">
+					<div class="lightbox-bar">
+						<span class="lightbox-count" data-count aria-hidden="true" />
+						<button type="button" class="lightbox-close" data-close aria-label="close gallery">
+							<X size={14} strokeWidth={1.5} aria-hidden="true" />
+						</button>
+					</div>
+
+					<div class="lightbox-stage">
+						<button type="button" class="lightbox-nav" data-prev aria-label="previous image">
+							<ArrowLeft size={16} strokeWidth={1.5} aria-hidden="true" />
+						</button>
+
+						<div class="lightbox-frame">
+							{images.map((image, index) => (
+								<Image
+									src={image.src}
+									alt={image.alt}
+									widths={[640, 1200]}
+									sizes="(max-width: 899px) 90vw, 60rem"
+									loading="lazy"
+									decoding="async"
+									data-slide={index}
+									hidden={index !== 0}
+								/>
+							))}
+						</div>
+
+						<button type="button" class="lightbox-nav" data-next aria-label="next image">
+							<ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" />
+						</button>
+					</div>
+
+					<p class="lightbox-caption" data-caption-text />
+				</div>
+			</dialog>
+		</figure>
+	)
+}
+
+<style>
+	.gallery {
+		margin: 0;
+	}
+
+	.thumbs {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+		gap: 0.75rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.thumb {
+		position: relative;
+		display: block;
+		width: 100%;
+		aspect-ratio: 4 / 3;
+		overflow: hidden;
+		padding: 0;
+		border: 1px solid #3d3846;
+		border-radius: 4px;
+		background: #1c1c1c;
+		cursor: zoom-in;
+	}
+
+	.thumb :global(img) {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.thumb:hover {
+		border-color: #5a5560;
+	}
+
+	.thumb:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	.thumb-index {
+		position: absolute;
+		right: 0.4rem;
+		bottom: 0.35rem;
+		padding: 0.05rem 0.3rem;
+		border-radius: 3px;
+		background: rgba(0, 0, 0, 0.7);
+		color: #a5a3a9;
+		font-size: 0.625rem;
+		letter-spacing: 0.04em;
+	}
+
+	.lightbox {
+		width: min(64rem, calc(100vw - 2rem));
+		max-width: none;
+		max-height: calc(100vh - 2rem);
+		margin: auto;
+		overflow: hidden;
+		padding: 0;
+		border: 1px solid #3d3846;
+		border-radius: 6px;
+		background: #000000;
+		color: #ffffff;
+	}
+
+	.lightbox::backdrop {
+		background: rgba(0, 0, 0, 0.82);
+	}
+
+	.lightbox-inner {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 0.75rem;
+	}
+
+	.lightbox-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.lightbox-count {
+		color: #737373;
+		font-size: 0.6875rem;
+		letter-spacing: 0.06em;
+	}
+
+	.lightbox-close,
+	.lightbox-nav {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.3rem;
+		border: 1px solid #3d3846;
+		border-radius: 3px;
+		background: transparent;
+		color: #deddda;
+		cursor: pointer;
+	}
+
+	.lightbox-close:hover,
+	.lightbox-nav:hover {
+		border-color: #5a5560;
+		background: #262626;
+		color: #ffffff;
+	}
+
+	.lightbox-close:focus-visible,
+	.lightbox-nav:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	.lightbox-stage {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.lightbox-frame {
+		display: grid;
+		place-items: center;
+		min-height: 0;
+	}
+
+	.lightbox-frame :global(img) {
+		display: block;
+		max-width: 100%;
+		max-height: calc(100vh - 12rem);
+		width: auto;
+		height: auto;
+		border: 1px solid #262626;
+		border-radius: 4px;
+	}
+
+	.lightbox-frame :global(img[hidden]) {
+		display: none;
+	}
+
+	.lightbox-caption {
+		margin: 0;
+		min-height: 1.25rem;
+		color: #a5a3a9;
+		font-size: 0.75rem;
+		line-height: 1.6;
+	}
+
+	@media (max-width: 639px) {
+		.thumbs {
+			grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+		}
+
+		.lightbox-stage {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.lightbox-nav {
+			display: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.lightbox[open] {
+			animation: lightbox-in 120ms ease-out;
+		}
+
+		@keyframes lightbox-in {
+			from {
+				opacity: 0;
+			}
+			to {
+				opacity: 1;
+			}
+		}
+	}
+</style>
+
+<script>
+	const galleries = document.querySelectorAll<HTMLElement>('[data-gallery]');
+
+	for (const gallery of galleries) {
+		const found = gallery.querySelector<HTMLDialogElement>('dialog');
+		if (!found) continue;
+
+		const dialog: HTMLDialogElement = found;
+		const slides = Array.from(dialog.querySelectorAll<HTMLImageElement>('[data-slide]'));
+		const captionText = dialog.querySelector<HTMLElement>('[data-caption-text]');
+		const counter = dialog.querySelector<HTMLElement>('[data-count]');
+		const thumbs = Array.from(gallery.querySelectorAll<HTMLButtonElement>('.thumb'));
+
+		let current = 0;
+
+		function show(index: number) {
+			if (slides.length === 0) return;
+			current = (index + slides.length) % slides.length;
+
+			slides.forEach((slide, position) => {
+				slide.hidden = position !== current;
+			});
+
+			const caption = thumbs[current]?.dataset.caption ?? '';
+			if (captionText) captionText.textContent = caption;
+			if (counter) {
+				counter.textContent = `${String(current + 1).padStart(2, '0')} / ${String(
+					slides.length,
+				).padStart(2, '0')}`;
+			}
+		}
+
+		function open(index: number) {
+			show(index);
+			dialog.showModal();
+		}
+
+		thumbs.forEach((thumb, index) => {
+			thumb.addEventListener('click', () => open(index));
+		});
+
+		dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+		dialog.querySelector('[data-prev]')?.addEventListener('click', () => show(current - 1));
+		dialog.querySelector('[data-next]')?.addEventListener('click', () => show(current + 1));
+
+		// Clicking the backdrop closes. The dialog element itself covers the
+		// viewport, so compare against its own box rather than the target.
+		dialog.addEventListener('click', (event) => {
+			if (event.target !== dialog) return;
+			const box = dialog.getBoundingClientRect();
+			const outside =
+				event.clientX < box.left ||
+				event.clientX > box.right ||
+				event.clientY < box.top ||
+				event.clientY > box.bottom;
+			if (outside) dialog.close();
+		});
+
+		dialog.addEventListener('keydown', (event) => {
+			if (event.key === 'ArrowLeft') {
+				event.preventDefault();
+				show(current - 1);
+			} else if (event.key === 'ArrowRight') {
+				event.preventDefault();
+				show(current + 1);
+			}
+		});
+	}
+</script>
