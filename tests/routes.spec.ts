@@ -33,7 +33,7 @@ test('selector uses the Adwaita dark palette', async ({ page }) => {
 	await expect(page.locator('.terminal')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
 	await expect(
 		page.locator('.waypoint-link[aria-current="page"] .waypoint-icon'),
-	).toHaveCSS('color', 'rgb(38, 162, 105)');
+	).toHaveCSS('color', 'rgb(57, 255, 136)');
 });
 
 test('timeline columns align across every destination', async ({ page }) => {
@@ -51,9 +51,19 @@ test('timeline columns align across every destination', async ({ page }) => {
 	const labels = await page.locator('.waypoint-label').evaluateAll((els) =>
 		els.map((el) => Math.round(el.getBoundingClientRect().x)),
 	);
+	const verticalOffsets = await links.evaluateAll((els) =>
+		els.map((el) => {
+			const linkBox = el.getBoundingClientRect();
+			const iconBox = el.querySelector('.waypoint-icon')!.getBoundingClientRect();
+			return Math.abs(
+				linkBox.top + linkBox.height / 2 - (iconBox.top + iconBox.height / 2),
+			);
+		}),
+	);
 
 	expect(new Set(icons).size).toBe(1);
 	expect(new Set(labels).size).toBe(1);
+	for (const offset of verticalOffsets) expect(offset).toBeLessThanOrEqual(1);
 });
 
 test('selector does not overflow horizontally', async ({ page }) => {

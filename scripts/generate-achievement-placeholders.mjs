@@ -27,6 +27,7 @@ const SLUGS = [
 	'pesu-io-course',
 	'vosd-drive',
 	'docker-pr-51670',
+	'ieee-cs-iampro-2025',
 ];
 
 const COUNT = 3;

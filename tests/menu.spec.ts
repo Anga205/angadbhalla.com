@@ -18,6 +18,19 @@ test('selector is directly addressable and starts at the menu', async ({ page })
 	await expect(page.getByRole('link', { name: /Projects:/ })).toBeFocused();
 });
 
+test('selector status shows cat commands for destinations', async ({ page }) => {
+	await page.goto('/selector');
+
+	const status = page.locator('#wayfinder-status');
+	await expect(status).toHaveText('cat projects.txt');
+
+	await page.keyboard.press('ArrowDown');
+	await expect(status).toHaveText('cat about.txt');
+
+	await page.keyboard.press('ArrowDown');
+	await expect(status).toHaveText('cat achievements.txt');
+});
+
 test('browser history moves between the intro and selector routes', async ({ page }) => {
 	await page.goto('/');
 	await expect(page.locator('#opening #advance')).toBeVisible({ timeout: 25_000 });

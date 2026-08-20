@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 const SLUGS = [
 	'algomania-3',
 	'tensor-2026',
+	'ieee-cs-iampro-2025',
 	'kalpana-2025',
 	'hack-o-ween-2025',
 	'leetcode-1337',
@@ -35,9 +36,9 @@ test('achievements index groups every achievement into sections', async ({ page 
 	const cards = page.locator('.card');
 	await expect(cards).toHaveCount(SLUGS.length);
 
-	// Five categories, each with a heading.
+	// Six categories, each with a heading.
 	const groups = page.locator('.group');
-	await expect(groups).toHaveCount(5);
+	await expect(groups).toHaveCount(6);
 
 	for (const label of [
 		'hackathons',
@@ -45,6 +46,7 @@ test('achievements index groups every achievement into sections', async ({ page 
 		'leadership & teaching',
 		'community',
 		'open source',
+		'research',
 	]) {
 		await expect(page.getByRole('heading', { name: label, level: 2 })).toBeVisible();
 	}
@@ -72,6 +74,26 @@ test('clicking a plain card opens its detail page', async ({ page }) => {
 	await expect(page).toHaveURL(/\/achievements\/alcoding-club-head$/);
 	await expect(page.getByRole('heading', { name: 'Head, The Alcoding Club', level: 1 })).toBeVisible();
 	await expect(page.locator('.highlights li').first()).toBeVisible();
+});
+
+test('IAMPro has a research detail page with three gallery slots', async ({ page }, testInfo) => {
+	await page.goto('/achievements');
+
+	await page.getByRole('link', { name: 'IEEE Computer Society IAMPro 2025' }).click();
+
+	await expect(page).toHaveURL(/\/achievements\/ieee-cs-iampro-2025$/);
+	await expect(
+		page.getByRole('heading', { name: 'IEEE Computer Society IAMPro 2025', level: 1 }),
+	).toBeVisible();
+	await expect(page.locator('.thumb')).toHaveCount(3);
+
+	testInfo.project.name === 'mobile' && testInfo.skip();
+
+	await page.locator('.thumb').first().click();
+	await expect(page.locator('dialog.lightbox')).toBeVisible();
+	await expect(page.locator('[data-caption-text]')).toHaveText(
+		'IAMPro 2025 programme documentation.',
+	);
 });
 
 test('hackathon cards show a gold or silver medal instead of the result text', async ({ page }) => {
@@ -217,6 +239,16 @@ test('algomania sits under competitive programming, not hackathons', async ({ pa
 
 	const hackathons = page.getByRole('region', { name: 'hackathons' });
 	await expect(hackathons.getByRole('button', { name: 'Algomania 3.0' })).toHaveCount(0);
+});
+
+test('Tensor and IAMPro sit under research', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const research = page.getByRole('region', { name: 'research' });
+	await expect(research.getByRole('button', { name: 'Tensor 2026' })).toBeVisible();
+	await expect(
+		research.getByRole('link', { name: 'IEEE Computer Society IAMPro 2025' }),
+	).toBeVisible();
 });
 
 test('hack-o-ween links to its linkedin post and event listing', async ({ page }) => {

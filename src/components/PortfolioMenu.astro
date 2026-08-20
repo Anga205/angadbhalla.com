@@ -219,7 +219,7 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 
 	.prompt {
 		flex-shrink: 0;
-		color: #26a269;
+		color: #39ff88;
 	}
 
 	.listing {
@@ -232,7 +232,7 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 		display: grid;
 		grid-template-columns: 1.5rem minmax(0, 1fr) 1rem;
 		column-gap: 0.75rem;
-		align-items: start;
+		align-items: center;
 		width: 100%;
 		margin-left: -0.5rem;
 		padding: 0.35rem 0.5rem;
@@ -246,7 +246,7 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 	}
 
 	.waypoint-link:focus-visible {
-		outline: 1px solid #26a269;
+		outline: 1px solid #39ff88;
 		outline-offset: 2px;
 	}
 
@@ -261,7 +261,7 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 	.waypoint-link:hover .waypoint-icon,
 	.waypoint-link:focus-visible .waypoint-icon,
 	.waypoint-link[aria-current='page'] .waypoint-icon {
-		color: #26a269;
+		color: #39ff88;
 	}
 
 	.waypoint-text {
@@ -292,7 +292,7 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 	.waypoint-link:hover .waypoint-caret,
 	.waypoint-link:focus-visible .waypoint-caret,
 	.waypoint-link[aria-current='page'] .waypoint-caret {
-		color: #26a269;
+		color: #39ff88;
 	}
 
 	.waypoint-chevron {
@@ -328,12 +328,12 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 	}
 
 	.project-link:focus-visible {
-		outline: 1px solid #26a269;
+		outline: 1px solid #39ff88;
 		outline-offset: 2px;
 	}
 
 	.project-link[aria-current='page'] {
-		color: #26a269;
+		color: #39ff88;
 	}
 
 	.project-dot {
@@ -544,7 +544,8 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 		link.addEventListener('focus', () => {
 			activeIndex = index;
 			highlight(index);
-			statusElement.textContent = link.dataset.destination ?? '';
+			const destination = link.dataset.destination ?? '';
+			statusElement.textContent = `cat ${destination}.txt`;
 			detailElement.textContent = 'enter to open · or click a line';
 		});
 	});

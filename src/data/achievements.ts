@@ -18,6 +18,7 @@ export const CATEGORIES = [
 	'leadership',
 	'community',
 	'open-source',
+	'research',
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
@@ -28,6 +29,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
 	leadership: 'leadership & teaching',
 	community: 'community',
 	'open-source': 'open source',
+	research: 'research',
 };
 
 export const CATEGORY_BLURBS: Record<Category, string> = {
@@ -36,6 +38,7 @@ export const CATEGORY_BLURBS: Record<Category, string> = {
 	leadership: 'running things other people show up to.',
 	community: 'work that is not about the code.',
 	'open-source': 'changes that survived review.',
+	research: 'papers turned into working systems.',
 };
 
 export type AchievementIcon =
@@ -185,7 +188,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 	{
 		slug: 'tensor-2026',
 		title: 'Tensor 2026',
-		category: 'hackathons',
+		category: 'research',
 		result: 'first place',
 		medal: 'gold',
 		date: 'March 2026',
@@ -229,6 +232,37 @@ export const ACHIEVEMENTS: Achievement[] = [
 				'GraphRAG response step grounded in retrieved relationships, not raw model recall.',
 			],
 			stack: ['Python', 'GraphRAG', 'LLM agents', 'Neo4j'],
+		},
+	},
+	{
+		slug: 'ieee-cs-iampro-2025',
+		title: 'IEEE Computer Society IAMPro 2025',
+		category: 'research',
+		result: 'research intern',
+		date: 'April 1 - September 30, 2025',
+		year: '2025',
+		summary: 'a six-month research internship and mentorship programme.',
+		description:
+			'Conducted a research project on implementing software on a blockchain-based architecture through IEEE Computer Society Bangalore chapter.',
+		tags: ['ieee', 'iampro', 'research', 'blockchain', 'internship', 'mentorship'],
+		icon: 'flask',
+		captions: {
+			'01': 'IAMPro 2025 programme documentation.',
+			'02': 'research notes and blockchain architecture work.',
+			'03': 'the six-month internship and mentorship programme.',
+		},
+		detail: {
+			overview: [
+				'IEEE Computer Society IAMPro 2025 was a six-month internship and mentorship programme run by the IEEE Computer Society Bangalore chapter. I joined as an intern from 1 April 2025 to 30 September 2025 through my membership in the IEEE Computer Society student chapter at PES University.',
+				'I worked under the mentorship of Dr. Venu Gopal N. alongside Ankit Khaitan. The internship centred on a research project investigating how software could be implemented on a blockchain-based architecture, giving me the chance to explore the trade-offs between distributed systems, trust, and practical software design.',
+			],
+			highlights: [
+				'Six-month internship from 1 April 2025 to 30 September 2025.',
+				'Conducted under the mentorship of Dr. Venu Gopal N.',
+				'Collaborated with Ankit Khaitan on the research work.',
+				'Researched software implementation on a blockchain-based architecture.',
+			],
+			stack: ['Blockchain', 'Distributed systems', 'Software architecture'],
 		},
 	},
 	{
