@@ -26,13 +26,13 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
 {
 	images.length > 0 && (
-		<figure class="gallery" data-gallery>
-			<ul class="thumbs">
+		<figure class="gallery m-0" data-gallery>
+			<ul class="thumbs m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3 p-0 max-[639px]:grid-cols-[repeat(auto-fill,minmax(8rem,1fr))]">
 				{images.map((image, index) => (
 					<li>
 						<button
 							type="button"
-							class="thumb"
+							class="thumb relative block aspect-4/3 w-full cursor-zoom-in overflow-hidden rounded-sm border border-[#3d3846] bg-[#1c1c1c] p-0 hover:border-[#5a5560] focus-visible:outline-1 focus-visible:outline-[#26a269] focus-visible:outline-offset-2"
 							data-index={index}
 							data-caption={image.caption}
 							aria-label={`expand image ${index + 1}: ${image.caption}`}
@@ -45,7 +45,7 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 								loading="lazy"
 								decoding="async"
 							/>
-							<span class="thumb-index" aria-hidden="true">
+								<span class="thumb-index absolute right-[0.4rem] bottom-[0.35rem] rounded-[3px] bg-[rgba(0,0,0,0.7)] px-[0.3rem] py-[0.05rem] text-[0.625rem] tracking-[0.04em] text-[#a5a3a9]" aria-hidden="true">
 								{String(index + 1).padStart(2, '0')}
 							</span>
 						</button>
@@ -54,20 +54,20 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 			</ul>
 
 			<dialog class="lightbox" id={dialogId} aria-label={`${title} gallery`}>
-				<div class="lightbox-inner">
-					<div class="lightbox-bar">
-						<span class="lightbox-count" data-count aria-hidden="true" />
-						<button type="button" class="lightbox-close" data-close aria-label="close gallery">
+				<div class="lightbox-inner flex flex-col gap-3 p-3">
+					<div class="lightbox-bar flex items-center justify-between gap-2">
+						<span class="lightbox-count text-[0.6875rem] tracking-[0.06em] text-dim" data-count aria-hidden="true" />
+						<button type="button" class="lightbox-close inline-flex cursor-pointer items-center justify-center rounded-[3px] border border-[#3d3846] bg-transparent p-[0.3rem] text-[#deddda] hover:border-[#5a5560] hover:bg-line hover:text-white focus-visible:outline-1 focus-visible:outline-[#26a269] focus-visible:outline-offset-2" data-close aria-label="close gallery">
 							<X size={14} strokeWidth={1.5} aria-hidden="true" />
 						</button>
 					</div>
 
-					<div class="lightbox-stage">
-						<button type="button" class="lightbox-nav" data-prev aria-label="previous image">
+					<div class="lightbox-stage grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 max-[639px]:grid-cols-[minmax(0,1fr)]">
+						<button type="button" class="lightbox-nav inline-flex cursor-pointer items-center justify-center rounded-[3px] border border-[#3d3846] bg-transparent p-[0.3rem] text-[#deddda] hover:border-[#5a5560] hover:bg-line hover:text-white focus-visible:outline-1 focus-visible:outline-[#26a269] focus-visible:outline-offset-2 max-[639px]:hidden" data-prev aria-label="previous image">
 							<ArrowLeft size={16} strokeWidth={1.5} aria-hidden="true" />
 						</button>
 
-						<div class="lightbox-frame">
+						<div class="lightbox-frame grid min-h-0 place-items-center">
 							{images.map((image, index) => (
 								<Image
 									src={image.src}
@@ -82,12 +82,12 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 							))}
 						</div>
 
-						<button type="button" class="lightbox-nav" data-next aria-label="next image">
+						<button type="button" class="lightbox-nav inline-flex cursor-pointer items-center justify-center rounded-[3px] border border-[#3d3846] bg-transparent p-[0.3rem] text-[#deddda] hover:border-[#5a5560] hover:bg-line hover:text-white focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-2 max-[639px]:hidden" data-next aria-label="next image">
 							<ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" />
 						</button>
 					</div>
 
-					<p class="lightbox-caption" data-caption-text />
+					<p class="lightbox-caption m-0 min-h-5 text-[0.75rem] leading-[1.6] text-[#a5a3a9]" data-caption-text />
 				</div>
 			</dialog>
 		</figure>
@@ -95,58 +95,11 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 }
 
 <style>
-	.gallery {
-		margin: 0;
-	}
-
-	.thumbs {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-		gap: 0.75rem;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.thumb {
-		position: relative;
-		display: block;
-		width: 100%;
-		aspect-ratio: 4 / 3;
-		overflow: hidden;
-		padding: 0;
-		border: 1px solid #3d3846;
-		border-radius: 4px;
-		background: #1c1c1c;
-		cursor: zoom-in;
-	}
-
 	.thumb :global(img) {
 		display: block;
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-	}
-
-	.thumb:hover {
-		border-color: #5a5560;
-	}
-
-	.thumb:focus-visible {
-		outline: 1px solid #26a269;
-		outline-offset: 2px;
-	}
-
-	.thumb-index {
-		position: absolute;
-		right: 0.4rem;
-		bottom: 0.35rem;
-		padding: 0.05rem 0.3rem;
-		border-radius: 3px;
-		background: rgba(0, 0, 0, 0.7);
-		color: #a5a3a9;
-		font-size: 0.625rem;
-		letter-spacing: 0.04em;
 	}
 
 	.lightbox {
@@ -166,65 +119,6 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 		background: rgba(0, 0, 0, 0.82);
 	}
 
-	.lightbox-inner {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-		padding: 0.75rem;
-	}
-
-	.lightbox-bar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-	}
-
-	.lightbox-count {
-		color: #737373;
-		font-size: 0.6875rem;
-		letter-spacing: 0.06em;
-	}
-
-	.lightbox-close,
-	.lightbox-nav {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0.3rem;
-		border: 1px solid #3d3846;
-		border-radius: 3px;
-		background: transparent;
-		color: #deddda;
-		cursor: pointer;
-	}
-
-	.lightbox-close:hover,
-	.lightbox-nav:hover {
-		border-color: #5a5560;
-		background: #262626;
-		color: #ffffff;
-	}
-
-	.lightbox-close:focus-visible,
-	.lightbox-nav:focus-visible {
-		outline: 1px solid #26a269;
-		outline-offset: 2px;
-	}
-
-	.lightbox-stage {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr) auto;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.lightbox-frame {
-		display: grid;
-		place-items: center;
-		min-height: 0;
-	}
-
 	.lightbox-frame :global(img) {
 		display: block;
 		max-width: 100%;
@@ -237,28 +131,6 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
 	.lightbox-frame :global(img[hidden]) {
 		display: none;
-	}
-
-	.lightbox-caption {
-		margin: 0;
-		min-height: 1.25rem;
-		color: #a5a3a9;
-		font-size: 0.75rem;
-		line-height: 1.6;
-	}
-
-	@media (max-width: 639px) {
-		.thumbs {
-			grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
-		}
-
-		.lightbox-stage {
-			grid-template-columns: minmax(0, 1fr);
-		}
-
-		.lightbox-nav {
-			display: none;
-		}
 	}
 
 	@media (prefers-reduced-motion: no-preference) {

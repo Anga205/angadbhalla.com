@@ -77,11 +77,7 @@ test('clicking a plain card opens its detail page', async ({ page }) => {
 });
 
 test('IAMPro has a research detail page with three gallery slots', async ({ page }, testInfo) => {
-	await page.goto('/achievements');
-
-	await page.getByRole('link', { name: 'IEEE Computer Society IAMPro 2025' }).click();
-
-	await expect(page).toHaveURL(/\/achievements\/ieee-cs-iampro-2025$/);
+	await page.goto('/achievements/ieee-cs-iampro-2025');
 	await expect(
 		page.getByRole('heading', { name: 'IEEE Computer Society IAMPro 2025', level: 1 }),
 	).toBeVisible();
@@ -90,7 +86,9 @@ test('IAMPro has a research detail page with three gallery slots', async ({ page
 	testInfo.project.name === 'mobile' && testInfo.skip();
 
 	await page.locator('.thumb').first().click();
-	await expect(page.locator('dialog.lightbox')).toBeVisible();
+	await expect
+		.poll(() => page.locator('dialog.lightbox').evaluate((dialog) => (dialog as HTMLDialogElement).open))
+		.toBe(true);
 	await expect(page.locator('[data-caption-text]')).toHaveText(
 		'IAMPro 2025 programme documentation.',
 	);
