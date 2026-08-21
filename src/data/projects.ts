@@ -25,50 +25,50 @@ export interface Project {
 	demo?: string;
 	repo?: string;
 	docs?: string;
+	post?: string;
 }
 
 export const PROJECTS: Project[] = [
 	{
 		id: 'angadrive',
 		name: 'AngaDriveV3',
-		summary: 'self-hosted file storage with a small sync client.',
+		summary: 'fast, self-hosted remote file storage.',
 		description:
-			'A drive I run myself. Chunked uploads, resumable transfers, and a sync client that does not need a browser open. Built to understand storage and conflict handling rather than to compete with anyone.',
+			'A performance-focused file hosting service with live websocket updates, a DAG filesystem, resumable uploads, and a SolidJS client. It is open source, self-hostable on a Raspberry Pi, and designed to feel fast without requiring an account.',
 		year: '2025',
-		stack: ['Go', 'SQLite', 'TypeScript'],
+		stack: ['Go', 'SolidJS', 'SQLite'],
 		status: 'active',
 		icon: 'drive',
-		demo: '#',
-		repo: '#',
-		docs: '#',
+		demo: 'https://drive.anga.codes',
+		repo: 'https://github.com/Anga205/AngaDriveV3',
+		post: 'https://lnkd.in/p/dknw77Br',
 	},
 	{
 		id: 'leetcode-tracker',
 		name: 'Leetcode Tracker',
-		summary: 'tracks competitive programming progress over time.',
+		summary: 'an automated competitive programming progress dashboard.',
 		description:
-			'Pulls submissions from judges, stores them, and charts the parts that actually matter: consistency, topic coverage, and where the difficulty wall is. The interesting part is the data model, not the charts.',
+			'A scheduled Rust updater records solve-count history through GitHub Actions, while a static React dashboard turns the readings into interactive charts for comparing progress over time.',
 		year: '2025',
-		stack: ['Python', 'Postgres', 'React'],
+		stack: ['Rust', 'React', 'Chart.js'],
 		status: 'active',
 		icon: 'tracker',
-		demo: '#',
-		repo: '#',
-		docs: '#',
+		demo: 'https://leetcode-tracker.anga.codes/',
+		repo: 'https://github.com/Anga205/Leetcode-Tracker',
 	},
 	{
 		id: 'code-execution-api',
 		name: 'Code Execution API',
 		summary: 'a hand-built sandbox for running untrusted code.',
 		description:
-			'Namespaces, cgroups v2, chroot, and seccomp-bpf straight against the kernel. No Docker, no container runtime in between. Four languages with hard time and memory limits.',
+			'A lower-overhead code sandbox built from Linux namespaces, cgroups v2, chroot, and seccomp-bpf instead of Docker or firejail. It runs Python, C, C++, and Java with hard time and memory limits, and is designed to power coding contests.',
 		year: '2025',
 		stack: ['Go', 'Linux', 'seccomp'],
 		status: 'active',
 		icon: 'terminal',
 		demo: '/projects/code-execution-api',
 		repo: 'https://github.com/Anga205/CodeExecutionAPI',
-		docs: '#',
+		docs: 'https://github.com/Anga205/CodeExecutionAPI/blob/main/README.md',
 	},
 	{
 		id: 'compiler',
@@ -80,8 +80,6 @@ export const PROJECTS: Project[] = [
 		stack: ['C', 'LLVM'],
 		status: 'archived',
 		icon: 'compiler',
-		repo: '#',
-		docs: '#',
 	},
 	{
 		id: 'portfolio',
@@ -93,8 +91,7 @@ export const PROJECTS: Project[] = [
 		stack: ['Astro', 'TypeScript', 'Tailwind'],
 		status: 'active',
 		icon: 'web',
-		repo: '#',
-		docs: '#',
+		repo: 'https://github.com/Anga205/angadbhalla.com',
 	},
 	{
 		id: 'dotfiles',
@@ -106,6 +103,18 @@ export const PROJECTS: Project[] = [
 		stack: ['Shell', 'GNOME'],
 		status: 'archived',
 		icon: 'tool',
-		repo: '#',
+	},
+	{
+		id: 'angaos',
+		name: 'AngaOS',
+		summary: 'a bare-bones operating system from the bootloader up.',
+		description:
+			'An x86 operating system built from a bootloader, kernel, and direct VGA-buffer output. It includes familiar filesystem commands such as ls, mkdir, cd, rm, and touch, and boots through QEMU with a small Makefile-driven toolchain.',
+		year: '2025',
+		stack: ['Assembly', 'C', 'NASM'],
+		status: 'active',
+		icon: 'terminal',
+		repo: 'https://github.com/Anga205/AngaOS',
+		post: 'https://lnkd.in/p/deAt6GRS',
 	},
 ];

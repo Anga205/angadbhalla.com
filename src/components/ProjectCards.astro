@@ -21,8 +21,9 @@ import {
 	Play,
 	BookOpen,
 	Github,
-	Archive,
-	CircleSlash,
+	Linkedin,
+	ArrowUpRight,
+	X,
 } from 'lucide-astro';
 import { PROJECTS, type Project } from '../data/projects';
 
@@ -41,10 +42,6 @@ const STATUS_LABEL: Record<Project['status'], string> = {
 	inactive: 'inactive',
 };
 
-const STATUS_ICON = {
-	archived: Archive,
-	inactive: CircleSlash,
-} as const;
 ---
 
 <section
@@ -64,73 +61,54 @@ const STATUS_ICON = {
 			<span aria-hidden="true"></span>
 		</div>
 
-		<div class="body p-7 text-[0.875rem] leading-[1.75] text-white">
+		<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
 			<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ ls ~/portfolio/projects</p>
 			<h1 class="mb-2 text-[1.35rem] font-normal">projects</h1>
-			<p class="lede mb-7 max-w-[62ch] text-[#a5a3a9]">
+			<p class="lede mb-8 max-w-[62ch] text-[#a5a3a9]">
 				Things I have built. Some are maintained, some are archives, and some are here because
 				the code still explains the idea.
 			</p>
 
-			<ul class="grid grid-cols-[repeat(auto-fill,minmax(19rem,1fr))] gap-4 m-0 list-none p-0 max-[639px]:grid-cols-[minmax(0,1fr)]">
+			<ul class="grid m-0 grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] list-none gap-3 p-0">
 				{PROJECTS.map((project) => {
 					const Icon = ICONS[project.icon];
-					const StatusIcon = project.status === 'active' ? null : STATUS_ICON[project.status];
+					const menuId = `menu-${project.id}`;
+					const links = [
+						project.demo && { label: 'demo', href: project.demo, icon: Play, external: project.demo.startsWith('http') },
+						project.repo && { label: 'repository', href: project.repo, icon: Github, external: true },
+						project.docs && { label: 'docs', href: project.docs, icon: BookOpen, external: true },
+						project.post && { label: 'linkedin post', href: project.post, icon: Linkedin, external: true },
+					].filter(Boolean) as Array<{ label: string; href: string; icon: typeof Play; external: boolean }>;
 					return (
 						<li
-							class={`card flex flex-col gap-3 rounded-md border border-[#3d3846] p-4 ${project.status === 'active' ? 'bg-[#1c1c1c]' : 'bg-[#191919]'}`}
+							class="card relative flex flex-col overflow-hidden rounded-md border border-[#3d3846] bg-[#1c1c1c]"
 							data-status={project.status}
 						>
-							<div class="card-head flex items-start gap-3">
-								<span
-									class="card-icon flex size-8 shrink-0 items-center justify-center rounded-sm border border-[#3d3846] text-[#26a269]"
-									aria-hidden="true"
-								>
-									<Icon size={18} strokeWidth={1.5} />
+							<div class="card-bar flex items-center justify-between gap-2 border-b border-[#3d3846] bg-[#303030] px-2 py-[0.3rem] select-none">
+								<span class="card-dots flex gap-1" aria-hidden="true">
+									<span class="size-1.5 rounded-full bg-[#e01b24]"></span>
+									<span class="size-1.5 rounded-full bg-[#e5a50a]"></span>
+									<span class="size-1.5 rounded-full bg-[#33d17a]"></span>
 								</span>
-								<div class="card-title min-w-0">
-									<h2 class="m-0 text-[0.9375rem] font-medium leading-[1.4] text-white">{project.name}</h2>
-									<p class="card-summary mt-[0.15rem] mb-0 text-[0.75rem] leading-normal text-[#a5a3a9]">{project.summary}</p>
+								<div class="card-actions flex items-center gap-1">
+									{project.status !== 'active' && <span class="card-status">{STATUS_LABEL[project.status]}</span>}
+									{links.map((link) => {
+										const LinkIcon = link.icon;
+										return (
+											<a class="card-action inline-flex size-4.5 items-center justify-center rounded-[3px] text-[#8a8a8a] no-underline hover:bg-[#3d3846] hover:text-[#deddda] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-1" href={link.href} {...(link.external ? { target: '_blank', rel: 'noreferrer' } : {})} aria-label={`${project.name} ${link.label}`} title={link.label}>
+												<LinkIcon size={12} strokeWidth={1.5} aria-hidden="true" />
+											</a>
+										);
+									})}
 								</div>
 							</div>
 
-							<p class="card-description m-0 text-[0.8125rem] leading-[1.65] text-[#a5a3a9]">{project.description}</p>
-
-							<div class="card-meta flex flex-wrap items-center gap-2 text-[0.6875rem] text-dim">
-								<span class="card-year text-dim">{project.year}</span>
-								<ul class="stack m-0 flex list-none flex-wrap gap-[0.35rem] p-0">
-									{project.stack.map((item) => (
-										<li class="rounded-[3px] border border-[#3d3846] px-[0.35rem] py-[0.05rem] text-[#a5a3a9]">{item}</li>
-									))}
-								</ul>
-							</div>
-
-							{project.status !== 'active' && (
-								<p class="status m-0 inline-flex items-center gap-[0.35rem] text-[0.6875rem] tracking-[0.04em] text-[#a5a3a9] uppercase" data-status={project.status}>
-									{StatusIcon && <StatusIcon size={12} strokeWidth={1.5} aria-hidden="true" />}
-									{STATUS_LABEL[project.status]}
-								</p>
-							)}
-
-							<div class="card-actions mt-auto flex flex-wrap gap-2 pt-1">
-								{project.demo && (
-									<a class="action inline-flex items-center gap-[0.35rem] rounded-[3px] border border-[#3d3846] px-[0.55rem] py-1 text-[0.75rem] text-[#deddda] no-underline hover:border-[#5a5560] hover:bg-line hover:text-white focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-2" href={project.demo}>
-										<Play size={13} strokeWidth={1.5} aria-hidden="true" />
-										demo
-									</a>
-								)}
-								{project.repo && (
-									<a class="action inline-flex items-center gap-[0.35rem] rounded-[3px] border border-[#3d3846] px-[0.55rem] py-1 text-[0.75rem] text-[#deddda] no-underline hover:border-[#5a5560] hover:bg-line hover:text-white focus-visible:outline-1 focus-visible:outline-[#26a269] focus-visible:outline-offset-2" href={project.repo}>
-										<Github size={13} strokeWidth={1.5} aria-hidden="true" />
-										repository
-									</a>
-								)}
-								{project.docs && (
-									<a class="action inline-flex items-center gap-[0.35rem] rounded-[3px] border border-[#3d3846] px-[0.55rem] py-1 text-[0.75rem] text-[#deddda] no-underline hover:border-[#5a5560] hover:bg-line hover:text-white focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-2" href={project.docs}>
-										<BookOpen size={13} strokeWidth={1.5} aria-hidden="true" />
-										docs
-									</a>
-								)}
+							<div class="card-body flex items-start gap-[0.6rem] p-3">
+								<span class="card-icon flex size-7 shrink-0 items-center justify-center rounded-sm border border-[#3d3846] text-[#26a269]" aria-hidden="true"><Icon size={16} strokeWidth={1.5} /></span>
+								<div class="card-text min-w-0">
+									<h2 class="m-0 text-[0.8125rem] font-medium leading-[1.4]"><button type="button" class="card-open cursor-pointer border-0 bg-transparent p-0 text-left text-[0.8125rem] font-[inherit] font-medium leading-[1.4] text-white" data-menu={menuId} aria-haspopup="dialog">{project.name}</button></h2>
+									<p class="card-summary mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#a5a3a9]">{project.summary}</p>
+								</div>
 							</div>
 						</li>
 					);
@@ -140,13 +118,75 @@ const STATUS_ICON = {
 	</div>
 </section>
 
+{PROJECTS.map((project) => {
+	const links = [
+		project.demo && { label: 'demo', href: project.demo, icon: Play },
+		project.repo && { label: 'repository', href: project.repo, icon: Github },
+		project.docs && { label: 'docs', href: project.docs, icon: BookOpen },
+		project.post && { label: 'linkedin post', href: project.post, icon: Linkedin },
+	].filter(Boolean) as Array<{ label: string; href: string; icon: typeof Play }>;
+	return (
+		<dialog class="menu" id={`menu-${project.id}`} aria-label={`${project.name} links`}>
+			<div class="menu-inner">
+				<div class="menu-bar"><span class="menu-title">{project.name}</span><button type="button" class="menu-close" data-close aria-label="close"><X size={13} strokeWidth={1.5} aria-hidden="true" /></button></div>
+				<ul class="menu-list">
+					{links.map((link) => { const LinkIcon = link.icon; return <li><a href={link.href} {...(link.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}><LinkIcon size={14} strokeWidth={1.5} aria-hidden="true" /><span class="menu-label">{link.label}</span><ArrowUpRight size={12} strokeWidth={1.5} aria-hidden="true" /></a></li>; })}
+				</ul>
+			</div>
+		</dialog>
+	);
+})}
+
 <style>
-	.status[data-status='archived'] {
-		color: #e5a50a;
+	.card-status {
+		margin-right: 0.25rem;
+		color: #a5a3a9;
+		font-size: 0.625rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
 	}
 
-	.status[data-status='inactive'] {
-		color: #737373;
-	}
+	.card:hover { border-color: #5a5560; }
+	.card:focus-within { outline: 1px solid #26a269; outline-offset: 2px; }
+	.card-open::after { content: ''; position: absolute; inset: 0; border-radius: 6px; }
+	.card-open:focus-visible { outline: none; }
+	.card:hover .card-open { color: #26a269; }
+	.card-action:hover { background: #3d3846; color: #deddda; }
+	.card-action:focus-visible { outline: 1px solid #26a269; outline-offset: 1px; }
+
+	.menu { width: min(22rem, calc(100vw - 2rem)); max-width: none; margin: auto; overflow: hidden; padding: 0; border: 1px solid #3d3846; border-radius: 6px; background: #000000; color: #ffffff; }
+	.menu::backdrop { background: rgba(0, 0, 0, 0.82); }
+	.menu-inner { display: flex; flex-direction: column; }
+	.menu-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.4rem 0.5rem; border-bottom: 1px solid #3d3846; background: #303030; color: #deddda; font-size: 0.6875rem; user-select: none; }
+	.menu-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.menu-close { display: inline-flex; align-items: center; justify-content: center; padding: 0.15rem; border: 0; border-radius: 3px; background: none; color: #a5a3a9; cursor: pointer; }
+	.menu-close:hover { background: #3d3846; color: #ffffff; }
+	.menu-close:focus-visible { outline: 1px solid #26a269; outline-offset: 1px; }
+	.menu-list { margin: 0; padding: 0.35rem; list-style: none; }
+	.menu-list a { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.5rem; border-radius: 4px; color: #deddda; font-size: 0.75rem; text-decoration: none; }
+	.menu-list a:hover { background: #1c1c1c; color: #ffffff; }
+	.menu-list a:focus-visible { outline: 1px solid #26a269; outline-offset: -1px; }
+	.menu-list a > :global(svg:first-child) { flex-shrink: 0; color: #8a8a8a; }
+	.menu-list a > :global(svg:last-child) { flex-shrink: 0; color: #4a4a4a; }
+	.menu-label { flex: 1; min-width: 0; }
+	@media (prefers-reduced-motion: no-preference) { .menu[open] { animation: menu-in 120ms ease-out; } @keyframes menu-in { from { opacity: 0; } to { opacity: 1; } } }
 
 </style>
+
+<script>
+	for (const opener of document.querySelectorAll<HTMLButtonElement>('[data-menu]')) {
+		const id = opener.dataset.menu;
+		const dialog = id ? document.getElementById(id) as HTMLDialogElement | null : null;
+		if (!dialog) continue;
+		opener.addEventListener('click', () => dialog.showModal());
+		dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+		dialog.addEventListener('keydown', (event) => {
+			if (event.key === 'Escape') { event.preventDefault(); dialog.close(); }
+		});
+		dialog.addEventListener('click', (event) => {
+			if (event.target !== dialog) return;
+			const box = dialog.getBoundingClientRect();
+			if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close();
+		});
+	}
+</script>

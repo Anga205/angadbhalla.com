@@ -103,6 +103,30 @@ test('projects route renders the project cards', async ({ page }) => {
 	await expect(page.locator('.card-actions').first()).toBeVisible();
 });
 
+test('project cards open link menus with the published project links', async ({ page }, testInfo) => {
+	if (testInfo.project.name === 'mobile') testInfo.skip();
+
+	await page.goto('/projects');
+
+	await page.getByRole('button', { name: 'AngaDriveV3' }).click();
+	const driveMenu = page.locator('#menu-angadrive[open]');
+	await expect(driveMenu).toBeVisible();
+	const driveHrefs = await driveMenu.locator('a').evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+	expect(driveHrefs).toContain('https://drive.anga.codes');
+	expect(driveHrefs).toContain('https://github.com/Anga205/AngaDriveV3');
+	expect(driveHrefs).toContain('https://lnkd.in/p/dknw77Br');
+
+	await page.keyboard.press('Escape');
+	await expect(driveMenu).toBeHidden();
+
+	await page.getByRole('button', { name: 'AngaOS' }).click();
+	const osMenu = page.locator('#menu-angaos[open]');
+	await expect(osMenu).toBeVisible();
+	const osHrefs = await osMenu.locator('a').evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+	expect(osHrefs).toContain('https://github.com/Anga205/AngaOS');
+	expect(osHrefs).toContain('https://lnkd.in/p/deAt6GRS');
+});
+
 test('project detail route renders the VS Code window', async ({ page }, testInfo) => {
 	await page.goto('/projects/code-execution-api');
 
