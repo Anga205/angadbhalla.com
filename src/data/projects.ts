@@ -22,7 +22,7 @@ export interface Project {
 	stack: string[];
 	status: ProjectStatus;
 	icon: 'drive' | 'tracker' | 'terminal' | 'compiler' | 'web' | 'tool';
-	demo?: string;
+	live?: string;
 	repo?: string;
 	docs?: string;
 	post?: string;
@@ -39,7 +39,7 @@ export const PROJECTS: Project[] = [
 		stack: ['Go', 'SolidJS', 'SQLite'],
 		status: 'active',
 		icon: 'drive',
-		demo: 'https://drive.anga.codes',
+		live: 'https://drive.anga.codes',
 		repo: 'https://github.com/Anga205/AngaDriveV3',
 		post: 'https://lnkd.in/p/dknw77Br',
 	},
@@ -53,7 +53,7 @@ export const PROJECTS: Project[] = [
 		stack: ['Rust', 'React', 'Chart.js'],
 		status: 'active',
 		icon: 'tracker',
-		demo: 'https://leetcode-tracker.anga.codes/',
+		live: 'https://leetcode-tracker.anga.codes/',
 		repo: 'https://github.com/Anga205/Leetcode-Tracker',
 	},
 	{
@@ -66,20 +66,10 @@ export const PROJECTS: Project[] = [
 		stack: ['Go', 'Linux', 'seccomp'],
 		status: 'active',
 		icon: 'terminal',
-		demo: '/projects/code-execution-api',
+		live: 'https://compiler.anga.codes',
 		repo: 'https://github.com/Anga205/CodeExecutionAPI',
 		docs: 'https://github.com/Anga205/CodeExecutionAPI/blob/main/README.md',
-	},
-	{
-		id: 'compiler',
-		name: 'Compiler',
-		summary: 'a small compiler front end written from scratch.',
-		description:
-			'Lexer, parser, and a typed AST for a small language. Written to learn the boring parts properly: error recovery, source spans, and diagnostics that point at the right token.',
-		year: '2024',
-		stack: ['C', 'LLVM'],
-		status: 'archived',
-		icon: 'compiler',
+		post: 'https://lnkd.in/p/duhbNW3q',
 	},
 	{
 		id: 'portfolio',
@@ -94,17 +84,6 @@ export const PROJECTS: Project[] = [
 		repo: 'https://github.com/Anga205/angadbhalla.com',
 	},
 	{
-		id: 'dotfiles',
-		name: 'Dotfiles',
-		summary: 'a GNOME setup that stays out of the way.',
-		description:
-			'Shell, editor, and desktop configuration kept in one place. Mostly here so a new machine takes minutes instead of an evening.',
-		year: '2023',
-		stack: ['Shell', 'GNOME'],
-		status: 'archived',
-		icon: 'tool',
-	},
-	{
 		id: 'angaos',
 		name: 'AngaOS',
 		summary: 'a bare-bones operating system from the bootloader up.',
@@ -116,5 +95,17 @@ export const PROJECTS: Project[] = [
 		icon: 'terminal',
 		repo: 'https://github.com/Anga205/AngaOS',
 		post: 'https://lnkd.in/p/deAt6GRS',
+	},
+	{
+		id: 'angadrive-v2',
+		name: 'AngaDriveV2',
+		summary: 'unsupported predecessor to AngaDriveV3.',
+		description:
+		'An older AngaDrive release kept as a public archive. It is no longer supported, but remains useful as a record of the project before the current version.',
+		year: '2024',
+		stack: ['Go', 'SQLite'],
+		status: 'archived',
+		icon: 'drive',
+		repo: 'https://github.com/Anga205/AngaDriveV2',
 	},
 ];

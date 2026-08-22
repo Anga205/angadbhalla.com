@@ -80,7 +80,7 @@ test('every destination has its own route and keeps the navigation available', a
 		['Projects', '/projects'],
 		['About me', '/about'],
 		['Achievements', '/achievements'],
-		['Find me', '/find-me'],
+		['Contact', '/contact'],
 	] as const;
 
 	for (const [name, route] of routes) {
@@ -98,9 +98,23 @@ test('projects route renders the project cards', async ({ page }) => {
 	const cards = page.locator('.card');
 	await expect(cards.first()).toBeVisible();
 	expect(await cards.count()).toBeGreaterThan(1);
+	await expect(page.getByRole('heading', { name: 'AngaDriveV2' })).toBeVisible();
+	await expect(page.getByText('public archive')).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Compiler' })).toHaveCount(0);
+	await expect(page.getByRole('heading', { name: 'Dotfiles' })).toHaveCount(0);
+	await expect(page.locator('.card').last()).toContainText('AngaDriveV2');
 
 	// Cards must not depend on having every link.
 	await expect(page.locator('.card-actions').first()).toBeVisible();
+});
+
+test('AngaDriveV2 links to its archived repository', async ({ page }) => {
+	await page.goto('/projects');
+
+	const card = page.locator('.card').filter({ hasText: 'AngaDriveV2' });
+	await card.getByRole('button', { name: 'AngaDriveV2' }).click();
+	await expect(card).toContainText('public archive');
+	await expect(page.locator('#menu-angadrive-v2 a[href="https://github.com/Anga205/AngaDriveV2"]')).toBeVisible();
 });
 
 test('project cards open link menus with the published project links', async ({ page }, testInfo) => {
@@ -127,22 +141,24 @@ test('project cards open link menus with the published project links', async ({ 
 	expect(osHrefs).toContain('https://lnkd.in/p/deAt6GRS');
 });
 
-test('project detail route renders the VS Code window', async ({ page }, testInfo) => {
-	await page.goto('/projects/code-execution-api');
+test('code execution API uses its live deployment link', async ({ page }) => {
+	await page.goto('/projects');
 
-	await expect(page.locator('#demo')).toBeVisible();
-	await expect(page.locator('.statusbar')).toBeVisible();
+	const card = page.locator('.card').filter({ hasText: 'Code Execution API' });
+	const liveLink = card.getByRole('link', { name: 'Code Execution API live deployment' });
+	await expect(liveLink).toHaveAttribute('href', 'https://compiler.anga.codes');
+	await expect(liveLink).toHaveAttribute('target', '_blank');
 
-	if (testInfo.project.name !== 'mobile') {
-		await expect(page.locator('.sidebar')).toBeVisible();
-		await expect(page.locator('.activitybar')).toBeVisible();
-	}
+	await card.getByRole('button', { name: 'Code Execution API' }).click();
+	await expect(page.locator('#menu-code-execution-api')).toContainText('live deployment');
+	await expect(page.locator('#menu-code-execution-api a[href="https://compiler.anga.codes"]')).toBeVisible();
+	await expect(page.locator('#menu-code-execution-api a[href="https://lnkd.in/p/duhbNW3q"]')).toBeVisible();
 });
 
 test('sidebar highlights the current route, not always projects', async ({ page }) => {
-	await page.goto('/find-me');
+	await page.goto('/contact');
 
-	await expect(page.locator('[data-destination-link="find-me"]')).toHaveAttribute(
+	await expect(page.locator('[data-destination-link="contact"]')).toHaveAttribute(
 		'aria-current',
 		'page',
 	);
@@ -152,18 +168,15 @@ test('sidebar highlights the current route, not always projects', async ({ page 
 	);
 });
 
-test('projects accordion lists projects and toggles', async ({ page }) => {
+test('projects navigation has no redundant project list', async ({ page }) => {
 	await page.goto('/projects');
 
-	const list = page.locator('#project-list');
-	await expect(list).toBeVisible();
-	expect(await list.locator('.project-link').count()).toBeGreaterThan(1);
+	await expect(page.locator('#project-list')).toHaveCount(0);
 
-	await page.locator('[data-destination-link="projects"]').click();
-	await expect(list).toBeHidden();
-
-	await page.locator('[data-destination-link="projects"]').click();
-	await expect(list).toBeVisible();
+	const projectsLink = page.locator('[data-destination-link="projects"]');
+	await expect(projectsLink).toHaveAttribute('href', '/projects');
+	await projectsLink.click();
+	await expect(page).toHaveURL(/\/projects$/);
 });
 
 test('mobile selector has no overflow and keeps the bottom rail usable', async ({ page }) => {
@@ -175,7 +188,7 @@ test('mobile selector has no overflow and keeps the bottom rail usable', async (
 	);
 	expect(overflow).toBeLessThanOrEqual(1);
 
-	await page.getByRole('link', { name: /Find me:/ }).click();
+	await page.getByRole('link', { name: /Contact:/ }).click();
 	await expect(page.locator('#wayfinder')).toHaveCSS('bottom', '0px');
 	await expect(page.locator('#wayfinder')).toHaveCSS('width', '375px');
 });

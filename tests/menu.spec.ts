@@ -80,9 +80,9 @@ test('opens Projects and keeps the menu as a desktop rail', async ({ page }, tes
 test('moves the minimized menu to the bottom on mobile', async ({ page }, testInfo) => {
 	test.skip(testInfo.project.name !== 'mobile', 'mobile rail only');
 	await openMenu(page);
-	await page.getByRole('link', { name: /Find me:/ }).click();
+	await page.getByRole('link', { name: /Contact:/ }).click();
 
-	await expect(page).toHaveURL(/\/find-me$/);
+	await expect(page).toHaveURL(/\/contact$/);
 	await expect(page.locator('#wayfinder')).toHaveClass(/is-minimized/);
 	await expect(page.locator('#wayfinder')).toHaveCSS('width', `${page.viewportSize()!.width}px`);
 	await expect(page.locator('#wayfinder')).toHaveCSS('bottom', '0px');

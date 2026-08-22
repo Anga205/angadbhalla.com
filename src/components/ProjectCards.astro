@@ -22,6 +22,7 @@ import {
 	BookOpen,
 	Github,
 	Linkedin,
+	ExternalLink,
 	ArrowUpRight,
 	X,
 } from 'lucide-astro';
@@ -74,7 +75,7 @@ const STATUS_LABEL: Record<Project['status'], string> = {
 					const Icon = ICONS[project.icon];
 					const menuId = `menu-${project.id}`;
 					const links = [
-						project.demo && { label: 'demo', href: project.demo, icon: Play, external: project.demo.startsWith('http') },
+						project.live && { label: 'live deployment', href: project.live, icon: ExternalLink, external: true },
 						project.repo && { label: 'repository', href: project.repo, icon: Github, external: true },
 						project.docs && { label: 'docs', href: project.docs, icon: BookOpen, external: true },
 						project.post && { label: 'linkedin post', href: project.post, icon: Linkedin, external: true },
@@ -120,7 +121,7 @@ const STATUS_LABEL: Record<Project['status'], string> = {
 
 {PROJECTS.map((project) => {
 	const links = [
-		project.demo && { label: 'demo', href: project.demo, icon: Play },
+		project.live && { label: 'live deployment', href: project.live, icon: ExternalLink },
 		project.repo && { label: 'repository', href: project.repo, icon: Github },
 		project.docs && { label: 'docs', href: project.docs, icon: BookOpen },
 		project.post && { label: 'linkedin post', href: project.post, icon: Linkedin },

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test('find me lists every contact with the right link', async ({ page }) => {
-	await page.goto('/find-me');
+test('contact page lists every contact with the right link', async ({ page }) => {
+	await page.goto('/contact');
 
 	const contacts = page.locator('.contact-link');
 	await expect(contacts).toHaveCount(5);
@@ -14,17 +14,18 @@ test('find me lists every contact with the right link', async ({ page }) => {
 		'https://discord.com/users/477680545271250944',
 	);
 	await expect(contacts.nth(4)).toHaveAttribute('href', 'https://www.instagram.com/_anga205/');
+	await expect(page.locator('[data-copy]')).toHaveCount(0);
 });
 
 test('contact form requires both fields', async ({ page }) => {
-	await page.goto('/find-me');
+	await page.goto('/contact');
 
 	await page.click('#send');
 	await expect(page.locator('#form-status')).toHaveText('email and message are required.');
 });
 
 test('contact form reports a failed send with placeholder credentials', async ({ page }) => {
-	await page.goto('/find-me');
+	await page.goto('/contact');
 
 	await page.fill('#email', 'someone@example.com');
 	await page.fill('#message', 'hello');
@@ -34,9 +35,9 @@ test('contact form reports a failed send with placeholder credentials', async ({
 	await expect(page.locator('#send')).toBeEnabled();
 });
 
-test('find me does not overflow on mobile', async ({ page }) => {
+test('contact page does not overflow on mobile', async ({ page }) => {
 	await page.setViewportSize({ width: 375, height: 667 });
-	await page.goto('/find-me');
+	await page.goto('/contact');
 	await expect(page.locator('.contact-link').first()).toBeVisible();
 
 	const overflow = await page.evaluate(

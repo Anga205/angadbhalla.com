@@ -1,7 +1,6 @@
 ---
 import { FolderGit2, User, Trophy, Link2 } from 'lucide-astro';
 import { DESTINATIONS } from '../data/destinations';
-import { PROJECTS } from '../data/projects';
 
 interface Props {
 	initiallyVisible?: boolean;
@@ -14,7 +13,7 @@ const ICONS = {
 	projects: FolderGit2,
 	about: User,
 	achievements: Trophy,
-	'find-me': Link2,
+	contact: Link2,
 } as const;
 
 // The active destination comes from the URL, not from list position. On
@@ -24,9 +23,6 @@ const activeId =
 	DESTINATIONS.find((d) => path === d.href || path.startsWith(`${d.href}/`))?.id ??
 	DESTINATIONS[0].id;
 
-// The accordion only opens on the projects routes, not merely because projects
-// is the default highlight on /selector.
-const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 ---
 
 <section
@@ -60,10 +56,9 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 					{DESTINATIONS.map((destination, index) => {
 						const Icon = ICONS[destination.icon];
 						const isActive = destination.id === activeId;
-						const isProjects = destination.id === 'projects';
 						return (
 							<li
-								class:list={['waypoint', isProjects && 'has-children']}
+								class="waypoint"
 								data-index={index}
 								data-destination={destination.id}
 							>
@@ -83,29 +78,6 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 										<span class="waypoint-description">{destination.description}</span>
 									</span>
 								</a>
-
-								{isProjects && (
-									<div
-										class="project-list"
-										id="project-list"
-										data-open={projectsOpen ? 'true' : 'false'}
-										hidden={!projectsOpen}
-									>
-										{PROJECTS.map((project) => (
-											<a
-												class="project-link"
-												href={`/projects/${project.id}`}
-												aria-current={path === `/projects/${project.id}` ? 'page' : undefined}
-											>
-												<span class="project-dot" aria-hidden="true"></span>
-												<span class="project-name">{project.name}</span>
-												{project.status !== 'active' && (
-													<span class="project-status">{project.status}</span>
-												)}
-											</a>
-										))}
-									</div>
-								)}
 							</li>
 						);
 					})}
@@ -295,71 +267,6 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 		color: #39ff88;
 	}
 
-	.waypoint-chevron {
-		color: #737373;
-		transition: transform 150ms ease;
-	}
-
-	.waypoint.has-children[data-expanded='true'] .waypoint-chevron {
-		transform: rotate(180deg);
-	}
-
-	.project-list {
-		margin: 0.15rem 0 0.5rem 2.25rem;
-		padding-left: 0.6rem;
-		border-left: 1px solid #262626;
-	}
-
-	.project-link {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.2rem 0.4rem;
-		border-radius: 3px;
-		color: #a5a3a9;
-		font-size: 0.75rem;
-		line-height: 1.6;
-		text-decoration: none;
-	}
-
-	.project-link:hover {
-		background: #1c1c1c;
-		color: #ffffff;
-	}
-
-	.project-link:focus-visible {
-		outline: 1px solid #39ff88;
-		outline-offset: 2px;
-	}
-
-	.project-link[aria-current='page'] {
-		color: #39ff88;
-	}
-
-	.project-dot {
-		width: 0.25rem;
-		height: 0.25rem;
-		flex-shrink: 0;
-		border-radius: 999px;
-		background: currentColor;
-		opacity: 0.6;
-	}
-
-	.project-name {
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.project-status {
-		margin-left: auto;
-		color: #737373;
-		font-size: 0.625rem;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-	}
-
 	.wayfinder-detail {
 		margin-top: 1rem;
 		padding-top: 0.75rem;
@@ -490,8 +397,6 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 	const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-destination-link]')];
 	const status = document.getElementById('wayfinder-status');
 	const detail = document.getElementById('wayfinder-detail-text');
-	const projectList = document.getElementById('project-list');
-	const projectsItem = document.querySelector<HTMLElement>('.waypoint.has-children');
 
 	if (!menu || !status || !detail || links.length === 0) {
 		throw new Error('PortfolioMenu: missing menu elements');
@@ -522,13 +427,6 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 		links[activeIndex].focus();
 	}
 
-	function setProjectsOpen(open: boolean) {
-		if (!projectList || !projectsItem) return;
-		projectList.hidden = !open;
-		projectList.dataset.open = open ? 'true' : 'false';
-		projectsItem.dataset.expanded = open ? 'true' : 'false';
-	}
-
 	function showMenu() {
 		menuElement.hidden = false;
 		highlight(currentIndex);
@@ -549,18 +447,6 @@ const projectsOpen = path === '/projects' || path.startsWith('/projects/');
 			detailElement.textContent = 'enter to open · or click a line';
 		});
 	});
-
-	// Clicking Projects on the projects route toggles the accordion instead of
-	// reloading the same page.
-	if (projectList && projectsItem) {
-		const projectsLink = links.find((link) => link.dataset.destination === 'projects');
-		projectsLink?.addEventListener('click', (event) => {
-			if (!window.location.pathname.startsWith('/projects')) return;
-			event.preventDefault();
-			setProjectsOpen(projectList.hidden === true);
-		});
-		setProjectsOpen(projectList.hidden !== true);
-	}
 
 	menuElement.addEventListener('keydown', (event) => {
 		if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {

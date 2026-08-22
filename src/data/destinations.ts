@@ -27,10 +27,10 @@ export const DESTINATIONS = [
 		description: 'certificates, hackathons, and contributions worth keeping track of.',
 	},
 	{
-		id: 'find-me',
-		label: 'Find me',
-		href: '/find-me',
-		icon: 'find-me',
+		id: 'contact',
+		label: 'Contact',
+		href: '/contact',
+		icon: 'contact',
 		description: 'GitHub, LinkedIn, email, and the other places I turn up.',
 	},
 ] as const;
