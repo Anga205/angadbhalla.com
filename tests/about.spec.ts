@@ -12,12 +12,28 @@ test('about page renders the intro and philosophy', async ({ page }) => {
 	await expect(page.getByText('The goofier the project, the better.')).toBeVisible();
 });
 
-test('about page reserves a portrait area for the model', async ({ page }) => {
+test('about page shows a rounded portrait photo in the intro', async ({ page }) => {
+	await page.goto('/');
+
+	const photo = page.locator('.portrait-photo img');
+	await expect(photo).toBeVisible();
+	await expect(photo).toHaveAttribute('src', '/angad.png');
+	await expect(photo).toHaveAttribute('alt', 'Angad Bhalla');
+
+	const radius = await photo.evaluate((el) => getComputedStyle(el).borderRadius);
+	expect(radius).toBe('9999px');
+});
+
+test('about page keeps the 3d model beside the philosophy section', async ({ page }) => {
 	await page.goto('/');
 
 	const portrait = page.locator('#portrait');
 	await expect(portrait).toBeVisible();
 	await expect(portrait).toHaveAttribute('data-model', '/anga.glb');
+
+	// The model lives inside the philosophy section, not the intro.
+	await expect(page.locator('.philosophy #portrait')).toHaveCount(1);
+	await expect(page.locator('.intro #portrait')).toHaveCount(0);
 });
 
 test('about page does not overflow on mobile', async ({ page }) => {

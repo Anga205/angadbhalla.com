@@ -43,57 +43,73 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 						</p>
 					</div>
 
-					{/* Reserved for the full-body GLB. The viewer mounts here. */}
-					<div class="portrait" id="portrait" data-model="/anga.glb">
-						<div class="portrait-canvas" id="portrait-canvas"></div>
-						<p class="portrait-fallback" id="portrait-fallback">loading model…</p>
+					{/* Portrait photo, fully rounded. */}
+					<div class="portrait-photo">
+						<img
+							src="/angad.png"
+							alt="Angad Bhalla"
+							width="512"
+							height="512"
+							loading="eager"
+							decoding="async"
+						/>
 					</div>
 				</div>
 
 				<section class="philosophy">
-					<h3 class="text-[1.05rem] font-normal">My Philosophy</h3>
-					<h2 class="mb-3 text-[0.75rem] font-normal tracking-[0.04em] text-[#26a269] uppercase">On building things</h2>
+					<div class="philosophy-grid">
+						<div class="philosophy-text">
+							<h3 class="text-[1.05rem] font-normal">My Philosophy</h3>
+							<h2 class="mb-3 text-[0.75rem] font-normal tracking-[0.04em] text-[#26a269] uppercase">On building things</h2>
 
-					<p class="mb-[1.1rem] text-[#a5a3a9]">
-						I think the best engineers treat software the same way a craftsman treats his work.
-						Every project is another chance to create something beautiful, the only way to learn
-						is to make mistakes. And every problem has a dozen different ways to be approached,
-						and sometimes, to get something wrong feels just as good as getting something right,
-						in fact, sometimes I try to get it as wrong as humanly possible, theres fun in seeing
-						a chaos.
-					</p>
+							<p class="mb-[1.1rem] text-[#a5a3a9]">
+								I think the best engineers treat software the same way a craftsman treats his work.
+								Every project is another chance to create something beautiful, the only way to learn
+								is to make mistakes. And every problem has a dozen different ways to be approached,
+								and sometimes, to get something wrong feels just as good as getting something right,
+								in fact, sometimes I try to get it as wrong as humanly possible, theres fun in seeing
+								a chaos.
+							</p>
 
-					<p class="mb-[1.1rem] text-[#a5a3a9]">
-						One of the best things that can happen to you in this field is to find someone who
-						loves and respects the craft as much as you do. Talent and skill is obviously a great
-						thing, but to admire the field, even in its goofyness, is a rare and wonderful
-						feeling. The most fun projects tend to start off with a "I know this sounds weird but
-						what if-" and the best projects are ones where you dont know what final product you're
-						aiming for, after all, the journey is just as fun as the destination.
-					</p>
+							<p class="mb-[1.1rem] text-[#a5a3a9]">
+								One of the best things that can happen to you in this field is to find someone who
+								loves and respects the craft as much as you do. Talent and skill is obviously a great
+								thing, but to admire the field, even in its goofyness, is a rare and wonderful
+								feeling. The most fun projects tend to start off with a "I know this sounds weird but
+								what if-" and the best projects are ones where you dont know what final product you're
+								aiming for, after all, the journey is just as fun as the destination.
+							</p>
 
-					<p class="mb-[1.1rem] text-[#a5a3a9]">The goofier the project, the better.</p>
+							<p class="mb-[1.1rem] text-[#a5a3a9]">The goofier the project, the better.</p>
 
-					<p class="mb-[1.1rem] text-[#a5a3a9]">
-						This field puts you into predicaments that perhaps nobody in the history of mankind
-						has ever dealt with before, there are no right answers, but there are fun approaches,
-						and who knows? maybe someday I myself will get to set the standard for what is right
-						and what is wrong, but until then, I will continue to make mistakes, and learn from
-						them.
-					</p>
+							<p class="mb-[1.1rem] text-[#a5a3a9]">
+								This field puts you into predicaments that perhaps nobody in the history of mankind
+								has ever dealt with before, there are no right answers, but there are fun approaches,
+								and who knows? maybe someday I myself will get to set the standard for what is right
+								and what is wrong, but until then, I will continue to make mistakes, and learn from
+								them.
+							</p>
 
-					<p class="mb-[1.1rem] text-[#a5a3a9]">
-						That's why I'm incredibly proud of every major project I've built. I could probably
-						spend hours or days talking about why AngaDrive is efficient down to the last CPU
-						clock cycle, or why I designed my Online Compiler the way I did. After all, every
-						optimization, every redesign, and every mistake has a story behind it.
-					</p>
+							<p class="mb-[1.1rem] text-[#a5a3a9]">
+								That's why I'm incredibly proud of every major project I've built. I could probably
+								spend hours or days talking about why AngaDrive is efficient down to the last CPU
+								clock cycle, or why I designed my Online Compiler the way I did. After all, every
+								optimization, every redesign, and every mistake has a story behind it.
+							</p>
 
-					<p class="pull italic font-sans">
-						A project to an engineer is what jewelry is to a goldsmith. Anyone can appriciate the
-						beauty of the craft, but only the maker can truly admire the process by which it was
-						forged.
-					</p>
+							<p class="pull italic font-sans">
+								A project to an engineer is what jewelry is to a goldsmith. Anyone can appriciate the
+								beauty of the craft, but only the maker can truly admire the process by which it was
+								forged.
+							</p>
+						</div>
+
+						{/* Reserved for the full-body GLB. The viewer mounts here. */}
+						<div class="portrait" id="portrait" data-model="/anga.glb">
+							<div class="portrait-canvas" id="portrait-canvas"></div>
+							<p class="portrait-fallback" id="portrait-fallback">loading model…</p>
+						</div>
+					</div>
 				</section>
 			</div>
 		</div>
@@ -101,11 +117,32 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 </Base>
 
 <style>
+	.portrait-photo {
+		display: grid;
+		place-items: center;
+	}
+
+	.portrait-photo img {
+		display: block;
+		width: 100%;
+		max-width: 16rem;
+		aspect-ratio: 1;
+		border-radius: 9999px;
+		border: 1px solid #3d3846;
+		object-fit: cover;
+	}
+
+	.philosophy-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 16rem;
+		align-items: start;
+		gap: 1.5rem;
+	}
+
 	.portrait {
 		position: relative;
 		height: 30rem;
 		overflow: hidden;
-        translate: -5rem 0
 	}
 
 	.portrait-canvas {
@@ -150,6 +187,10 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 	}
 
 	@media (max-width: 899px) {
+		.philosophy-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
 		.portrait {
 			height: 18rem;
 		}

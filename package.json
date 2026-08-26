@@ -12,7 +12,6 @@
     "check": "astro check",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "placeholders": "node scripts/generate-achievement-placeholders.mjs",
     "astro": "astro"
   },
   "dependencies": {

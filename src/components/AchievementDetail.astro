@@ -24,7 +24,7 @@ interface Props {
 }
 
 const { achievement, siblings, basePath, backLabel, section } = Astro.props;
-const images = galleryFor(achievement.slug, achievement.captions, achievement.images);
+const images = galleryFor(achievement.images);
 
 // Tags and stack can be demoted to metadata when the pills add nothing.
 const metaOnly = Boolean(achievement.metaOnly);

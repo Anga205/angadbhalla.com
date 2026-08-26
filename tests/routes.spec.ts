@@ -12,6 +12,19 @@ test('sidebar uses the Adwaita dark palette', async ({ page }) => {
 	).toHaveCSS('color', 'rgb(57, 255, 136)');
 });
 
+test('mobile rail drops the trailing slash from destination labels', async ({ page }, testInfo) => {
+	testInfo.skip(testInfo.project.name !== 'mobile', 'mobile rail only');
+
+	await page.goto('/');
+
+	const slash = page.locator('.waypoint-slash').first();
+	await expect(slash).toBeHidden();
+
+	// The label text itself no longer ends in a slash.
+	const label = await page.locator('.waypoint-label').first().innerText();
+	expect(label.endsWith('/')).toBe(false);
+});
+
 test('sidebar columns align across every destination', async ({ page }, testInfo) => {
 	// The mobile rail is a horizontal flex strip, not a column grid.
 	testInfo.skip(testInfo.project.name === 'mobile', 'desktop rail only');

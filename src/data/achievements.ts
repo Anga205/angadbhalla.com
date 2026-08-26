@@ -5,10 +5,8 @@
  * /achievements/<slug>. The listing groups cards by category; the detail page
  * renders the long form plus a gallery.
  *
- * Galleries use the three numbered files in public/achievements/<slug>/.
- * Captions are optional: add an entry to `captions` keyed by the filename
- * stem (e.g. "01") and it is used in the lightbox; otherwise a fallback is
- * generated.
+ * Galleries are declared per entry with `images`. Entries without images
+ * simply render no gallery.
  */
 export const CATEGORIES = [
 	'hackathons',
@@ -127,9 +125,7 @@ export interface Achievement {
 	tags: string[];
 	icon: AchievementIcon;
 	links?: AchievementLink[];
-	/** Lightbox captions, keyed by filename stem. */
-	captions?: Record<string, string>;
-	/** Explicit gallery, overriding the numbered-file convention. */
+	/** Gallery images. Entries without any simply have no gallery. */
 	images?: GalleryImage[];
 	detail: AchievementDetail;
 }
@@ -140,40 +136,12 @@ export interface GalleryImage {
 	caption: string;
 }
 
-const PUBLIC_GALLERY_SLUGS = new Set([
-	'algomania-3',
-	'tensor-2026',
-	'kalpana-2025',
-	'hack-o-ween-2025',
-	'leetcode-1337',
-	'alcoding-club-head',
-	'pesu-io-course',
-	'vosd-drive',
-	'docker-pr-51670',
-	'ieee-cs-iampro-2025',
-]);
-
 /**
- * Images for one achievement, sorted by path so numeric filenames control
- * order. Returns an empty array when the folder does not exist yet.
+ * Images for one achievement. Galleries are declared explicitly in the data,
+ * so an entry with no `images` simply renders no gallery.
  */
-export function galleryFor(
-	slug: string,
-	captions: Record<string, string> = {},
-	images?: GalleryImage[],
-): GalleryImage[] {
-	// An explicit list wins: some entries ship real photographs rather than
-	// the numbered placeholder convention.
-	if (images && images.length > 0) return images;
-
-	if (!PUBLIC_GALLERY_SLUGS.has(slug)) return [];
-
-	const prefix = `/achievements/${slug}/`;
-
-	return ['01', '02', '03'].map((stem) => {
-			const caption = captions[stem] ?? `image ${stem}`;
-			return { src: `${prefix}${stem}.svg`, alt: caption, caption };
-		});
+export function galleryFor(images?: GalleryImage[]): GalleryImage[] {
+	return images ?? [];
 }
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -203,11 +171,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/dCpnrydT', icon: 'linkedin' },
 			{ label: 'event listing', href: 'https://events.pes.edu/11437/', icon: 'info' },
 		],
-		captions: {
-			'01': 'the offline round at MRD Auditorium, RR Campus.',
-			'02': 'final leaderboard, top eight teams.',
-			'03': 'the winning team after the last cycle.',
-		},
 		detail: {
 			overview: [
 				'Algomania 3.0 is an inter-collegiate competitive programming contest hosted by EncodeAI at PES University. Drawing inspiration from the ICPC-style team contest format, it brought together teams from multiple universities to compete in a series of algorithmic problem-solving rounds. The contest tested participants\' ability to devise efficient algorithms, write correct implementations, and solve challenging problems under tight time constraints.',
@@ -251,11 +214,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 				icon: 'linkedin',
 			},
 		],
-		captions: {
-			'01': 'the paper shortlist we worked from.',
-			'02': 'log graph, entities as nodes and relationships as edges.',
-			'03': 'a query answered from the selected subgraph.',
-		},
 		detail: {
 			overview: [
 				'Tensor replaced problem statements with a stack of research papers. Teams read, chose, and had to turn the ideas into something that ran before the clock stopped. We took three: GraphRAG, semantic caching, and difficulty-aware tool dispatching.',
@@ -339,11 +297,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/dU9XYBv8', icon: 'linkedin' },
 			{ label: 'event report', href: 'https://news.pes.edu/11747/', icon: 'info' },
 		],
-		captions: {
-			'01': 'the rig: Pi, camera, and a very short cable run.',
-			'02': 'live recognition during judging.',
-			'03': 'first place, Hack for Humanity.',
-		},
 		detail: {
 			overview: [
 				'Kalpana ran under the theme "Hack for Humanity", which changes what judges reward. Novelty alone was not enough; the project had to plausibly help someone. We built an American Sign Language interpreter that runs entirely on a Raspberry Pi.',
@@ -374,11 +327,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/ddgcuhat', icon: 'linkedin' },
 			{ label: 'event listing', href: 'https://events.pes.edu/11310/', icon: 'info' },
 		],
-		captions: {
-			'01': 'hour four, still arguing about scope.',
-			'02': 'the build, running.',
-			'03': 'second place.',
-		},
 		detail: {
 			overview: [
 				'Hack-o-ween is a 24-hour hackathon run by ARCH, the technical club of the CSE (AI & ML) department at PESU. The format is unforgiving: scope has to be decided early, because anything left to the last six hours does not ship.',
@@ -418,11 +366,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/d9qKKzf9', icon: 'linkedin' },
 			{ label: 'my leetcode profile', href: 'https://leetcode.com/u/Anga205', icon: 'external' },
 		],
-		captions: {
-			'01': 'the counter, at 1,337.',
-			'02': 'topic coverage across the solve history.',
-			'03': 'contest rating over time.',
-		},
 		detail: {
 			overview: [
 				'1,337 problems solved on LeetCode, reached on 29 October 2026, with a contest rating of 2,112. The number is a joke about "leet"; the practice behind it is not.',
@@ -460,6 +403,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 			'pesu',
 		],
 		icon: 'users',
+		metaOnly: true,
 		links: [
 			{
 				label: 'club page',
@@ -467,16 +411,33 @@ export const ACHIEVEMENTS: Achievement[] = [
 				icon: 'info',
 			},
 			{
-				label: 'containerization 101',
-				href: 'https://lnkd.in/p/d5xg7iKw',
+				label: 'Docker Workshop',
+				href: 'https://www.linkedin.com/posts/alcoding_docker-containerization-alcodingclub-activity-7355439380456501248-air3',
 				icon: 'linkedin',
 			},
+			{
+				label: 'Terrathon 4.0',
+				href: 'https://www.linkedin.com/posts/alcoding_terrathon4-hackathon-sustainability-activity-7312160071730221056--2IU',
+				icon: 'linkedin',
+			},
+			{
+				label: 'club instagram',
+				href: 'https://www.instagram.com/p/C_mwH_PykE7/?img_index=2',
+				icon: 'external',
+			},
 		],
-		captions: {
-			'01': 'Terrathon 4.0, opening hours.',
-			'02': 'a monthly contest problem set.',
-			'03': 'handover, April 2025.',
-		},
+		images: [
+			{
+				src: '/achievements/alcoding-club-head/alcoding1.jpg',
+				alt: 'Members of The Alcoding Club together at a club gathering.',
+				caption: 'All the members of The Alcoding Club.',
+			},
+			{
+				src: '/achievements/alcoding-club-head/alcoding2.jpg',
+				alt: 'The team that hosted the Containerization with Docker workshop.',
+				caption: 'The team responsible for hosting the Containerization with Docker workshop.',
+			},
+		],
 		detail: {
 			overview: [
 				'The Alcoding Club is the Competitive Programming Club of PES University. I joined in January 2024 as a member of the technical team, where my work was mostly problem-setting and writing test cases for the monthly coding contests we hosted. That taught me a lot about the optimisation and contest-thinking side of competitive programming, well beyond just DSA \u2014 it was my first real exposure to that experience.',
@@ -522,11 +483,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 				icon: 'youtube',
 			},
 		],
-		captions: {
-			'01': 'slot 20, first session.',
-			'02': 'a worked problem, on the board.',
-			'03': 'end-of-course contest.',
-		},
 		detail: {
 			overview: [
 				'PESU I/O is the university\u2019s peer-to-peer teaching programme: students teaching students, for credit and for the practice of explaining things. I taught the competitive programming slot to a class of 55.',
@@ -554,6 +510,14 @@ export const ACHIEVEMENTS: Achievement[] = [
 		description: 'A robotics internship with the Remote Robotics (ReRo) team at cRAIS.',
 		tags: ['crais', 'robotics', 'rero', 'internship'],
 		icon: 'container',
+		menu: true,
+		links: [
+			{
+				label: 'my linkedin post',
+				href: 'https://lnkd.in/p/d3vHPJZd',
+				icon: 'linkedin',
+			},
+		],
 		detail: {
 			overview: [
 				'I worked as a robotics intern at cRAIS (Center for Robotics Automation and Intelligent Systems) on the Remote Robotics (ReRo) team.',
@@ -611,11 +575,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/dHbNECk9', icon: 'linkedin' },
 			{ label: 'voice of stray dogs', href: 'https://www.vosd.in/', icon: 'heart' },
 		],
-		captions: {
-			'01': 'the first collection round.',
-			'02': 'stacked and weighed.',
-			'03': 'handed over.',
-		},
 		detail: {
 			overview: [
 				'A solo newspaper collection drive for Voice of Stray Dogs, one of India\u2019s larger stray rescue operations. Newspapers get sold by weight; the proceeds fund rescue and medical care. The mechanism is simple, which means the difficulty is entirely in the asking.',
@@ -681,11 +640,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 				icon: 'github',
 			},
 		],
-		captions: {
-			'01': 'the diff.',
-			'02': 'maintainer review and approval.',
-			'03': 'merged into the 29.2.0 milestone.',
-		},
 		detail: {
 			overview: [
 				'names-generator.go is the file behind every unnamed container. Docker names containers after scientists and hackers, and the list has been carried forward since the 0.7.x era. One entry described C\u00e9dric Villani as a "Poincar\u00e9 Price" laureate.',

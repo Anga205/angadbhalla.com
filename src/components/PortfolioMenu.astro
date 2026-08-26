@@ -69,7 +69,7 @@ const activeId =
 										<Icon size={16} strokeWidth={1.5} />
 									</span>
 									<span class="waypoint-text">
-										<span class="waypoint-label">{destination.label.toLowerCase()}/</span>
+									<span class="waypoint-label">{destination.label.toLowerCase()}<span class="waypoint-slash">/</span></span>
 										<span class="waypoint-description">{destination.description}</span>
 									</span>
 								</a>
@@ -368,12 +368,12 @@ const activeId =
 			white-space: nowrap;
 			font-size: 0.625rem;
 		}
-	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.wayfinder {
-			transition: none;
-		}
+	/* The mobile rail has no `ls ~/portfolio` prompt, so the trailing slash
+	   that mimics a directory listing is dropped there. */
+	.wayfinder.is-minimized .waypoint-slash {
+		display: none;
+	}
 	}
 </style>
 

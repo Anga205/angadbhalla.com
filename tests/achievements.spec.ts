@@ -111,6 +111,25 @@ test('university page lists every role as a linkedin-style entry', async ({ page
 	await expect(page.locator('.card-role-label')).toHaveCount(0);
 });
 
+test('robotics internship opens a menu with its linkedin post', async ({ page }) => {
+	await page.goto('/university');
+
+	await page.getByRole('button', { name: 'Robotics Intern, cRAIS (Center for Robotics Automation and Intelligent Systems)' }).click();
+
+	const menu = page.locator('dialog.menu[open]');
+	await expect(menu).toBeVisible();
+
+	const hrefs = await menu
+		.locator('.menu-list a')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+	expect(hrefs).toContain('https://lnkd.in/p/d3vHPJZd');
+});
+
+test('robotics internship no longer has a detail page', async ({ page }) => {
+	const response = await page.goto('/university/crais-robotics-intern');
+	expect(response?.status()).toBe(404);
+});
+
 test('university cards link to their own detail pages', async ({ page }) => {
 	await page.goto('/university');
 
@@ -370,22 +389,31 @@ test('detail page gallery opens a lightbox with the image caption', async ({ pag
 	await page.goto('/university/alcoding-club-head');
 
 	const thumbs = page.locator('.thumb');
-	await expect(thumbs).toHaveCount(3);
+	await expect(thumbs).toHaveCount(2);
+
+	const sources = await page
+		.locator('.thumb img')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('src')));
+	expect(sources).toEqual([
+		'/achievements/alcoding-club-head/alcoding1.jpg',
+		'/achievements/alcoding-club-head/alcoding2.jpg',
+	]);
 
 	await thumbs.first().click();
 
 	const dialog = page.locator('dialog.lightbox');
 	await expect(dialog).toBeVisible();
-	await expect(dialog.locator('[data-caption-text]')).toHaveText('Terrathon 4.0, opening hours.');
-	await expect(dialog.locator('[data-count]')).toHaveText('01 / 03');
+	await expect(dialog.locator('[data-caption-text]')).toHaveText(
+		'All the members of The Alcoding Club.',
+	);
+	await expect(dialog.locator('[data-count]')).toHaveText('01 / 02');
 
 	// Arrow keys advance and wrap.
 	await page.keyboard.press('ArrowRight');
-	await expect(dialog.locator('[data-count]')).toHaveText('02 / 03');
+	await expect(dialog.locator('[data-count]')).toHaveText('02 / 02');
 
-	await page.keyboard.press('ArrowLeft');
-	await page.keyboard.press('ArrowLeft');
-	await expect(dialog.locator('[data-count]')).toHaveText('03 / 03');
+	await page.keyboard.press('ArrowRight');
+	await expect(dialog.locator('[data-count]')).toHaveText('01 / 02');
 
 	// Escape closes the native dialog.
 	await page.keyboard.press('Escape');
@@ -429,7 +457,7 @@ test('tedx speaker links to the youtube talk', async ({ page }) => {
 	expect(hrefs).toContain('https://www.youtube.com/watch?v=GSN9b3AIITw');
 });
 
-test('alcoding club links to the club page and the containerization post', async ({ page }) => {
+test('alcoding club links to the club page and the two event posts', async ({ page }) => {
 	await page.goto('/university/alcoding-club-head');
 
 	const hrefs = await page
@@ -437,7 +465,31 @@ test('alcoding club links to the club page and the containerization post', async
 		.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
 
 	expect(hrefs).toContain('https://clubs.pes.edu/the-alcoding-club/about/');
-	expect(hrefs).toContain('https://lnkd.in/p/d5xg7iKw');
+	expect(hrefs).toContain(
+		'https://www.linkedin.com/posts/alcoding_docker-containerization-alcodingclub-activity-7355439380456501248-air3',
+	);
+	expect(hrefs).toContain(
+		'https://www.linkedin.com/posts/alcoding_terrathon4-hackathon-sustainability-activity-7312160071730221056--2IU',
+	);
+	expect(hrefs).toContain('https://www.instagram.com/p/C_mwH_PykE7/?img_index=2');
+
+	// The old containerization 101 short link is gone.
+	expect(hrefs).not.toContain('https://lnkd.in/p/d5xg7iKw');
+
+	const actions = page.locator('.actions');
+	await expect(actions.getByRole('link', { name: 'Docker Workshop', exact: true })).toBeVisible();
+	await expect(actions.getByRole('link', { name: 'Terrathon 4.0', exact: true })).toBeVisible();
+});
+
+test('alcoding club folds tags and stack into metadata instead of visible pills', async ({ page }) => {
+	await page.goto('/university/alcoding-club-head');
+
+	await expect(page.locator('#tags')).toHaveCount(0);
+	await expect(page.locator('#stack')).toHaveCount(0);
+
+	const keywords = await page.locator('meta[name="keywords"]').getAttribute('content');
+	expect(keywords).toContain('terrathon');
+	expect(keywords).toContain('Docker');
 });
 
 test('containerization workshop is folded into the alcoding club achievement', async ({ page }) => {
@@ -466,7 +518,10 @@ test('alcoding club page links the people and events it mentions', async ({ page
 	];
 
 	for (const [name, href] of expected) {
-		await expect(page.getByRole('link', { name }), name).toHaveAttribute('href', href);
+		await expect(page.locator('.prose').getByRole('link', { name }), name).toHaveAttribute(
+			'href',
+			href,
+		);
 	}
 
 	// The overview covers the whole tenure, so there is no highlights list.
@@ -505,7 +560,7 @@ test('lightbox close button dismisses the dialog', async ({ page }) => {
 	await page.locator('.thumb').nth(1).click();
 	const dialog = page.locator('dialog.lightbox');
 	await expect(dialog).toBeVisible();
-	await expect(dialog.locator('[data-count]')).toHaveText('02 / 03');
+	await expect(dialog.locator('[data-count]')).toHaveText('02 / 02');
 
 	await dialog.locator('[data-close]').click();
 	await expect(dialog).toBeHidden();
