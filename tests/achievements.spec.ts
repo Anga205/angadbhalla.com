@@ -76,7 +76,7 @@ test('clicking a plain card opens its detail page', async ({ page }) => {
 	await expect(page).toHaveURL(/\/achievements\/ieee-cs-iampro-2025$/);
 	await expect(page.getByRole('heading', { name: 'Research Intern', level: 1 })).toBeVisible();
 	await expect(page.getByText('IEEE Computer Society IAMPro 2025 Batch')).toBeVisible();
-	await expect(page.locator('.highlights li').first()).toBeVisible();
+	await expect(page.locator('.prose p').first()).toBeVisible();
 });
 
 test('university page lists every role as a linkedin-style entry', async ({ page }) => {
@@ -117,14 +117,24 @@ test('university cards link to their own detail pages', async ({ page }) => {
 	await page.getByRole('link', { name: 'Club Head, The Alcoding Club' }).click();
 
 	await expect(page).toHaveURL(/\/university\/alcoding-club-head$/);
-	await expect(page.getByRole('heading', { name: 'Head, The Alcoding Club', level: 1 })).toBeVisible();
-	await expect(page.locator('.highlights li').first()).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'The Alcoding Club', level: 1 })).toBeVisible();
+	await expect(page.locator('.prose p').first()).toBeVisible();
 });
 
 test('IAMPro has a research detail page with three gallery slots', async ({ page }, testInfo) => {
 	await page.goto('/achievements/ieee-cs-iampro-2025');
 	await expect(page.getByRole('heading', { name: 'Research Intern', level: 1 })).toBeVisible();
 	await expect(page.locator('.thumb')).toHaveCount(3);
+
+	// Real photographs, not the generated placeholders.
+	const sources = await page
+		.locator('.thumb img')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('src')));
+	expect(sources).toEqual([
+		'/achievements/ieee-cs-iampro-2025/certificate.png',
+		'/achievements/ieee-cs-iampro-2025/pic1.jpg',
+		'/achievements/ieee-cs-iampro-2025/pic2.jpg',
+	]);
 
 	testInfo.project.name === 'mobile' && testInfo.skip();
 
@@ -133,8 +143,30 @@ test('IAMPro has a research detail page with three gallery slots', async ({ page
 		.poll(() => page.locator('dialog.lightbox').evaluate((dialog) => (dialog as HTMLDialogElement).open))
 		.toBe(true);
 	await expect(page.locator('[data-caption-text]')).toHaveText(
-		'IAMPro 2025 programme documentation.',
+		'Certificate issued by the IEEE Computer Society Bangalore chapter confirming the internship under the IAMPro 2025 batch.',
 	);
+});
+
+test('IAMPro folds tags and stack into metadata instead of visible pills', async ({ page }) => {
+	await page.goto('/achievements/ieee-cs-iampro-2025');
+
+	await expect(page.locator('#tags')).toHaveCount(0);
+	await expect(page.locator('#stack')).toHaveCount(0);
+	await expect(page.locator('#highlights')).toHaveCount(0);
+
+	const keywords = await page
+		.locator('meta[name="keywords"]')
+		.getAttribute('content');
+	expect(keywords).toContain('iampro');
+	expect(keywords).toContain('Blockchain');
+});
+
+test('IAMPro links Ankith Khaitan to his LinkedIn profile', async ({ page }) => {
+	await page.goto('/achievements/ieee-cs-iampro-2025');
+
+	const link = page.getByRole('link', { name: 'Ankith Khaitan' });
+	await expect(link).toHaveAttribute('href', 'https://www.linkedin.com/in/ankithkhaitan/');
+	await expect(page.getByText('Dr. Venugopal N.')).toBeVisible();
 });
 
 test('hackathon cards show a gold or silver medal instead of the result text', async ({ page }) => {
@@ -415,9 +447,31 @@ test('containerization workshop is folded into the alcoding club achievement', a
 	await expect(page.getByRole('button', { name: 'Containerization 101' })).toHaveCount(0);
 	await expect(page.getByRole('link', { name: 'Containerization 101' })).toHaveCount(0);
 
-	// The workshop is mentioned on the club detail page.
+	// The Docker workshop is described on the club detail page.
 	await page.goto('/university/alcoding-club-head');
-	await expect(page.getByText(/Containerization 101/).first()).toBeVisible();
+	await expect(page.getByText(/Docker workshop/).first()).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Pranavjeet Naidu' })).toBeVisible();
+});
+
+test('alcoding club page links the people and events it mentions', async ({ page }) => {
+	await page.goto('/university/alcoding-club-head');
+
+	const expected: Array<[string, string]> = [
+		['core team', 'https://www.instagram.com/p/C_mwH_PykE7'],
+		['October coding contest', 'https://www.instagram.com/p/DA3IL5wzAKc'],
+		['Hashir Shaikh', 'https://www.linkedin.com/in/hashir-shaikh-9603a629a/'],
+		['Munis Shafiq', 'https://www.linkedin.com/in/munis-shafiq/'],
+		['Pranavjeet Naidu', 'https://www.linkedin.com/in/pranavjeet-naidu/'],
+		['Terrathon 4.0', 'https://www.instagram.com/p/DHDHBApSLRI/'],
+	];
+
+	for (const [name, href] of expected) {
+		await expect(page.getByRole('link', { name }), name).toHaveAttribute('href', href);
+	}
+
+	// The overview covers the whole tenure, so there is no highlights list.
+	await expect(page.locator('#highlights')).toHaveCount(0);
+	await expect(page.getByText(/Terrathon 3\.0/)).toBeVisible();
 });
 
 test('vosd links to the linkedin post and the vosd site', async ({ page }) => {

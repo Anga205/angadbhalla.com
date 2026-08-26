@@ -72,10 +72,13 @@ export interface AchievementLink {
 }
 
 export interface AchievementDetail {
-	/** Long-form paragraphs, rendered in order. */
+	/**
+	 * Long-form paragraphs, rendered in order. Authored HTML is allowed, so
+	 * paragraphs can carry inline links.
+	 */
 	overview: string[];
-	/** Short, scannable bullets. */
-	highlights: string[];
+	/** Short, scannable bullets. Omit when the overview already covers them. */
+	highlights?: string[];
 	/** Optional technical stack, rendered as pills. */
 	stack?: string[];
 }
@@ -115,12 +118,19 @@ export interface Achievement {
 	href?: string;
 	/** Also list this entry on the /university page. */
 	alsoUniversity?: boolean;
+	/**
+	 * Render `tags` (and `detail.stack`) as <meta> keywords and hidden markup
+	 * instead of visible sections. Use when the pills add nothing to the page.
+	 */
+	metaOnly?: boolean;
 	description: string;
 	tags: string[];
 	icon: AchievementIcon;
 	links?: AchievementLink[];
 	/** Lightbox captions, keyed by filename stem. */
 	captions?: Record<string, string>;
+	/** Explicit gallery, overriding the numbered-file convention. */
+	images?: GalleryImage[];
 	detail: AchievementDetail;
 }
 
@@ -147,7 +157,15 @@ const PUBLIC_GALLERY_SLUGS = new Set([
  * Images for one achievement, sorted by path so numeric filenames control
  * order. Returns an empty array when the folder does not exist yet.
  */
-export function galleryFor(slug: string, captions: Record<string, string> = {}): GalleryImage[] {
+export function galleryFor(
+	slug: string,
+	captions: Record<string, string> = {},
+	images?: GalleryImage[],
+): GalleryImage[] {
+	// An explicit list wins: some entries ship real photographs rather than
+	// the numbered placeholder convention.
+	if (images && images.length > 0) return images;
+
 	if (!PUBLIC_GALLERY_SLUGS.has(slug)) return [];
 
 	const prefix = `/achievements/${slug}/`;
@@ -266,23 +284,31 @@ export const ACHIEVEMENTS: Achievement[] = [
 		department: 'IAMPro 2025 Batch',
 		alsoUniversity: true,
 		href: '/achievements/ieee-cs-iampro-2025',
+		metaOnly: true,
 		tags: ['ieee', 'iampro', 'research', 'blockchain', 'internship', 'mentorship'],
 		icon: 'flask',
-		captions: {
-			'01': 'IAMPro 2025 programme documentation.',
-			'02': 'research notes and blockchain architecture work.',
-			'03': 'the six-month internship and mentorship programme.',
-		},
+		images: [
+			{
+				src: '/achievements/ieee-cs-iampro-2025/certificate.png',
+				alt: 'IAMPro 2025 internship certificate issued by the IEEE Computer Society Bangalore chapter.',
+				caption:
+					'Certificate issued by the IEEE Computer Society Bangalore chapter confirming the internship under the IAMPro 2025 batch.',
+			},
+			{
+				src: '/achievements/ieee-cs-iampro-2025/pic1.jpg',
+				alt: 'Angad Bhalla on the left and Dr. Venugopal N. on the right.',
+				caption: 'Me (left) and Dr. Venugopal N. (right).',
+			},
+			{
+				src: '/achievements/ieee-cs-iampro-2025/pic2.jpg',
+				alt: 'Ankith Khaitan on the left, Dr. Venugopal N. in the middle, and Angad Bhalla on the right.',
+				caption: 'Ankith Khaitan (left), Dr. Venugopal N. (middle), and me (right).',
+			},
+		],
 		detail: {
 			overview: [
 				'IEEE Computer Society IAMPro 2025 was a six-month internship and mentorship programme run by the IEEE Computer Society Bangalore chapter. I joined as an intern from 1 April 2025 to 30 September 2025 through my membership in the IEEE Computer Society student chapter at PES University.',
-				'I worked under the mentorship of Dr. Venu Gopal N. alongside Ankit Khaitan. The internship centred on a research project investigating how software could be implemented on a blockchain-based architecture, giving me the chance to explore the trade-offs between distributed systems, trust, and practical software design.',
-			],
-			highlights: [
-				'Six-month internship from 1 April 2025 to 30 September 2025.',
-				'Conducted under the mentorship of Dr. Venu Gopal N.',
-				'Collaborated with Ankit Khaitan on the research work.',
-				'Researched software implementation on a blockchain-based architecture.',
+				'I worked under the mentorship of Dr. Venugopal N. alongside <a href="https://www.linkedin.com/in/ankithkhaitan/" target="_blank" rel="noreferrer">Ankith Khaitan</a>. The internship centred on a research project investigating how software could be implemented on a blockchain-based architecture, giving me the chance to explore the trade-offs between distributed systems, trust, and practical software design.',
 			],
 			stack: ['Blockchain', 'Distributed systems', 'Software architecture'],
 		},
@@ -412,7 +438,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 	},
 	{
 		slug: 'alcoding-club-head',
-		title: 'Head, The Alcoding Club',
+		title: 'The Alcoding Club',
 		category: 'leadership',
 		organization: 'The Alcoding Club',
 		position: 'Club Head',
@@ -420,7 +446,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 		result: 'club head',
 		date: 'September 2024 \u2014 April 2025',
 		year: '2025',
-		summary: 'ran PESU\u2019s competitive programming club.',
+		summary: 'The Competitive Programming Club of PES University',
 		description:
 			'Weekly HackerRank contests, monthly problem sets, workshops, and Terrathon 4.0 \u2014 the club\u2019s flagship 24-hour hackathon.',
 		tags: [
@@ -453,16 +479,13 @@ export const ACHIEVEMENTS: Achievement[] = [
 		},
 		detail: {
 			overview: [
-				'The Alcoding Club is PESU\u2019s algorithms and competitive programming club. I joined in January 2024, took over as head in September 2024, and handed over in April 2025.',
-				'The job is mostly operations. Weekly contests need problems written, tested, and calibrated so the difficulty curve is not a cliff. Terrathon needs tracks, judges, and someone awake at 4am when the deployment breaks. None of it is glamorous, and all of it is the actual work.',
-				'One of the events I ran as head was Containerization 101, a hands-on Docker workshop with the club. I led the organising team; Dr. Chaitra N. and Pranavjeet Naidu spoke. Everyone left with a container they had built and run themselves.',
-			],
-			highlights: [
-				'Ran the club for a full academic year.',
-				'Authored problems for monthly HackerRank contests.',
-				'Organised and executed Terrathon 4.0, the flagship 24-hour hackathon.',
-				'Led the organising team for Containerization 101, a hands-on Docker workshop.',
-				'Mentored participants through contests and hackathons.',
+				'The Alcoding Club is the Competitive Programming Club of PES University. I joined in January 2024 as a member of the technical team, where my work was mostly problem-setting and writing test cases for the monthly coding contests we hosted. That taught me a lot about the optimisation and contest-thinking side of competitive programming, well beyond just DSA \u2014 it was my first real exposure to that experience.',
+				'During my time on the Problem Setting Team, I also helped organise the club\u2019s flagship 24-hour hackathon, Terrathon 3.0, the university\u2019s largest sustainability-themed hackathon, run in collaboration with the Changemakers\u2019 Society.',
+				'When I became Head of the club in September 2024, I was one of very few second years to have become a club head that quickly, so I had a lot of figuring out to do. Luckily my <a href="https://www.instagram.com/p/C_mwH_PykE7" target="_blank" rel="noreferrer">core team</a> had some very talented people.',
+				'The first event I hosted was the <a href="https://www.instagram.com/p/DA3IL5wzAKc" target="_blank" rel="noreferrer">October coding contest</a>. It was very early in my time as club head, and since a lot of the club had graduated or left and fresh recruitments were not done yet, I remember pulling all-nighters almost every night before the contests \u2014 setting up the contest, creating questions, making test cases. Huge thanks to <a href="https://www.linkedin.com/in/hashir-shaikh-9603a629a/" target="_blank" rel="noreferrer">Hashir Shaikh</a> and <a href="https://www.linkedin.com/in/munis-shafiq/" target="_blank" rel="noreferrer">Munis Shafiq</a> for pitching in and helping me set questions. We were understaffed, but we pulled it off.',
+				'Usually around November every year, the Google Developer Student Club (GDSC) at PES University hosts a Docker workshop. During my year, 2024, that club was inactive because of some minor handover issues, so Hackerspace ECC hosted the workshop at EC Campus and my club pitched in to host it on the main campus (<a href="https://www.instagram.com/p/DCMXNCGNU0M" target="_blank" rel="noreferrer">Docker workshop post</a>). It was an interesting experience in event organisation and my first exposure to the operations side of event management: booking the venue, organising food, getting event permissions, managing the budget, and getting the speaker, <a href="https://www.linkedin.com/in/pranavjeet-naidu/" target="_blank" rel="noreferrer">Pranavjeet Naidu</a>, a member of the open source community at PES.',
+				'The final event I hosted as club head was <a href="https://www.instagram.com/p/DHDHBApSLRI/" target="_blank" rel="noreferrer">Terrathon 4.0</a>, the club\u2019s flagship 24-hour hackathon. It was its own kind of fun: as club head there was a surprising amount of technical work in running a hackathon, mostly data science to manage spreadsheets of budgets, registrations, and volunteers. It was one of the few times I got to put my Python data-management skills to work.',
+				"All in all, during my time as club head, We conducted 6 coding contests, 2 workshops and 1 hackathon (in collaboration with the Changemakers\u2019 Society).",
 			],
 			stack: ['HackerRank', 'C++', 'Python', 'Docker'],
 		},

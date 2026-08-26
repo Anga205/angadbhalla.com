@@ -24,7 +24,12 @@ interface Props {
 }
 
 const { achievement, siblings, basePath, backLabel, section } = Astro.props;
-const images = galleryFor(achievement.slug, achievement.captions);
+const images = galleryFor(achievement.slug, achievement.captions, achievement.images);
+
+// Tags and stack can be demoted to metadata when the pills add nothing.
+const metaOnly = Boolean(achievement.metaOnly);
+const highlights = achievement.detail.highlights ?? [];
+const keywords = [...achievement.tags, ...(achievement.detail.stack ?? [])];
 
 const position = siblings.findIndex((item) => item.slug === achievement.slug);
 const previous = siblings[(position - 1 + siblings.length) % siblings.length];
@@ -37,6 +42,8 @@ const showSiblings = siblings.length > 1;
 	description={`${achievement.title} — ${achievement.result}. ${achievement.summary}`}
 >
 	<PortfolioMenu minimized />
+
+	{metaOnly && <meta name="keywords" content={keywords.join(', ')} />}
 
 	<main class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24">
 		<div class="window mx-auto max-w-240 overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
@@ -69,20 +76,26 @@ const showSiblings = siblings.length > 1;
 				</header>
 
 				<section class="prose" aria-label="Overview">
-					{achievement.detail.overview.map((paragraph) => <p class="mb-[1.1rem] max-w-[68ch] text-[#a5a3a9]">{paragraph}</p>)}
-				</section>
-
-				<section class="block mt-7" aria-labelledby="highlights">
-					<h2 class="mb-3 flex items-baseline gap-2 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase" id="highlights">highlights</h2>
-					<ul class="highlights m-0 list-none p-0">
-						{achievement.detail.highlights.map((item) => (
-							<li class="relative mb-[0.4rem] max-w-[68ch] pl-[1.1rem] text-[#a5a3a9]">{item}</li>
-						))}
-					</ul>
+					{achievement.detail.overview.map((paragraph) => (
+						<p class="mb-[1.1rem] max-w-[68ch] text-[#a5a3a9]" set:html={paragraph} />
+					))}
 				</section>
 
 				{
-					achievement.detail.stack && achievement.detail.stack.length > 0 && (
+					highlights.length > 0 && (
+						<section class="block mt-7" aria-labelledby="highlights">
+							<h2 class="mb-3 flex items-baseline gap-2 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase" id="highlights">highlights</h2>
+							<ul class="highlights m-0 list-none p-0">
+								{highlights.map((item) => (
+									<li class="relative mb-[0.4rem] max-w-[68ch] pl-[1.1rem] text-[#a5a3a9]">{item}</li>
+								))}
+							</ul>
+						</section>
+					)
+				}
+
+				{
+					!metaOnly && achievement.detail.stack && achievement.detail.stack.length > 0 && (
 						<section class="block mt-7" aria-labelledby="stack">
 							<h2 class="mb-3 flex items-baseline gap-2 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase" id="stack">stack</h2>
 							<ul class="stack m-0 flex list-none flex-wrap gap-[0.35rem] p-0">
@@ -94,14 +107,24 @@ const showSiblings = siblings.length > 1;
 					)
 				}
 
-				<section class="block mt-7" aria-labelledby="tags">
-					<h2 class="mb-3 flex items-baseline gap-2 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase" id="tags">tags</h2>
-					<ul class="stack m-0 flex list-none flex-wrap gap-[0.35rem] p-0">
-						{achievement.tags.map((tag) => (
-							<li class="rounded-[3px] border border-[#3d3846] px-[0.35rem] py-[0.05rem] text-[0.6875rem] text-[#a5a3a9]">{tag}</li>
-						))}
-					</ul>
-				</section>
+				{
+					!metaOnly && (
+						<section class="block mt-7" aria-labelledby="tags">
+							<h2 class="mb-3 flex items-baseline gap-2 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase" id="tags">tags</h2>
+							<ul class="stack m-0 flex list-none flex-wrap gap-[0.35rem] p-0">
+								{achievement.tags.map((tag) => (
+									<li class="rounded-[3px] border border-[#3d3846] px-[0.35rem] py-[0.05rem] text-[0.6875rem] text-[#a5a3a9]">{tag}</li>
+								))}
+							</ul>
+						</section>
+					)
+				}
+
+				{metaOnly && (
+					<div class="sr-only" aria-hidden="true">
+						{keywords.map((keyword) => <span>{keyword}</span>)}
+					</div>
+				)}
 
 				{
 					images.length > 0 && (
@@ -167,5 +190,24 @@ const showSiblings = siblings.length > 1;
 		position: absolute;
 		left: 0;
 		color: #26a269;
+	}
+
+	/* Inline links inside overview paragraphs, authored as HTML in the data. */
+	.prose :global(a) {
+		color: #26a269;
+		text-decoration: underline;
+		text-decoration-color: rgba(38, 162, 105, 0.4);
+		text-underline-offset: 2px;
+	}
+
+	.prose :global(a:hover) {
+		color: #33d17a;
+		text-decoration-color: currentColor;
+	}
+
+	.prose :global(a:focus-visible) {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+		border-radius: 2px;
 	}
 </style>
