@@ -1,0 +1,29 @@
+---
+/**
+ * /university/<slug>
+ *
+ * Long-form pages for university & extracurricular roles.
+ */
+import AchievementDetail from '../../components/AchievementDetail.astro';
+import { UNIVERSITY_DETAIL_ACHIEVEMENTS } from '../../data/achievements';
+
+export function getStaticPaths() {
+	return UNIVERSITY_DETAIL_ACHIEVEMENTS.map((achievement) => ({
+		params: { slug: achievement.slug },
+		props: { achievement },
+	}));
+}
+
+const { achievement } = Astro.props;
+const siblings = UNIVERSITY_DETAIL_ACHIEVEMENTS.filter(
+	(item) => item.category === achievement.category,
+);
+---
+
+<AchievementDetail
+	achievement={achievement}
+	siblings={siblings}
+	basePath="/university"
+	backLabel="all university"
+	section="university"
+/>

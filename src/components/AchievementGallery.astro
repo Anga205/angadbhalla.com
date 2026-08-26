@@ -10,7 +10,6 @@
  * Images are discovered from disk by galleryFor(), so adding a screenshot is
  * a file drop, not a code change.
  */
-import { Image } from 'astro:assets';
 import { ArrowLeft, ArrowRight, X } from 'lucide-astro';
 import type { GalleryImage } from '../data/achievements';
 
@@ -37,11 +36,9 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 							data-caption={image.caption}
 							aria-label={`expand image ${index + 1}: ${image.caption}`}
 						>
-							<Image
+							<img
 								src={image.src}
 								alt={image.alt}
-								widths={[320, 640]}
-								sizes="(max-width: 639px) 45vw, 14rem"
 								loading="lazy"
 								decoding="async"
 							/>
@@ -69,11 +66,9 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
 						<div class="lightbox-frame grid min-h-0 place-items-center">
 							{images.map((image, index) => (
-								<Image
+								<img
 									src={image.src}
 									alt={image.alt}
-									widths={[640, 1200]}
-									sizes="(max-width: 899px) 90vw, 60rem"
 									loading="lazy"
 									decoding="async"
 									data-slide={index}

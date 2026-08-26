@@ -1,10 +1,17 @@
 /**
- * The four top-level destinations. Order is the order shown in the selector.
+ * The five top-level destinations. Order is the order shown in the sidebar.
  *
- * `href` is a real route, so the selector is plain links: browser back/forward
+ * `href` is a real route, so navigation is plain links: browser back/forward
  * works without any client-side routing.
  */
 export const DESTINATIONS = [
+	{
+		id: 'home',
+		label: 'Home',
+		href: '/',
+		icon: 'home',
+		description: 'background, engineering philosophy, and the work between projects.',
+	},
 	{
 		id: 'projects',
 		label: 'Projects',
@@ -13,11 +20,11 @@ export const DESTINATIONS = [
 		description: 'things I have built, with the useful parts left in.',
 	},
 	{
-		id: 'about',
-		label: 'About me',
-		href: '/about',
-		icon: 'about',
-		description: 'background, engineering philosophy, and the work between projects.',
+		id: 'university',
+		label: 'University',
+		href: '/university',
+		icon: 'university',
+		description: 'clubs, teaching, internships, and talks from university.',
 	},
 	{
 		id: 'achievements',

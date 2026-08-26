@@ -1,49 +1,29 @@
 import { test, expect } from '@playwright/test';
 
-async function reachSelector(page: import('@playwright/test').Page) {
+test('sidebar uses the Adwaita dark palette', async ({ page }) => {
 	await page.goto('/');
-	await expect(page.locator('#opening #advance')).toBeVisible({ timeout: 25_000 });
-	await page.keyboard.press('Enter');
-	await expect(page).toHaveURL(/\/selector$/);
-	await expect(page.locator('#wayfinder')).toBeVisible();
-}
-
-test('bfcache restore shows the completed intro instead of a blank page', async ({ page }) => {
-	await reachSelector(page);
-	await page.goBack();
-	await expect(page).toHaveURL(/\/$/);
-
-	// Simulate a bfcache restore, which is what causes the blank screen.
-	await page.evaluate(() => {
-		window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
-	});
-
-	await expect(page.locator('#opening')).toBeVisible();
-	await expect(page.locator('#frame')).toBeVisible();
-	await expect(page.locator('#advance')).toBeVisible();
-	await expect(page.locator('#typed')).toContainText('imma just show you');
-});
-
-test('selector uses the Adwaita dark palette', async ({ page }) => {
-	await page.goto('/selector');
 
 	await expect(page.locator('#wayfinder')).toHaveCSS('background-color', 'rgb(23, 23, 23)');
-	await expect(page.locator('.window')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
-	await expect(page.locator('.headerbar')).toHaveCSS('background-color', 'rgb(48, 48, 48)');
-	await expect(page.locator('.terminal')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+	await expect(page.locator('main .window')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+	await expect(page.locator('main .headerbar')).toHaveCSS('background-color', 'rgb(48, 48, 48)');
+	await expect(page.locator('#wayfinder .terminal')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
 	await expect(
 		page.locator('.waypoint-link[aria-current="page"] .waypoint-icon'),
 	).toHaveCSS('color', 'rgb(57, 255, 136)');
 });
 
-test('timeline columns align across every destination', async ({ page }) => {
-	await page.goto('/selector');
+test('sidebar columns align across every destination', async ({ page }, testInfo) => {
+	// The mobile rail is a horizontal flex strip, not a column grid.
+	testInfo.skip(testInfo.project.name === 'mobile', 'desktop rail only');
+
+	await page.goto('/');
 
 	const links = page.locator('.waypoint-link');
-	await expect(links).toHaveCount(4);
+	await expect(links).toHaveCount(5);
 
+	// The rail is the minimized sidebar: icon + label, two columns.
 	const columns = await links.first().evaluate((el) => getComputedStyle(el).gridTemplateColumns);
-	expect(columns.split(' ')).toHaveLength(3);
+	expect(columns.split(' ')).toHaveLength(2);
 
 	const icons = await page.locator('.waypoint-icon').evaluateAll((els) =>
 		els.map((el) => Math.round(el.getBoundingClientRect().x)),
@@ -66,8 +46,8 @@ test('timeline columns align across every destination', async ({ page }) => {
 	for (const offset of verticalOffsets) expect(offset).toBeLessThanOrEqual(1);
 });
 
-test('selector does not overflow horizontally', async ({ page }) => {
-	await page.goto('/selector');
+test('home page does not overflow horizontally', async ({ page }) => {
+	await page.goto('/');
 	await expect(page.locator('#wayfinder')).toBeVisible();
 	const overflow = await page.evaluate(
 		() => document.documentElement.scrollWidth - window.innerWidth,
@@ -78,13 +58,13 @@ test('selector does not overflow horizontally', async ({ page }) => {
 test('every destination has its own route and keeps the navigation available', async ({ page }) => {
 	const routes = [
 		['Projects', '/projects'],
-		['About me', '/about'],
+		['University', '/university'],
 		['Achievements', '/achievements'],
 		['Contact', '/contact'],
 	] as const;
 
 	for (const [name, route] of routes) {
-		await page.goto('/selector');
+		await page.goto('/');
 		await page.getByRole('link', { name: new RegExp(`${name}:`) }).click();
 		await expect(page).toHaveURL(new RegExp(`${route}$`));
 		await expect(page.locator('#wayfinder')).toHaveClass(/is-minimized/);
@@ -99,13 +79,39 @@ test('projects route renders the project cards', async ({ page }) => {
 	await expect(cards.first()).toBeVisible();
 	expect(await cards.count()).toBeGreaterThan(1);
 	await expect(page.getByRole('heading', { name: 'AngaDriveV2' })).toBeVisible();
-	await expect(page.getByText('public archive')).toBeVisible();
+	await expect(page.getByText('public archive', { exact: true })).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'Compiler' })).toHaveCount(0);
 	await expect(page.getByRole('heading', { name: 'Dotfiles' })).toHaveCount(0);
 	await expect(page.locator('.card').last()).toContainText('AngaDriveV2');
 
 	// Cards must not depend on having every link.
 	await expect(page.locator('.card-actions').first()).toBeVisible();
+});
+
+test('archived project cards explain the warning icon on hover', async ({ page }, testInfo) => {
+	if (testInfo.project.name === 'mobile') testInfo.skip();
+
+	await page.goto('/projects');
+
+	const card = page.locator('.card').filter({ hasText: 'AngaDriveV2' });
+	const tooltip = card.locator('.card-tooltip');
+
+	await expect(tooltip).toHaveCount(1);
+	await expect(tooltip).toHaveAttribute('role', 'tooltip');
+	await expect(tooltip).toContainText('legacy project');
+	await expect(tooltip).toContainText('public archive');
+	await expect(tooltip).toBeHidden();
+
+	await card.hover();
+	await expect(tooltip).toBeVisible();
+
+	// Active cards never carry the warning tooltip.
+	await expect(
+		page
+			.locator('.card')
+			.filter({ has: page.getByRole('heading', { name: 'AngaDriveV3', exact: true }) })
+			.locator('.card-tooltip'),
+	).toHaveCount(0);
 });
 
 test('AngaDriveV2 links to its archived repository', async ({ page }) => {
@@ -179,9 +185,9 @@ test('projects navigation has no redundant project list', async ({ page }) => {
 	await expect(page).toHaveURL(/\/projects$/);
 });
 
-test('mobile selector has no overflow and keeps the bottom rail usable', async ({ page }) => {
+test('mobile home page has no overflow and keeps the bottom rail usable', async ({ page }) => {
 	await page.setViewportSize({ width: 375, height: 667 });
-	await page.goto('/selector');
+	await page.goto('/');
 
 	const overflow = await page.evaluate(
 		() => document.documentElement.scrollWidth - window.innerWidth,

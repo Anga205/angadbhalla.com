@@ -5,13 +5,11 @@
  * /achievements/<slug>. The listing groups cards by category; the detail page
  * renders the long form plus a gallery.
  *
- * Galleries are discovered from disk, not declared here. Drop a file into
- * src/assets/achievements/<slug>/ and it appears, sorted by filename. Captions
- * are optional: add an entry to `captions` keyed by the filename stem (e.g.
- * "01") and it is used in the lightbox; otherwise a fallback is generated.
+ * Galleries use the three numbered files in public/achievements/<slug>/.
+ * Captions are optional: add an entry to `captions` keyed by the filename
+ * stem (e.g. "01") and it is used in the lightbox; otherwise a fallback is
+ * generated.
  */
-import type { ImageMetadata } from 'astro';
-
 export const CATEGORIES = [
 	'hackathons',
 	'competitive',
@@ -26,7 +24,7 @@ export type Category = (typeof CATEGORIES)[number];
 export const CATEGORY_LABELS: Record<Category, string> = {
 	hackathons: 'hackathons',
 	competitive: 'competitive programming',
-	leadership: 'leadership & teaching',
+	leadership: 'university & extracurriculars',
 	community: 'community',
 	'open-source': 'open source',
 	research: 'research',
@@ -35,7 +33,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
 export const CATEGORY_BLURBS: Record<Category, string> = {
 	hackathons: 'time-boxed builds, judged.',
 	competitive: 'practice, measured over years.',
-	leadership: 'running things other people show up to.',
+	leadership: 'roles, organisations, and the work around them.',
 	community: 'work that is not about the code.',
 	'open-source': 'changes that survived review.',
 	research: 'papers turned into working systems.',
@@ -103,6 +101,20 @@ export interface Achievement {
 	/** Sort key and card meta. */
 	year: string;
 	summary: string;
+	/** Organisation the role was held at. Leadership cards only. */
+	organization?: string;
+	/** The role itself. Rendered as the leadership card heading. */
+	position?: string;
+	/** Team or department within the organisation. Leadership cards only. */
+	department?: string;
+	/**
+	 * Overrides the detail-page link. Needed when a card is shown on a page
+	 * whose detail route does not own it (e.g. a research entry surfaced on
+	 * /university but documented under /achievements).
+	 */
+	href?: string;
+	/** Also list this entry on the /university page. */
+	alsoUniversity?: boolean;
 	description: string;
 	tags: string[];
 	icon: AchievementIcon;
@@ -113,30 +125,36 @@ export interface Achievement {
 }
 
 export interface GalleryImage {
-	src: ImageMetadata;
+	src: string;
 	alt: string;
 	caption: string;
 }
 
-const IMAGE_MODULES = import.meta.glob<{ default: ImageMetadata }>(
-	'/src/assets/achievements/*/*.{svg,png,jpg,jpeg,webp}',
-	{ eager: true },
-);
+const PUBLIC_GALLERY_SLUGS = new Set([
+	'algomania-3',
+	'tensor-2026',
+	'kalpana-2025',
+	'hack-o-ween-2025',
+	'leetcode-1337',
+	'alcoding-club-head',
+	'pesu-io-course',
+	'vosd-drive',
+	'docker-pr-51670',
+	'ieee-cs-iampro-2025',
+]);
 
 /**
  * Images for one achievement, sorted by path so numeric filenames control
  * order. Returns an empty array when the folder does not exist yet.
  */
 export function galleryFor(slug: string, captions: Record<string, string> = {}): GalleryImage[] {
-	const prefix = `/src/assets/achievements/${slug}/`;
+	if (!PUBLIC_GALLERY_SLUGS.has(slug)) return [];
 
-	return Object.entries(IMAGE_MODULES)
-		.filter(([path]) => path.startsWith(prefix))
-		.sort(([a], [b]) => a.localeCompare(b))
-		.map(([path, module]) => {
-			const stem = path.slice(prefix.length).replace(/\.[^.]+$/, '');
+	const prefix = `/achievements/${slug}/`;
+
+	return ['01', '02', '03'].map((stem) => {
 			const caption = captions[stem] ?? `image ${stem}`;
-			return { src: module.default, alt: caption, caption };
+			return { src: `${prefix}${stem}.svg`, alt: caption, caption };
 		});
 }
 
@@ -236,14 +254,18 @@ export const ACHIEVEMENTS: Achievement[] = [
 	},
 	{
 		slug: 'ieee-cs-iampro-2025',
-		title: 'IEEE Computer Society IAMPro 2025',
+		title: 'Research Intern',
 		category: 'research',
 		result: 'research intern',
 		date: 'April 1 - September 30, 2025',
 		year: '2025',
-		summary: 'a six-month research internship and mentorship programme.',
-		description:
-			'Conducted a research project on implementing software on a blockchain-based architecture through IEEE Computer Society Bangalore chapter.',
+		summary: 'IEEE Computer Society IAMPro 2025 Batch',
+		description: 'IEEE Computer Society IAMPro 2025 Batch',
+		organization: 'IEEE Computer Society Bangalore Chapter',
+		position: 'Research Intern',
+		department: 'IAMPro 2025 Batch',
+		alsoUniversity: true,
+		href: '/achievements/ieee-cs-iampro-2025',
 		tags: ['ieee', 'iampro', 'research', 'blockchain', 'internship', 'mentorship'],
 		icon: 'flask',
 		captions: {
@@ -392,6 +414,9 @@ export const ACHIEVEMENTS: Achievement[] = [
 		slug: 'alcoding-club-head',
 		title: 'Head, The Alcoding Club',
 		category: 'leadership',
+		organization: 'The Alcoding Club',
+		position: 'Club Head',
+		department: 'Core Team',
 		result: 'club head',
 		date: 'September 2024 \u2014 April 2025',
 		year: '2025',
@@ -444,8 +469,11 @@ export const ACHIEVEMENTS: Achievement[] = [
 	},
 	{
 		slug: 'pesu-io-course',
-		title: 'PESU I/O \u2014 Competitive Programming',
+		title: 'SME @ PESU I/O',
 		category: 'leadership',
+		organization: 'PESU I/O',
+		position: 'Subject Matter Expert (SME)',
+		department: 'Competitive Programming',
 		result: 'instructor',
 		date: 'August \u2014 November 2025',
 		year: '2025',
@@ -490,6 +518,52 @@ export const ACHIEVEMENTS: Achievement[] = [
 		},
 	},
 	{
+		slug: 'crais-robotics-intern',
+		title: 'Robotics Intern @ cRAIS',
+		category: 'leadership',
+		organization: 'cRAIS (Center for Robotics Automation and Intelligent Systems)',
+		position: 'Robotics Intern',
+		department: 'Remote Robotics (ReRo) team',
+		result: 'intern',
+		date: 'June \u2014 July 2025',
+		year: '2025',
+		summary: 'worked on the Remote Robotics (ReRo) team.',
+		description: 'A robotics internship with the Remote Robotics (ReRo) team at cRAIS.',
+		tags: ['crais', 'robotics', 'rero', 'internship'],
+		icon: 'container',
+		detail: {
+			overview: [
+				'I worked as a robotics intern at cRAIS (Center for Robotics Automation and Intelligent Systems) on the Remote Robotics (ReRo) team.',
+			],
+			highlights: ['Worked with the Remote Robotics (ReRo) team.'],
+		},
+	},
+	{
+		slug: 'ieee-ras-speaker',
+		title: 'IEEE RAS Speaker',
+		category: 'leadership',
+		organization: 'TAMS (The Amateur Manager and Scientist)',
+		position: 'IEEE RAS Speaker',
+		result: 'speaker',
+		date: 'August 2025',
+		year: '2025',
+		summary: 'spoke on robotics at a TAMS session.',
+		description:
+			'A talk for the IEEE Robotics and Automation Society chapter, hosted by TAMS.',
+		tags: ['ieee', 'ras', 'robotics', 'speaker', 'tams'],
+		icon: 'users',
+		menu: true,
+		links: [
+			{ label: 'my linkedin post', href: 'https://lnkd.in/p/deWbmV4m', icon: 'linkedin' },
+		],
+		detail: {
+			overview: [
+				'I spoke at an IEEE Robotics and Automation Society (RAS) session hosted by TAMS (The Amateur Manager and Scientist).',
+			],
+			highlights: ['Talk delivered to the IEEE RAS chapter at TAMS.'],
+		},
+	},
+	{
 		slug: 'vosd-drive',
 		title: 'VOSD Newspaper Drive',
 		category: 'community',
@@ -529,6 +603,31 @@ export const ACHIEVEMENTS: Achievement[] = [
 				'Collected and handed over to VOSD for resale by weight.',
 				'44,000+ views on the write-up.',
 			],
+		},
+	},
+	{
+		slug: 'tedx-speaker',
+		title: 'TEDx Speaker',
+		category: 'community',
+		organization: 'TEDxSNSCE',
+		result: 'speaker',
+		date: 'August 25, 2017',
+		year: '2017',
+		summary: 'a TEDx talk.',
+		description: 'A TEDx talk delivered at TEDxSNSCE.',
+		tags: ['tedx', 'speaker', 'talk', 'community'],
+		icon: 'heart',
+		menu: true,
+		links: [
+			{
+				label: 'youtube video',
+				href: 'https://www.youtube.com/watch?v=GSN9b3AIITw',
+				icon: 'youtube',
+			},
+		],
+		detail: {
+			overview: ['A TEDx talk delivered at TEDxSNSCE.'],
+			highlights: ['Spoke at TEDxSNSCE.'],
 		},
 	},
 	{
@@ -595,7 +694,23 @@ export function hasDetailPage(achievement: Achievement): boolean {
 	return !opensMenu(achievement);
 }
 
-export const DETAIL_ACHIEVEMENTS = ACHIEVEMENTS.filter(hasDetailPage);
+/**
+ * University & extracurriculars live on their own page (/university), so the
+ * achievements index excludes them.
+ */
+export const UNIVERSITY_ACHIEVEMENTS = ACHIEVEMENTS.filter(
+	(achievement) => achievement.category === 'leadership' || achievement.alsoUniversity,
+);
+
+export const ACHIEVEMENT_INDEX = ACHIEVEMENTS.filter(
+	(achievement) => achievement.category !== 'leadership',
+);
+
+export const DETAIL_ACHIEVEMENTS = ACHIEVEMENT_INDEX.filter(hasDetailPage);
+
+export const UNIVERSITY_DETAIL_ACHIEVEMENTS = UNIVERSITY_ACHIEVEMENTS.filter(
+	(achievement) => hasDetailPage(achievement) && !achievement.href,
+);
 
 export interface AchievementGroup {
 	category: Category;
@@ -610,6 +725,6 @@ export function groupByCategory(): AchievementGroup[] {
 		category,
 		label: CATEGORY_LABELS[category],
 		blurb: CATEGORY_BLURBS[category],
-		items: ACHIEVEMENTS.filter((achievement) => achievement.category === category),
+		items: ACHIEVEMENT_INDEX.filter((achievement) => achievement.category === category),
 	})).filter((group) => group.items.length > 0);
 }

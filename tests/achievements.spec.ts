@@ -7,9 +7,8 @@ const SLUGS = [
 	'kalpana-2025',
 	'hack-o-ween-2025',
 	'leetcode-1337',
-	'alcoding-club-head',
-	'pesu-io-course',
 	'vosd-drive',
+	'tedx-speaker',
 	'docker-pr-51670',
 ] as const;
 
@@ -20,8 +19,8 @@ const MENU_SLUGS = [
 	'kalpana-2025',
 	'hack-o-ween-2025',
 	'leetcode-1337',
-	'pesu-io-course',
 	'vosd-drive',
+	'tedx-speaker',
 	'docker-pr-51670',
 ] as const;
 
@@ -36,20 +35,23 @@ test('achievements index groups every achievement into sections', async ({ page 
 	const cards = page.locator('.card');
 	await expect(cards).toHaveCount(SLUGS.length);
 
-	// Six categories, each with a heading.
+	// Five categories, each with a heading. University has its own page.
 	const groups = page.locator('.group');
-	await expect(groups).toHaveCount(6);
+	await expect(groups).toHaveCount(5);
 
 	for (const label of [
 		'hackathons',
 		'competitive programming',
-		'leadership & teaching',
 		'community',
 		'open source',
 		'research',
 	]) {
 		await expect(page.getByRole('heading', { name: label, level: 2 })).toBeVisible();
 	}
+
+	await expect(
+		page.getByRole('heading', { name: 'university & extracurriculars', level: 2 }),
+	).toHaveCount(0);
 });
 
 test('achievement cards stay compact: icon, name, one-line summary', async ({ page }) => {
@@ -69,18 +71,59 @@ test('achievement cards stay compact: icon, name, one-line summary', async ({ pa
 test('clicking a plain card opens its detail page', async ({ page }) => {
 	await page.goto('/achievements');
 
-	await page.getByRole('link', { name: 'Head, The Alcoding Club' }).click();
+	await page.getByRole('link', { name: 'Research Intern' }).click();
 
-	await expect(page).toHaveURL(/\/achievements\/alcoding-club-head$/);
+	await expect(page).toHaveURL(/\/achievements\/ieee-cs-iampro-2025$/);
+	await expect(page.getByRole('heading', { name: 'Research Intern', level: 1 })).toBeVisible();
+	await expect(page.getByText('IEEE Computer Society IAMPro 2025 Batch')).toBeVisible();
+	await expect(page.locator('.highlights li').first()).toBeVisible();
+});
+
+test('university page lists every role as a linkedin-style entry', async ({ page }) => {
+	await page.goto('/university');
+
+	await expect(page.getByRole('heading', { name: 'university', level: 1 })).toBeVisible();
+
+	const cards = page.locator('.card');
+	await expect(cards).toHaveCount(5);
+
+	const club = cards.filter({ hasText: 'The Alcoding Club' });
+	await expect(club.getByRole('heading', { level: 3 })).toHaveText('Club Head');
+	await expect(club.locator('.card-org')).toHaveText('The Alcoding Club');
+	await expect(club.locator('.card-dept')).toHaveText('Core Team');
+	await expect(club.locator('.card-dates')).toHaveText('September 2024 — April 2025');
+
+	const course = cards.filter({ hasText: 'PESU I/O' });
+	await expect(course.getByRole('heading', { level: 3 })).toHaveText('Subject Matter Expert (SME)');
+	await expect(course.locator('.card-dept')).toHaveText('Competitive Programming');
+	await expect(course.locator('.card-dates')).toHaveText('August — November 2025');
+
+	const intern = cards.filter({ hasText: 'cRAIS' });
+	await expect(intern.getByRole('heading', { level: 3 })).toHaveText('Robotics Intern');
+	await expect(intern.locator('.card-dept')).toHaveText('Remote Robotics (ReRo) team');
+	await expect(intern.locator('.card-dates')).toHaveText('June — July 2025');
+
+	const ras = cards.filter({ hasText: 'TAMS' });
+	await expect(ras.getByRole('heading', { level: 3 })).toHaveText('IEEE RAS Speaker');
+	await expect(ras.locator('.card-org')).toHaveText('TAMS (The Amateur Manager and Scientist)');
+
+	// The old label column is gone.
+	await expect(page.locator('.card-role-label')).toHaveCount(0);
+});
+
+test('university cards link to their own detail pages', async ({ page }) => {
+	await page.goto('/university');
+
+	await page.getByRole('link', { name: 'Club Head, The Alcoding Club' }).click();
+
+	await expect(page).toHaveURL(/\/university\/alcoding-club-head$/);
 	await expect(page.getByRole('heading', { name: 'Head, The Alcoding Club', level: 1 })).toBeVisible();
 	await expect(page.locator('.highlights li').first()).toBeVisible();
 });
 
 test('IAMPro has a research detail page with three gallery slots', async ({ page }, testInfo) => {
 	await page.goto('/achievements/ieee-cs-iampro-2025');
-	await expect(
-		page.getByRole('heading', { name: 'IEEE Computer Society IAMPro 2025', level: 1 }),
-	).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Research Intern', level: 1 })).toBeVisible();
 	await expect(page.locator('.thumb')).toHaveCount(3);
 
 	testInfo.project.name === 'mobile' && testInfo.skip();
@@ -197,8 +240,8 @@ test('every menu card opens a menu with its links', async ({ page }) => {
 		'IEEE Kalpana 2025',
 		'Hack-o-ween 2025',
 		'LeetCode — 1,337 solved',
-		'PESU I/O — Competitive Programming',
 		'VOSD Newspaper Drive',
+		'TEDx Speaker',
 		'docker/docker #51670',
 	]) {
 		await page.getByRole('button', { name: title }).click();
@@ -245,7 +288,7 @@ test('Tensor and IAMPro sit under research', async ({ page }) => {
 	const research = page.getByRole('region', { name: 'research' });
 	await expect(research.getByRole('button', { name: 'Tensor 2026' })).toBeVisible();
 	await expect(
-		research.getByRole('link', { name: 'IEEE Computer Society IAMPro 2025' }),
+		research.getByRole('link', { name: 'Research Intern' }),
 	).toBeVisible();
 });
 
@@ -292,7 +335,7 @@ test('every remaining achievement has a reachable detail page', async ({ page })
 });
 
 test('detail page gallery opens a lightbox with the image caption', async ({ page }) => {
-	await page.goto('/achievements/alcoding-club-head');
+	await page.goto('/university/alcoding-club-head');
 
 	const thumbs = page.locator('.thumb');
 	await expect(thumbs).toHaveCount(3);
@@ -318,9 +361,9 @@ test('detail page gallery opens a lightbox with the image caption', async ({ pag
 });
 
 test('pesu io links to the linkedin post and the youtube video', async ({ page }) => {
-	await page.goto('/achievements');
+	await page.goto('/university');
 
-	await page.getByRole('button', { name: 'PESU I/O — Competitive Programming' }).click();
+	await page.getByRole('button', { name: 'Subject Matter Expert (SME), PESU I/O' }).click();
 
 	const hrefs = await page
 		.locator('dialog.menu[open] .menu-list a')
@@ -330,8 +373,32 @@ test('pesu io links to the linkedin post and the youtube video', async ({ page }
 	expect(hrefs).toContain('https://www.youtube.com/watch?v=FTFoN2CjIGQ');
 });
 
+test('ieee ras speaker links to its linkedin post', async ({ page }) => {
+	await page.goto('/university');
+
+	await page.getByRole('button', { name: 'IEEE RAS Speaker, TAMS (The Amateur Manager and Scientist)' }).click();
+
+	const hrefs = await page
+		.locator('dialog.menu[open] .menu-list a')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+
+	expect(hrefs).toContain('https://lnkd.in/p/deWbmV4m');
+});
+
+test('tedx speaker links to the youtube talk', async ({ page }) => {
+	await page.goto('/achievements');
+
+	await page.getByRole('button', { name: 'TEDx Speaker' }).click();
+
+	const hrefs = await page
+		.locator('dialog.menu[open] .menu-list a')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+
+	expect(hrefs).toContain('https://www.youtube.com/watch?v=GSN9b3AIITw');
+});
+
 test('alcoding club links to the club page and the containerization post', async ({ page }) => {
-	await page.goto('/achievements/alcoding-club-head');
+	await page.goto('/university/alcoding-club-head');
 
 	const hrefs = await page
 		.locator('.actions a')
@@ -349,7 +416,7 @@ test('containerization workshop is folded into the alcoding club achievement', a
 	await expect(page.getByRole('link', { name: 'Containerization 101' })).toHaveCount(0);
 
 	// The workshop is mentioned on the club detail page.
-	await page.goto('/achievements/alcoding-club-head');
+	await page.goto('/university/alcoding-club-head');
 	await expect(page.getByText(/Containerization 101/).first()).toBeVisible();
 });
 
@@ -379,7 +446,7 @@ test('docker pull request card links to the docker/docker PR', async ({ page }) 
 });
 
 test('lightbox close button dismisses the dialog', async ({ page }) => {
-	await page.goto('/achievements/alcoding-club-head');
+	await page.goto('/university/alcoding-club-head');
 
 	await page.locator('.thumb').nth(1).click();
 	const dialog = page.locator('dialog.lightbox');
@@ -391,16 +458,16 @@ test('lightbox close button dismisses the dialog', async ({ page }) => {
 });
 
 test('detail page links back to the index', async ({ page }) => {
-	await page.goto('/achievements/alcoding-club-head');
+	await page.goto('/university/alcoding-club-head');
 
-	await page.getByRole('link', { name: /all achievements/ }).click();
-	await expect(page).toHaveURL(/\/achievements$/);
+	await page.getByRole('link', { name: /all university/ }).click();
+	await expect(page).toHaveURL(/\/university$/);
 });
 
 test('achievements pages do not overflow on mobile', async ({ page }) => {
 	await page.setViewportSize({ width: 375, height: 667 });
 
-	for (const route of ['/achievements', '/achievements/alcoding-club-head']) {
+	for (const route of ['/achievements', '/university', '/university/alcoding-club-head']) {
 		await page.goto(route);
 		const overflow = await page.evaluate(
 			() => document.documentElement.scrollWidth - window.innerWidth,

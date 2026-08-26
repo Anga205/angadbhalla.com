@@ -1,40 +1,35 @@
 ---
-import { FolderGit2, User, Trophy, Link2 } from 'lucide-astro';
+import { FolderGit2, User, Trophy, Link2, GraduationCap } from 'lucide-astro';
 import { DESTINATIONS } from '../data/destinations';
 
 interface Props {
-	initiallyVisible?: boolean;
 	minimized?: boolean;
 }
 
-const { initiallyVisible = false, minimized = false } = Astro.props;
+const { minimized = false } = Astro.props;
 
 const ICONS = {
+	home: User,
 	projects: FolderGit2,
-	about: User,
+	university: GraduationCap,
 	achievements: Trophy,
 	contact: Link2,
 } as const;
 
-// The active destination comes from the URL, not from list position. On
-// /selector no destination matches, so the first one is the default highlight.
+// The active destination comes from the URL, not from list position.
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const activeId =
-	DESTINATIONS.find((d) => path === d.href || path.startsWith(`${d.href}/`))?.id ??
-	DESTINATIONS[0].id;
+	DESTINATIONS.find((d) => {
+		const href = d.href.replace(/\/$/, '') || '/';
+		return path === href || (href !== '/' && path.startsWith(`${href}/`));
+	})?.id ?? DESTINATIONS[0].id;
 
 ---
 
 <section
-	class:list={[
-		'wayfinder',
-		!initiallyVisible && 'wayfinder--hidden',
-		minimized && 'is-minimized',
-	]}
+	class:list={['wayfinder', minimized && 'is-minimized']}
 	id="wayfinder"
 	tabindex="-1"
-	data-initial-visible={initiallyVisible ? 'true' : undefined}
-	hidden={!initiallyVisible}
 >
 	<div class="window">
 		<div class="headerbar">
@@ -108,16 +103,6 @@ const activeId =
 		padding: 1.5rem;
 		overflow-y: auto;
 		background: #171717;
-		opacity: 1;
-		transition: opacity 350ms;
-	}
-
-	.wayfinder--hidden {
-		opacity: 0;
-	}
-
-	.wayfinder.is-visible {
-		opacity: 1;
 	}
 
 	.window {
@@ -354,7 +339,7 @@ const activeId =
 
 		.wayfinder.is-minimized .listing {
 			display: grid;
-			grid-template-columns: repeat(4, minmax(0, 1fr));
+			grid-template-columns: repeat(5, minmax(0, 1fr));
 			gap: 0.25rem;
 		}
 
@@ -364,7 +349,7 @@ const activeId =
 			align-items: center;
 			gap: 0.2rem;
 			margin: 0;
-			padding: 0.25rem;
+			padding: 0.25rem 0.1rem;
 			text-align: center;
 		}
 
@@ -381,7 +366,7 @@ const activeId =
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
-			font-size: 0.6875rem;
+			font-size: 0.625rem;
 		}
 	}
 
@@ -427,17 +412,6 @@ const activeId =
 		links[activeIndex].focus();
 	}
 
-	function showMenu() {
-		menuElement.hidden = false;
-		highlight(currentIndex);
-		requestAnimationFrame(() => {
-			requestAnimationFrame(() => {
-				menuElement.classList.add('is-visible');
-				links[currentIndex].focus();
-			});
-		});
-	}
-
 	links.forEach((link, index) => {
 		link.addEventListener('focus', () => {
 			activeIndex = index;
@@ -470,7 +444,4 @@ const activeId =
 			links[activeIndex].click();
 		}
 	});
-
-	window.addEventListener('portfolio:show-menu', showMenu);
-	if (menuElement.dataset.initialVisible === 'true') showMenu();
 </script>

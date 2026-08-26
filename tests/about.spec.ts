@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('about page renders the intro and philosophy', async ({ page }) => {
-	await page.goto('/about');
+	await page.goto('/');
 
 	await expect(page.getByRole('heading', { name: 'Angad Bhalla' })).toBeVisible();
 	await expect(page.getByText('PES University, Bangalore (2023-2027)')).toBeVisible();
@@ -13,7 +13,7 @@ test('about page renders the intro and philosophy', async ({ page }) => {
 });
 
 test('about page reserves a portrait area for the model', async ({ page }) => {
-	await page.goto('/about');
+	await page.goto('/');
 
 	const portrait = page.locator('#portrait');
 	await expect(portrait).toBeVisible();
@@ -22,7 +22,7 @@ test('about page reserves a portrait area for the model', async ({ page }) => {
 
 test('about page does not overflow on mobile', async ({ page }) => {
 	await page.setViewportSize({ width: 375, height: 667 });
-	await page.goto('/about');
+	await page.goto('/');
 	await expect(page.getByRole('heading', { name: 'Angad Bhalla' })).toBeVisible();
 
 	const overflow = await page.evaluate(

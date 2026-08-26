@@ -3,7 +3,7 @@
  *
  *   node scripts/generate-achievement-placeholders.mjs
  *
- * Writes src/assets/achievements/<slug>/01.svg … 03.svg. These are real files
+ * Writes public/achievements/<slug>/01.svg … 03.svg. These are real files
  * on disk, so the gallery layout is exercised before any screenshots exist.
  * Replace them with .png/.jpg of the same stem and the caption mapping in
  * src/data/achievements.ts keeps working.
@@ -15,7 +15,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = join(ROOT, 'src/assets/achievements');
+const OUT = join(ROOT, 'public/achievements');
 
 const SLUGS = [
 	'algomania-3',
