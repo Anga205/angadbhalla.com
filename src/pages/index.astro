@@ -17,29 +17,18 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 			</div>
 
 			<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
-				<p class="prompt mb-5 text-[0.75rem] text-[#26a269]">$ cat home.txt</p>
-
-				<div class="intro mb-8 grid grid-cols-[minmax(0,1fr)_16rem] items-start gap-6 border-b border-line pb-8 max-[899px]:grid-cols-[minmax(0,1fr)]">
+				<div class="intro mb-8 border-b border-line pb-8">
+					<p class="intro-prompt text-[0.75rem] text-[#26a269]">$ cat home.txt</p>
+					<h1 class="intro-heading mb-2 text-[1.35rem] font-normal">Angad Bhalla</h1>
 					<div class="intro-text">
-						<h1 class="mb-2 text-[1.35rem] font-normal">Angad Bhalla</h1>
 						<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
-							I'm an undergraduate pursuing a degree in Computer Science &amp; Engineering at PES
-							University, Bangalore (2023-2027), with experience across systems engineering,
-							infrastructure, and cybersecurity.
-						</p>
-						<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
-							I've completed internships at Goldman Sachs, Frigga Cloud, and Araciv Technologies,
-							working across infrastructure, security, and software development.
-						</p>
-						<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
-							At PES University, I led Team Alcoding, the competitive programming club,
-							organizing hackathons and coding contests. I also conducted the competitive
-							programming course at PESU I/O (Slot 20).
+							I'm a <span id="age">21</span> year old software engineer currently pursuing a degree in
+							Computer Science &amp; Engineering at PES University, Bangalore (2023-2027).
 						</p>
 						<p class="mb-0 max-w-[52ch] text-[#a5a3a9]">
-							Outside of work, I spend time learning the craft of coffee, exploring brewing
-							techniques and refining my understanding of the process. I also volunteer in
-							community initiatives, including fundraising for stray dogs.
+							I like playing Minecraft with my friends, watching Marvel &amp; DC, and I'm also a
+							huge coffee aficionado. In my off hours, I volunteer in community NGOs for animal
+							welfare.
 						</p>
 					</div>
 
@@ -117,9 +106,36 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 </Base>
 
 <style>
-	.portrait-photo {
+	.intro {
 		display: grid;
-		place-items: center;
+		grid-template-columns: minmax(0, 1fr) 16rem;
+		grid-template-areas:
+			'prompt prompt'
+			'heading photo'
+			'text photo';
+		grid-template-rows: auto auto 1fr;
+		column-gap: 1.5rem;
+		align-items: start;
+	}
+
+	.intro-prompt {
+		grid-area: prompt;
+		margin-bottom: 1.25rem;
+	}
+
+	.intro-heading {
+		grid-area: heading;
+	}
+
+	.intro-text {
+		grid-area: text;
+	}
+
+	.portrait-photo {
+		grid-area: photo;
+		display: grid;
+		align-items: start;
+		justify-items: center;
 	}
 
 	.portrait-photo img {
@@ -133,15 +149,22 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 	}
 
 	.philosophy-grid {
+		/* Tune the text/model split here. These are a ratio of the total
+		   width, so 1.5fr / 1fr gives the text ~60% and the model ~40%. */
+		--philosophy-text-ratio: 1.5fr;
+		--philosophy-model-ratio: 1fr;
+
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) 16rem;
-		align-items: start;
+		grid-template-columns:
+			minmax(0, var(--philosophy-text-ratio))
+			minmax(0, var(--philosophy-model-ratio));
+		align-items: stretch;
 		gap: 1.5rem;
 	}
 
 	.portrait {
 		position: relative;
-		height: 30rem;
+		min-height: 30rem;
 		overflow: hidden;
 	}
 
@@ -187,18 +210,52 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 	}
 
 	@media (max-width: 899px) {
+		.intro {
+			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-areas:
+				'prompt photo'
+				'heading photo'
+				'text text';
+			grid-template-rows: auto auto auto;
+			column-gap: 1rem;
+			align-items: start;
+		}
+
+		.intro-prompt {
+			margin-bottom: 0.5rem;
+		}
+
+		.portrait-photo img {
+			width: 6rem;
+			max-width: 6rem;
+		}
+
 		.philosophy-grid {
 			grid-template-columns: minmax(0, 1fr);
 		}
 
 		.portrait {
 			height: 18rem;
+			min-height: 18rem;
 		}
 	}
 
 </style>
 
 <script>
+	// Age is computed on the client so it stays correct without a rebuild.
+	const ageElement = document.getElementById('age');
+	if (ageElement) {
+		const birthday = new Date(1117650600 * 1000);
+		const now = new Date();
+		let age = now.getUTCFullYear() - birthday.getUTCFullYear();
+		const monthDelta = now.getUTCMonth() - birthday.getUTCMonth();
+		if (monthDelta < 0 || (monthDelta === 0 && now.getUTCDate() < birthday.getUTCDate())) {
+			age -= 1;
+		}
+		ageElement.textContent = String(age);
+	}
+
 	// The model is loaded only when the portrait scrolls into view, so the
 	// about page stays cheap until someone actually looks at it.
 	const portrait = document.getElementById('portrait');
@@ -268,16 +325,46 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 
 			scene.add(model);
 
-			// Fixed camera: diagonally towards the model's centre from its
-			// positive-X, negative-Z side.
+			// Fixed viewing direction: diagonally towards the model's centre
+			// from its positive-X, negative-Z side. The distance is recomputed
+			// on every resize so the model fills the available height instead
+			// of sitting in a fixed-size box.
 			const target = new THREE.Vector3(0, size.y / 2, 0);
-			camera.position.set(1.1, 0.95, -0.60);
 			controls.target.copy(target);
 
-			const offset = camera.position.clone().sub(target);
-			const initialAzimuth = Math.atan2(offset.x, offset.z);
-			const initialPolar = Math.acos(offset.y / offset.length());
-			const initialPosition = camera.position.clone();
+			const viewDirection = new THREE.Vector3(1.1, 0.05, -0.6).normalize();
+			const initialAzimuth = Math.atan2(viewDirection.x, viewDirection.z);
+			const initialPolar = Math.acos(viewDirection.y);
+			let initialPosition = new THREE.Vector3();
+
+			// Seed the camera along the intended direction so the first
+			// framing pass has a valid direction to preserve.
+			camera.position.copy(target).addScaledVector(viewDirection, 1);
+
+			const fitDistance = () => {
+				const heightPx = hostElement.clientHeight;
+				if (!heightPx) return 1;
+
+				// Frame by height, then back off so the figure occupies about
+				// two thirds of the column height and sits centred in it.
+				const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+				const padding = 1.56;
+				return ((size.y / 2) * padding) / Math.tan(verticalFov / 2);
+			};
+
+			// Pull the camera back along its current direction so the model
+			// always fills the box, without resetting the user's rotation.
+			const applyFraming = () => {
+				const distance = fitDistance();
+				const direction = camera.position.clone().sub(target);
+				if (direction.lengthSq() < 1e-6) direction.copy(viewDirection);
+				direction.normalize();
+				camera.position.copy(target).addScaledVector(direction, distance);
+				initialPosition = camera.position.clone();
+				controls.update();
+				controls.saveState();
+			};
+
 			controls.minPolarAngle = initialPolar;
 			controls.maxPolarAngle = initialPolar;
 			const horizontalLimit = THREE.MathUtils.degToRad(82);
@@ -299,9 +386,6 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 			renderer.domElement.addEventListener('pointermove', applyResistance, { capture: true });
 			renderer.domElement.addEventListener('pointerup', resetResistance, { capture: true });
 			renderer.domElement.addEventListener('pointercancel', resetResistance, { capture: true });
-
-			controls.update();
-			controls.saveState();
 
 			let snapFrame = 0;
 			let snapTimeout = 0;
@@ -365,6 +449,7 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 				renderer.setSize(width, heightPx);
 				camera.aspect = width / heightPx;
 				camera.updateProjectionMatrix();
+				applyFraming();
 				renderer.render(scene, camera);
 			}
 

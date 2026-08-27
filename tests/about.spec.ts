@@ -5,9 +5,9 @@ test('about page renders the intro and philosophy', async ({ page }) => {
 
 	await expect(page.getByRole('heading', { name: 'Angad Bhalla' })).toBeVisible();
 	await expect(page.getByText('PES University, Bangalore (2023-2027)')).toBeVisible();
-	await expect(page.getByText('Goldman Sachs, Frigga Cloud, and Araciv Technologies')).toBeVisible();
-	await expect(page.getByText('Team Alcoding')).toBeVisible();
-	await expect(page.getByText('fundraising for stray dogs')).toBeVisible();
+	await expect(page.getByText('playing Minecraft with my friends')).toBeVisible();
+	await expect(page.getByText('huge coffee aficionado')).toBeVisible();
+	await expect(page.getByText('community NGOs for animal welfare')).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'my philosophy' })).toBeVisible();
 	await expect(page.getByText('The goofier the project, the better.')).toBeVisible();
 });
