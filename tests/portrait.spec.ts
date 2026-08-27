@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test('about portrait renders the compressed GLB', async ({ page }) => {
-	await page.goto('/');
+test('philosophy portrait renders the compressed GLB', async ({ page }) => {
+	await page.goto('/philosophy');
 
 	const portrait = page.locator('#portrait');
 	await portrait.scrollIntoViewIfNeeded();
@@ -20,7 +20,7 @@ test('about portrait renders the compressed GLB', async ({ page }) => {
 
 test('portrait rotates horizontally with damping and snaps back', async ({ page }, testInfo) => {
 	test.skip(testInfo.project.name !== 'default', 'drag interaction is desktop-only coverage');
-	await page.goto('/');
+	await page.goto('/philosophy');
 
 	const portrait = page.locator('#portrait');
 	await portrait.scrollIntoViewIfNeeded();

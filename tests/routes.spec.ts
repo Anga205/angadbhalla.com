@@ -12,7 +12,7 @@ test('sidebar uses the Adwaita dark palette', async ({ page }) => {
 	).toHaveCSS('color', 'rgb(57, 255, 136)');
 });
 
-test('mobile rail drops the trailing slash from destination labels', async ({ page }, testInfo) => {
+test('mobile rail drops the trailing slash and uses short labels', async ({ page }, testInfo) => {
 	testInfo.skip(testInfo.project.name !== 'mobile', 'mobile rail only');
 
 	await page.goto('/');
@@ -20,9 +20,21 @@ test('mobile rail drops the trailing slash from destination labels', async ({ pa
 	const slash = page.locator('.waypoint-slash').first();
 	await expect(slash).toBeHidden();
 
-	// The label text itself no longer ends in a slash.
-	const label = await page.locator('.waypoint-label').first().innerText();
-	expect(label.endsWith('/')).toBe(false);
+	// The rail is six items wide, so the full labels are replaced by short
+	// ones: no trailing slash, nothing truncated away.
+	await expect(page.locator('.waypoint-label').first()).toBeHidden();
+	await expect(page.locator('.waypoint-label-short').first()).toBeVisible();
+
+	const labels = await page
+		.locator('.waypoint-label-short')
+		.evaluateAll((els) =>
+			els.map((el) => ({ text: el.textContent ?? '', clipped: el.scrollWidth > el.clientWidth })),
+		);
+	expect(labels).toHaveLength(6);
+	for (const label of labels) {
+		expect(label.text.endsWith('/')).toBe(false);
+		expect(label.clipped).toBe(false);
+	}
 });
 
 test('sidebar columns align across every destination', async ({ page }, testInfo) => {
@@ -32,7 +44,7 @@ test('sidebar columns align across every destination', async ({ page }, testInfo
 	await page.goto('/');
 
 	const links = page.locator('.waypoint-link');
-	await expect(links).toHaveCount(5);
+	await expect(links).toHaveCount(6);
 
 	// The rail is the minimized sidebar: icon + label, two columns.
 	const columns = await links.first().evaluate((el) => getComputedStyle(el).gridTemplateColumns);
@@ -73,6 +85,7 @@ test('every destination has its own route and keeps the navigation available', a
 		['Projects', '/projects'],
 		['University', '/university'],
 		['Achievements', '/achievements'],
+		['Philosophy', '/philosophy'],
 		['Contact', '/contact'],
 	] as const;
 

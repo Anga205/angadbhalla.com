@@ -4,7 +4,7 @@ test('contact page lists every contact with the right link', async ({ page }) =>
 	await page.goto('/contact');
 
 	const contacts = page.locator('.contact-link');
-	await expect(contacts).toHaveCount(5);
+	await expect(contacts).toHaveCount(6);
 
 	await expect(contacts.nth(0)).toHaveAttribute('href', 'mailto:angadbhalla2005@gmail.com');
 	await expect(contacts.nth(1)).toHaveAttribute('href', 'https://github.com/Anga205/');
@@ -14,6 +14,10 @@ test('contact page lists every contact with the right link', async ({ page }) =>
 		'https://discord.com/users/477680545271250944',
 	);
 	await expect(contacts.nth(4)).toHaveAttribute('href', 'https://www.instagram.com/_anga205/');
+	await expect(contacts.nth(5)).toHaveAttribute(
+		'href',
+		'https://www.duolingo.com/profile/AngadBhalla',
+	);
 	await expect(page.locator('[data-copy]')).toHaveCount(0);
 });
 

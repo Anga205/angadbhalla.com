@@ -1,5 +1,5 @@
 ---
-import { FolderGit2, User, Trophy, Link2, GraduationCap } from 'lucide-astro';
+import { FolderGit2, User, Trophy, Link2, GraduationCap, BookOpen } from 'lucide-astro';
 import { DESTINATIONS } from '../data/destinations';
 
 interface Props {
@@ -13,6 +13,7 @@ const ICONS = {
 	projects: FolderGit2,
 	university: GraduationCap,
 	achievements: Trophy,
+	philosophy: BookOpen,
 	contact: Link2,
 } as const;
 
@@ -69,7 +70,8 @@ const activeId =
 										<Icon size={16} strokeWidth={1.5} />
 									</span>
 									<span class="waypoint-text">
-									<span class="waypoint-label">{destination.label.toLowerCase()}<span class="waypoint-slash">/</span></span>
+										<span class="waypoint-label">{destination.label.toLowerCase()}<span class="waypoint-slash">/</span></span>
+										<span class="waypoint-label-short">{destination.shortLabel}</span>
 										<span class="waypoint-description">{destination.description}</span>
 									</span>
 								</a>
@@ -233,6 +235,15 @@ const activeId =
 		line-height: 1.75;
 	}
 
+	/* The six-item mobile rail has no room for the full label, so it shows a
+	   short one instead. Everywhere else the short label is hidden. */
+	.waypoint-label-short {
+		display: none;
+		color: #ffffff;
+		font-size: 0.875rem;
+		line-height: 1.75;
+	}
+
 	.waypoint-description {
 		display: block;
 		color: #a5a3a9;
@@ -339,7 +350,7 @@ const activeId =
 
 		.wayfinder.is-minimized .listing {
 			display: grid;
-			grid-template-columns: repeat(5, minmax(0, 1fr));
+			grid-template-columns: repeat(6, minmax(0, 1fr));
 			gap: 0.25rem;
 		}
 
@@ -363,6 +374,20 @@ const activeId =
 		}
 
 		.wayfinder.is-minimized .waypoint-label {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			font-size: 0.625rem;
+		}
+
+		/* Six columns at phone widths cannot fit the full names, so the rail
+		   swaps in the short labels and drops the directory slash. */
+		.wayfinder.is-minimized .waypoint-label {
+			display: none;
+		}
+
+		.wayfinder.is-minimized .waypoint-label-short {
+			display: block;
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
