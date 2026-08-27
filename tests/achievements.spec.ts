@@ -68,10 +68,47 @@ test('achievement cards stay compact: icon, name, one-line summary', async ({ pa
 	await expect(card.locator('.card-more')).toHaveCount(0);
 });
 
-test('clicking a plain card opens its detail page', async ({ page }) => {
+test('achievement cards show the date and span the full width', async ({ page }) => {
 	await page.goto('/achievements');
 
-	await page.getByRole('link', { name: 'Research Intern' }).click();
+	const cards = page.locator('.card');
+	await expect(cards.first().locator('.card-dates')).toBeVisible();
+	await expect(
+		cards.filter({ hasText: 'Algomania 3.0' }).locator('.card-dates'),
+	).toHaveText('March 2026');
+
+	// One card per row, like the university directory.
+	const columns = await page
+		.locator('.group ul')
+		.first()
+		.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
+	expect(columns.split(' ')).toHaveLength(1);
+
+	const listWidth = await page
+		.locator('.group ul')
+		.first()
+		.evaluate((el) => el.getBoundingClientRect().width);
+	const cardWidth = await cards.first().evaluate((el) => el.getBoundingClientRect().width);
+	expect(Math.abs(listWidth - cardWidth)).toBeLessThanOrEqual(1);
+});
+
+test('clicking a page-menu card opens a dialog with its activity description', async ({ page }) => {
+	await page.goto('/achievements');
+
+	await page.getByRole('button', { name: 'Research Intern' }).click();
+
+	// Still on the index; the page is reached through the dialog.
+	await expect(page).toHaveURL(/\/achievements$/);
+
+	const menu = page.locator('dialog.menu[open]');
+	await expect(menu).toBeVisible();
+
+	// The page is offered first, before the external links.
+	const first = menu.locator('.menu-list a').first();
+	await expect(first).toHaveText(/Activity Description/);
+	await expect(first).toHaveAttribute('href', '/achievements/ieee-cs-iampro-2025');
+
+	await first.click();
 
 	await expect(page).toHaveURL(/\/achievements\/ieee-cs-iampro-2025$/);
 	await expect(page.getByRole('heading', { name: 'Research Intern', level: 1 })).toBeVisible();
@@ -130,10 +167,18 @@ test('robotics internship no longer has a detail page', async ({ page }) => {
 	expect(response?.status()).toBe(404);
 });
 
-test('university cards link to their own detail pages', async ({ page }) => {
+test('university cards open a dialog that links to their detail pages', async ({ page }) => {
 	await page.goto('/university');
 
-	await page.getByRole('link', { name: 'Club Head, The Alcoding Club' }).click();
+	await page.getByRole('button', { name: 'Club Head, The Alcoding Club' }).click();
+
+	const menu = page.locator('dialog.menu[open]');
+	await expect(menu).toBeVisible();
+
+	const description = menu.getByRole('link', { name: /Activity Description/ });
+	await expect(description).toHaveAttribute('href', '/university/alcoding-club-head');
+
+	await description.click();
 
 	await expect(page).toHaveURL(/\/university\/alcoding-club-head$/);
 	await expect(page.getByRole('heading', { name: 'The Alcoding Club', level: 1 })).toBeVisible();
@@ -322,6 +367,57 @@ test('leetcode card uses the leetcode mark and links to the post and profile', a
 	expect(hrefs).toContain('https://leetcode.com/u/Anga205');
 });
 
+test('the leetcode profile link uses the leetcode mark, not the external icon', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const card = page.locator('.card').filter({ hasText: 'LeetCode' }).first();
+	const profile = card.getByRole('link', { name: 'my leetcode profile' });
+
+	// The LeetCode mark is a filled path; lucide's ExternalLink is stroked.
+	await expect(profile.locator('svg[fill="currentColor"]')).toHaveCount(1);
+	await expect(profile.locator('svg[stroke="currentColor"]')).toHaveCount(0);
+});
+
+test('page-menu cards list their activity description and every related link', async ({ page }) => {
+	await page.goto('/university');
+
+	await page.getByRole('button', { name: 'Club Head, The Alcoding Club' }).click();
+	const menu = page.locator('dialog.menu[open]');
+	await expect(menu).toBeVisible();
+
+	const hrefs = await menu
+		.locator('.menu-list a')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+
+	expect(hrefs[0]).toBe('/university/alcoding-club-head');
+	expect(hrefs).toContain('https://clubs.pes.edu/the-alcoding-club/about/');
+	expect(hrefs).toContain(
+		'https://www.linkedin.com/posts/alcoding_docker-containerization-alcodingclub-activity-7355439380456501248-air3',
+	);
+	expect(hrefs).toContain(
+		'https://www.linkedin.com/posts/alcoding_terrathon4-hackathon-sustainability-activity-7312160071730221056--2IU',
+	);
+	expect(hrefs).toContain('https://www.instagram.com/p/C_mwH_PykE7/?img_index=2');
+});
+
+test('page-menu cards carry an activity description icon in the headerbar', async ({ page }) => {
+	await page.goto('/university');
+
+	const club = page.locator('.card').filter({ hasText: 'The Alcoding Club' }).first();
+	const description = club.getByRole('link', { name: 'Activity Description' });
+	await expect(description).toHaveAttribute('href', '/university/alcoding-club-head');
+	await expect(description).toHaveAttribute('title', 'Activity Description');
+
+	// The research intern card has no external links, so the icon replaces the
+	// result text in its headerbar.
+	const intern = page.locator('.card').filter({ hasText: 'IAMPro 2025 Batch' }).first();
+	await expect(intern.locator('.card-result')).toHaveCount(0);
+	await expect(intern.getByRole('link', { name: 'Activity Description' })).toHaveAttribute(
+		'href',
+		'/achievements/ieee-cs-iampro-2025',
+	);
+});
+
 test('algomania sits under competitive programming, not hackathons', async ({ page }) => {
 	await page.goto('/achievements');
 
@@ -339,7 +435,7 @@ test('Tensor and IAMPro sit under research', async ({ page }) => {
 	const research = page.getByRole('region', { name: 'research' });
 	await expect(research.getByRole('button', { name: 'Tensor 2026' })).toBeVisible();
 	await expect(
-		research.getByRole('link', { name: 'Research Intern' }),
+		research.getByRole('button', { name: 'Research Intern' }),
 	).toBeVisible();
 });
 
@@ -390,7 +486,6 @@ test('detail page gallery opens a lightbox with the image caption', async ({ pag
 
 	const thumbs = page.locator('.thumb');
 	await expect(thumbs).toHaveCount(2);
-
 	const sources = await page
 		.locator('.thumb img')
 		.evaluateAll((els) => els.map((el) => el.getAttribute('src')));
@@ -418,6 +513,20 @@ test('detail page gallery opens a lightbox with the image caption', async ({ pag
 	// Escape closes the native dialog.
 	await page.keyboard.press('Escape');
 	await expect(dialog).toBeHidden();
+});
+
+test('detail page gallery sits above the description', async ({ page }) => {
+	await page.goto('/university/alcoding-club-head');
+
+	const gallery = page.locator('#gallery');
+	const prose = page.locator('.prose');
+
+	await expect(gallery).toBeVisible();
+	await expect(prose).toBeVisible();
+
+	const galleryTop = await gallery.evaluate((el) => el.getBoundingClientRect().top);
+	const proseTop = await prose.evaluate((el) => el.getBoundingClientRect().top);
+	expect(galleryTop).toBeLessThan(proseTop);
 });
 
 test('pesu io links to the linkedin post and the youtube video', async ({ page }) => {

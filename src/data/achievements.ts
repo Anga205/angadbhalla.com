@@ -61,7 +61,8 @@ export type LinkIcon =
 	| 'external'
 	| 'code'
 	| 'heart'
-	| 'youtube';
+	| 'youtube'
+	| 'leetcode';
 
 export interface AchievementLink {
 	label: string;
@@ -97,6 +98,12 @@ export interface Achievement {
 	 * changing the icon. Use this when an achievement has no long-form page.
 	 */
 	menu?: boolean;
+	/**
+	 * Turns the card into a link menu that also offers its detail page as an
+	 * "Activity Description" entry. Use this when an achievement has a
+	 * long-form page but the card should surface its links first.
+	 */
+	pageMenu?: boolean;
 	/** Human-readable date, e.g. "March 2026". */
 	date: string;
 	/** Sort key and card meta. */
@@ -242,6 +249,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 		department: 'IAMPro 2025 Batch',
 		alsoUniversity: true,
 		href: '/achievements/ieee-cs-iampro-2025',
+		pageMenu: true,
 		metaOnly: true,
 		tags: ['ieee', 'iampro', 'research', 'blockchain', 'internship', 'mentorship'],
 		icon: 'flask',
@@ -364,7 +372,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 		menu: true,
 		links: [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/d9qKKzf9', icon: 'linkedin' },
-			{ label: 'my leetcode profile', href: 'https://leetcode.com/u/Anga205', icon: 'external' },
+			{ label: 'my leetcode profile', href: 'https://leetcode.com/u/Anga205', icon: 'leetcode' },
 		],
 		detail: {
 			overview: [
@@ -403,6 +411,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 			'pesu',
 		],
 		icon: 'users',
+		pageMenu: true,
 		metaOnly: true,
 		links: [
 			{
@@ -661,14 +670,18 @@ export function getAchievement(slug: string): Achievement | undefined {
 
 /**
  * Cards that open a link menu rather than navigating to a detail page.
- * Medal cards always do; others opt in with `menu: true`.
+ * Medal cards always do; others opt in with `menu: true` or `pageMenu: true`.
  */
 export function opensMenu(achievement: Achievement): boolean {
-	return Boolean(achievement.medal) || Boolean(achievement.menu);
+	return Boolean(achievement.medal) || Boolean(achievement.menu) || Boolean(achievement.pageMenu);
 }
 
+/**
+ * Entries with a long-form page. `pageMenu` cards keep their page; it is only
+ * reachable through the menu's "Activity Description" entry.
+ */
 export function hasDetailPage(achievement: Achievement): boolean {
-	return !opensMenu(achievement);
+	return !achievement.medal && !achievement.menu;
 }
 
 /**

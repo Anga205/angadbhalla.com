@@ -75,6 +75,18 @@ const showSiblings = siblings.length > 1;
 					</div>
 				</header>
 
+				{
+					images.length > 0 && (
+						<section class="block mb-7" aria-labelledby="gallery">
+							<h2 class="mb-3 flex items-baseline gap-2 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase" id="gallery">
+								gallery
+								<span class="count text-[0.6875rem] text-[#4a4a4a]">{String(images.length).padStart(2, '0')}</span>
+							</h2>
+							<AchievementGallery images={images} title={achievement.title} />
+						</section>
+					)
+				}
+
 				<section class="prose" aria-label="Overview">
 					{achievement.detail.overview.map((paragraph) => (
 						<p class="mb-[1.1rem] max-w-[68ch] text-[#a5a3a9]" set:html={paragraph} />
@@ -125,18 +137,6 @@ const showSiblings = siblings.length > 1;
 						{keywords.map((keyword) => <span>{keyword}</span>)}
 					</div>
 				)}
-
-				{
-					images.length > 0 && (
-						<section class="block mt-7" aria-labelledby="gallery">
-							<h2 class="mb-3 flex items-baseline gap-2 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase" id="gallery">
-								gallery
-								<span class="count text-[0.6875rem] text-[#4a4a4a]">{String(images.length).padStart(2, '0')}</span>
-							</h2>
-							<AchievementGallery images={images} title={achievement.title} />
-						</section>
-					)
-				}
 
 				{
 					achievement.links && achievement.links.length > 0 && (
