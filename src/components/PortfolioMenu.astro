@@ -1,5 +1,5 @@
 ---
-import { FolderGit2, User, Trophy, Link2, GraduationCap, BookOpen } from 'lucide-astro';
+import { FolderGit2, User, Trophy, GraduationCap, BookOpen } from 'lucide-astro';
 import { DESTINATIONS } from '../data/destinations';
 
 interface Props {
@@ -14,7 +14,6 @@ const ICONS = {
 	university: GraduationCap,
 	achievements: Trophy,
 	philosophy: BookOpen,
-	contact: Link2,
 } as const;
 
 // The active destination comes from the URL, not from list position.
@@ -235,7 +234,7 @@ const activeId =
 		line-height: 1.75;
 	}
 
-	/* The six-item mobile rail has no room for the full label, so it shows a
+	/* The five-item mobile rail has no room for the full label, so it shows a
 	   short one instead. Everywhere else the short label is hidden. */
 	.waypoint-label-short {
 		display: none;
@@ -350,7 +349,7 @@ const activeId =
 
 		.wayfinder.is-minimized .listing {
 			display: grid;
-			grid-template-columns: repeat(6, minmax(0, 1fr));
+			grid-template-columns: repeat(5, minmax(0, 1fr));
 			gap: 0.25rem;
 		}
 
@@ -380,7 +379,7 @@ const activeId =
 			font-size: 0.625rem;
 		}
 
-		/* Six columns at phone widths cannot fit the full names, so the rail
+		/* Five columns at phone widths cannot fit the full names, so the rail
 		   swaps in the short labels and drops the directory slash. */
 		.wayfinder.is-minimized .waypoint-label {
 			display: none;

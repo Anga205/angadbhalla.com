@@ -1,7 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
-import { Mail, Github, Linkedin, MessageCircle, Instagram, Languages } from 'lucide-astro';
+import { Mail, Github, Linkedin, MessageCircle, Instagram, Send } from 'lucide-astro';
+import Duolingo from '../components/icons/Duolingo.astro';
 import { CONTACTS, type ContactIcon } from '../data/contacts';
 
 const ICONS: Record<ContactIcon, typeof Mail> = {
@@ -10,7 +11,7 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 	linkedin: Linkedin,
 	discord: MessageCircle,
 	instagram: Instagram,
-	duolingo: Languages,
+	duolingo: Duolingo as unknown as typeof Mail,
 };
 ---
 
@@ -74,12 +75,25 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 										aria-label={`${contact.label}: ${contact.value}`}
 										title={contact.label}
 									>
-										<Icon size={15} strokeWidth={1.5} aria-hidden="true" />
+										<Icon size={22} strokeWidth={1.5} aria-hidden="true" />
 									</a>
 								</li>
 							);
 						})}
 					</ul>
+				</section>
+
+				<section class="form-section" id="contact" aria-labelledby="form-heading">
+					<p class="form-prompt text-[0.75rem] text-[#26a269]">$ send --to anga</p>
+					<h2 class="mb-1 text-[1.05rem] font-normal" id="form-heading">send a message</h2>
+					<p class="form-note mb-5 text-[0.8125rem] text-[#a5a3a9]">
+						Email works too, but this form goes straight to my inbox.
+					</p>
+					<form id="contact-form" novalidate>
+						<label class="field"><span>your email</span><input type="email" name="email" id="email" autocomplete="email" required placeholder="you@example.com" /></label>
+						<label class="field"><span>message</span><textarea name="message" id="message" rows="5" required placeholder="what's on your mind?"></textarea></label>
+						<div class="form-actions"><button type="submit" id="send"><Send size={13} strokeWidth={1.5} aria-hidden="true" />send</button><span id="form-status" role="status"></span></div>
+					</form>
 				</section>
 			</div>
 		</div>
@@ -151,9 +165,9 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 		align-items: center;
 		justify-content: center;
 		width: 100%;
-		padding: 0.4rem 0;
+		padding: 0.7rem 0;
 		border: 1px solid #3d3846;
-		border-radius: 4px;
+		border-radius: 6px;
 		background: #000000;
 		color: #737373;
 		text-decoration: none;
@@ -172,6 +186,102 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 	.contact-card:focus-visible {
 		outline: 1px solid #26a269;
 		outline-offset: 2px;
+		color: #26a269;
+	}
+
+	.form-section {
+		margin-top: 2rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--color-line);
+	}
+
+	.form-prompt {
+		margin-bottom: 0.25rem;
+	}
+
+	.field {
+		display: block;
+		margin-bottom: 1rem;
+	}
+
+	.field > span {
+		display: block;
+		margin-bottom: 0.35rem;
+		color: #a5a3a9;
+		font-size: 0.75rem;
+	}
+
+	.field input,
+	.field textarea {
+		display: block;
+		width: 100%;
+		padding: 0.5rem 0.6rem;
+		border: 1px solid #3d3846;
+		border-radius: 3px;
+		background: #1c1c1c;
+		color: #ffffff;
+		font: inherit;
+		font-size: 0.8125rem;
+		resize: vertical;
+	}
+
+	.field input::placeholder,
+	.field textarea::placeholder {
+		color: #6b6b6b;
+	}
+
+	.field input:focus,
+	.field textarea:focus {
+		outline: 1px solid #26a269;
+		outline-offset: 1px;
+		border-color: #26a269;
+	}
+
+	.form-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	#send {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.35rem 0.75rem;
+		border: 1px solid #3d3846;
+		border-radius: 3px;
+		background: #303030;
+		color: #deddda;
+		font: inherit;
+		font-size: 0.8125rem;
+		cursor: pointer;
+	}
+
+	#send:hover:not(:disabled) {
+		background: #3d3846;
+		color: #ffffff;
+	}
+
+	#send:disabled {
+		color: #6b6b6b;
+		cursor: default;
+	}
+
+	#send:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	#form-status {
+		color: #a5a3a9;
+		font-size: 0.75rem;
+	}
+
+	#form-status.is-error {
+		color: #ff7b72;
+	}
+
+	#form-status.is-ok {
 		color: #26a269;
 	}
 
@@ -210,5 +320,51 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 			age -= 1;
 		}
 		ageElement.textContent = String(age);
+	}
+
+	// `/contact` redirects to `/#contact`. The page scrolls inside `main`, not
+	// the document, so the browser's own anchor jump never moves anything and
+	// the form has to be brought into view by hand.
+	if (window.location.hash === '#contact') {
+		document.getElementById('contact')?.scrollIntoView({ block: 'start' });
+	}
+</script>
+
+<script>
+	import emailjs from '@emailjs/browser';
+
+	const SERVICE_ID = 'YOUR_SERVICE_ID';
+	const TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
+	const PUBLIC_KEY = 'YOUR_PUBLIC_KEY';
+	const form = document.getElementById('contact-form') as HTMLFormElement | null;
+	const send = document.getElementById('send') as HTMLButtonElement | null;
+	const status = document.getElementById('form-status');
+
+	if (form && send && status) {
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			const data = new FormData(form);
+			const email = String(data.get('email') ?? '').trim();
+			const message = String(data.get('message') ?? '').trim();
+			if (!email || !message) {
+				status.textContent = 'email and message are required.';
+				status.className = 'is-error';
+				return;
+			}
+			send.disabled = true;
+			status.textContent = 'sending...';
+			status.className = '';
+			try {
+				await emailjs.send(SERVICE_ID, TEMPLATE_ID, { from_email: email, message }, { publicKey: PUBLIC_KEY });
+				form.reset();
+				status.textContent = 'sent. thanks.';
+				status.className = 'is-ok';
+			} catch {
+				status.textContent = 'could not send. email me directly instead.';
+				status.className = 'is-error';
+			} finally {
+				send.disabled = false;
+			}
+		});
 	}
 </script>

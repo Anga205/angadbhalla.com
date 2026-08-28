@@ -7,6 +7,11 @@ export default defineConfig({
 	// The dev toolbar overlays the bottom navigation on mobile and intercepts
 	// clicks in Playwright. It is not part of the site, so keep it off.
 	devToolbar: { enabled: false },
+	// The contact page is gone; `/contact` still resolves so old links and
+	// bookmarks land on the message form at the foot of the home page.
+	redirects: {
+		'/contact': '/#contact',
+	},
 	vite: {
 		plugins: [tailwindcss()],
 	},

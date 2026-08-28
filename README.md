@@ -15,7 +15,7 @@ Personal portfolio site built with Astro.
 │   │   ├── projects.astro
 │   │   ├── university.astro
 │   │   ├── achievements.astro
-│   │   └── contact.astro
+│   │   └── philosophy.astro
 │   └── styles/
 │       └── global.css              reset, black canvas, accent
 ├── tests/

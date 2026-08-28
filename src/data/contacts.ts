@@ -1,6 +1,5 @@
 /**
- * Every place I turn up online. Shared by the contact page and the home page
- * cards so the two can never drift apart.
+ * Every place I turn up online, rendered as the icon cards on the home page.
  *
  * `icon` is a string key rather than a component: data modules stay free of
  * imports from the component layer, and each consumer maps the key to its own

@@ -80,7 +80,7 @@ test('home page social cards sit in one full-width row', async ({ page }, testIn
 	expect(new Set(boxes.map((box) => box.top)).size).toBe(1);
 
 	// Compact: no card is taller than a comfortable icon button.
-	for (const box of boxes) expect(box.height).toBeLessThanOrEqual(32);
+	for (const box of boxes) expect(box.height).toBeLessThanOrEqual(56);
 
 	// The row spans the window body, so the cards share the width evenly.
 	const widths = boxes.map((box) => box.width);
