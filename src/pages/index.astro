@@ -57,44 +57,49 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 					</div>
 				</div>
 
-				<section class="links" aria-labelledby="links-heading">
-					<p class="links-prompt text-[0.75rem] text-[#26a269]">$ ls ~/links</p>
-					<h2 class="mb-3 text-[1.05rem] font-normal" id="links-heading">find me</h2>
+				<div class="contact-grid">
+					<section class="links" aria-labelledby="links-heading">
+						<h2 class="mb-3 text-[1.05rem] font-normal" id="links-heading">find me</h2>
 
-					<ul class="contact-cards">
-						{CONTACTS.map((contact) => {
-							const Icon = ICONS[contact.icon];
-							const external = contact.href.startsWith('http');
-							return (
-								<li>
-									<a
-										class="contact-card"
-										href={contact.href}
-										target={external ? '_blank' : undefined}
-										rel={external ? 'noreferrer' : undefined}
-										aria-label={`${contact.label}: ${contact.value}`}
-										title={contact.label}
-									>
-										<Icon size={22} strokeWidth={1.5} aria-hidden="true" />
-									</a>
-								</li>
-							);
-						})}
-					</ul>
-				</section>
+						<ul class="contact-cards">
+							{CONTACTS.map((contact) => {
+								const Icon = ICONS[contact.icon];
+								const external = contact.href.startsWith('http');
+								return (
+									<li>
+										<a
+											class="contact-card"
+											href={contact.href}
+											target={external ? '_blank' : undefined}
+											rel={external ? 'noreferrer' : undefined}
+											aria-label={`${contact.label}: ${contact.value}`}
+										>
+											<span class="contact-icon" aria-hidden="true">
+												<Icon size={18} strokeWidth={1.5} />
+											</span>
+											<span class="contact-text">
+												<span class="contact-label">{contact.label}</span>
+												<span class="contact-value">{contact.value}</span>
+											</span>
+										</a>
+									</li>
+								);
+							})}
+						</ul>
+					</section>
 
-				<section class="form-section" id="contact" aria-labelledby="form-heading">
-					<p class="form-prompt text-[0.75rem] text-[#26a269]">$ send --to anga</p>
-					<h2 class="mb-1 text-[1.05rem] font-normal" id="form-heading">send a message</h2>
-					<p class="form-note mb-5 text-[0.8125rem] text-[#a5a3a9]">
-						Email works too, but this form goes straight to my inbox.
-					</p>
-					<form id="contact-form" novalidate>
-						<label class="field"><span>your email</span><input type="email" name="email" id="email" autocomplete="email" required placeholder="you@example.com" /></label>
-						<label class="field"><span>message</span><textarea name="message" id="message" rows="5" required placeholder="what's on your mind?"></textarea></label>
-						<div class="form-actions"><button type="submit" id="send"><Send size={13} strokeWidth={1.5} aria-hidden="true" />send</button><span id="form-status" role="status"></span></div>
-					</form>
-				</section>
+					<section class="form-section" id="contact" aria-labelledby="form-heading">
+						<p class="form-prompt text-[0.75rem] text-[#26a269]">$ send --to anga</p>
+						<h2 class="mb-3 text-[1.05rem] font-normal" id="form-heading">Send me a message</h2>
+						<form id="contact-form" novalidate>
+							<label class="field field--email"><input type="email" name="email" id="email" autocomplete="email" required placeholder="your@email-id.com" aria-label="your email" /></label>
+							<label class="field field--message"><textarea name="message" id="message" required placeholder="type any message here....." aria-label="message"></textarea></label>
+							<div class="form-actions"><button type="submit" id="send"><Send size={13} strokeWidth={1.5} aria-hidden="true" />send</button></div>
+						</form>
+					</section>
+				</div>
+
+				<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
 			</div>
 		</div>
 	</main>
@@ -143,12 +148,26 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 		object-fit: cover;
 	}
 
-	.links-prompt {
-		margin-bottom: 0.25rem;
+	/*
+	 * Buttons and form sit side by side on desktop: the contact cards stack one
+	 * per row on the left, the message form takes the right column. Below 900px
+	 * the grid collapses to one column, the form drops underneath, and the cards
+	 * shrink back to a compact 3 x 2 icon grid.
+	 *
+	 * Both columns stretch to the same height. The form is a flex column and the
+	 * textarea takes the leftover space, so the two sections always line up no
+	 * matter how many contacts there are.
+	 */
+	.contact-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 1.5rem;
+		align-items: stretch;
 	}
 
 	.contact-cards {
-		display: flex;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 0.4rem;
 		margin: 0;
 		padding: 0;
@@ -156,16 +175,15 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 	}
 
 	.contact-cards > li {
-		flex: 1 1 0;
 		min-width: 0;
 	}
 
 	.contact-card {
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		gap: 0.6rem;
 		width: 100%;
-		padding: 0.7rem 0;
+		padding: 0.5rem 0.7rem;
 		border: 1px solid #3d3846;
 		border-radius: 6px;
 		background: #000000;
@@ -177,10 +195,43 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 			color 120ms ease;
 	}
 
+	.contact-icon {
+		display: flex;
+		shrink: 0;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.contact-text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		line-height: 1.35;
+	}
+
+	.contact-label {
+		color: #a5a3a9;
+		font-size: 0.6875rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.contact-value {
+		overflow: hidden;
+		color: #deddda;
+		font-size: 0.75rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
 	.contact-card:hover {
 		background: #1c1c1c;
 		border-color: #5a5560;
 		color: #26a269;
+	}
+
+	.contact-card:hover .contact-value {
+		color: #ffffff;
 	}
 
 	.contact-card:focus-visible {
@@ -190,13 +241,20 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 	}
 
 	.form-section {
-		margin-top: 2rem;
-		padding-top: 1.5rem;
-		border-top: 1px solid var(--color-line);
+		display: flex;
+		flex-direction: column;
+		padding-left: 1.5rem;
+		border-left: 1px solid var(--color-line);
 	}
 
 	.form-prompt {
 		margin-bottom: 0.25rem;
+	}
+
+	#contact-form {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
 	}
 
 	.field {
@@ -204,11 +262,17 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 		margin-bottom: 1rem;
 	}
 
-	.field > span {
-		display: block;
-		margin-bottom: 0.35rem;
-		color: #a5a3a9;
-		font-size: 0.75rem;
+	/* The message field owns the leftover height so the form matches the
+	   contact list beside it. */
+	.field--message {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+	}
+
+	.field--message textarea {
+		flex: 1;
+		min-height: 7rem;
 	}
 
 	.field input,
@@ -222,7 +286,8 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 		color: #ffffff;
 		font: inherit;
 		font-size: 0.8125rem;
-		resize: vertical;
+		/* The message box is sized by the layout, not by dragging. */
+		resize: none;
 	}
 
 	.field input::placeholder,
@@ -238,16 +303,16 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 	}
 
 	.form-actions {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
+		display: block;
 	}
 
 	#send {
-		display: inline-flex;
+		display: flex;
 		align-items: center;
+		justify-content: center;
+		width: 100%;
 		gap: 0.4rem;
-		padding: 0.35rem 0.75rem;
+		padding: 0.45rem 0.75rem;
 		border: 1px solid #3d3846;
 		border-radius: 3px;
 		background: #303030;
@@ -272,17 +337,113 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 		outline-offset: 2px;
 	}
 
-	#form-status {
-		color: #a5a3a9;
-		font-size: 0.75rem;
+	/*
+	 * Toasts stack in the bottom-right corner. On phones the fixed navigation
+	 * rail owns the bottom of the screen, so the stack is lifted above it.
+	 */
+	.toasts {
+		position: fixed;
+		right: 1rem;
+		bottom: 1rem;
+		z-index: 30;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.4rem;
+		pointer-events: none;
 	}
 
-	#form-status.is-error {
+	.toast {
+		max-width: min(22rem, calc(100vw - 2rem));
+		padding: 0.5rem 0.7rem;
+		border: 1px solid #3d3846;
+		border-radius: 4px;
+		background: #1c1c1c;
+		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
+		color: #deddda;
+		font-size: 0.75rem;
+		line-height: 1.5;
+		pointer-events: auto;
+		cursor: pointer;
+		animation: toast-in 140ms ease-out;
+	}
+
+	.toast[data-kind='ok'] {
+		border-color: #2f5c3f;
+		color: #26a269;
+	}
+
+	.toast[data-kind='error'] {
+		border-color: #6b2b2b;
 		color: #ff7b72;
 	}
 
-	#form-status.is-ok {
-		color: #26a269;
+	.toast.is-leaving {
+		opacity: 0;
+		transition: opacity 160ms ease-in;
+	}
+
+	@keyframes toast-in {
+		from {
+			opacity: 0;
+			transform: translateY(0.35rem);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.toast {
+			animation: none;
+		}
+
+		.toast.is-leaving {
+			transition: none;
+		}
+	}
+
+	@media (max-width: 899px) {
+		.contact-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		/* Compact icon grid: the handle is already in the accessible name, so
+		   the visible text is dropped to keep six buttons on two rows. */
+		.contact-cards {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+
+		.contact-card {
+			justify-content: center;
+			padding: 0.7rem 0;
+		}
+
+		.contact-text {
+			display: none;
+		}
+
+		.form-section {
+			margin-top: 0.5rem;
+			padding-top: 1.5rem;
+			padding-left: 0;
+			border-top: 1px solid var(--color-line);
+			border-left: 0;
+		}
+	}
+
+	@media (max-width: 639px) {
+		.toasts {
+			right: 0.75rem;
+			bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+			left: 0.75rem;
+			align-items: stretch;
+		}
+
+		.toast {
+			max-width: none;
+		}
 	}
 
 	@media (max-width: 899px) {
@@ -332,36 +493,82 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 
 <script>
 	import emailjs from '@emailjs/browser';
+	import {
+		EMAILJS_APP,
+		EMAILJS_PUBLIC_KEY,
+		EMAILJS_SERVICE_ID,
+		EMAILJS_TEMPLATE_ID,
+	} from '../data/emailjs';
 
-	const SERVICE_ID = 'YOUR_SERVICE_ID';
-	const TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
-	const PUBLIC_KEY = 'YOUR_PUBLIC_KEY';
 	const form = document.getElementById('contact-form') as HTMLFormElement | null;
 	const send = document.getElementById('send') as HTMLButtonElement | null;
-	const status = document.getElementById('form-status');
+	const toasts = document.getElementById('toasts');
 
-	if (form && send && status) {
+	/** How long a toast stays on screen before it fades out. */
+	const TOAST_LIFETIME = 4000;
+	/** Keep the stack short so it never covers the form it is reporting on. */
+	const TOAST_LIMIT = 3;
+
+	type ToastKind = 'ok' | 'error' | 'info';
+
+	function dismiss(toast: HTMLElement) {
+		toast.classList.add('is-leaving');
+		toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+		// Reduced motion skips the transition, so remove on a timer as well.
+		window.setTimeout(() => toast.remove(), 400);
+	}
+
+	function showToast(kind: ToastKind, text: string) {
+		if (!toasts) return;
+
+		const toast = document.createElement('p');
+		toast.className = 'toast';
+		toast.dataset.kind = kind;
+		toast.textContent = text;
+		toast.addEventListener('click', () => dismiss(toast));
+
+		toasts.append(toast);
+
+		// Drop the oldest toasts once the stack is full.
+		while (toasts.children.length > TOAST_LIMIT) {
+			toasts.firstElementChild?.remove();
+		}
+
+		window.setTimeout(() => dismiss(toast), TOAST_LIFETIME);
+	}
+
+	if (form && send) {
 		form.addEventListener('submit', async (event) => {
 			event.preventDefault();
+
 			const data = new FormData(form);
 			const email = String(data.get('email') ?? '').trim();
 			const message = String(data.get('message') ?? '').trim();
+
 			if (!email || !message) {
-				status.textContent = 'email and message are required.';
-				status.className = 'is-error';
+				showToast('error', 'email and message are required.');
 				return;
 			}
+
 			send.disabled = true;
-			status.textContent = 'sending...';
-			status.className = '';
+			showToast('info', 'sending...');
+
 			try {
-				await emailjs.send(SERVICE_ID, TEMPLATE_ID, { from_email: email, message }, { publicKey: PUBLIC_KEY });
+				await emailjs.send(
+					EMAILJS_SERVICE_ID,
+					EMAILJS_TEMPLATE_ID,
+					{
+						time: new Date().toLocaleString(),
+						app: EMAILJS_APP,
+						message,
+						contact: email,
+					},
+					{ publicKey: EMAILJS_PUBLIC_KEY },
+				);
 				form.reset();
-				status.textContent = 'sent. thanks.';
-				status.className = 'is-ok';
+				showToast('ok', 'sent. thanks.');
 			} catch {
-				status.textContent = 'could not send. email me directly instead.';
-				status.className = 'is-error';
+				showToast('error', 'could not send. email me directly instead.');
 			} finally {
 				send.disabled = false;
 			}

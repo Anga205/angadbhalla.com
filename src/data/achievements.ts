@@ -128,6 +128,11 @@ export interface Achievement {
 	 * instead of visible sections. Use when the pills add nothing to the page.
 	 */
 	metaOnly?: boolean;
+	/**
+	 * Show a live solve count on the card, fetched from the LeetCode API on the
+	 * client. The static `result` stays as the fallback until the request lands.
+	 */
+	liveCount?: boolean;
 	description: string;
 	tags: string[];
 	icon: AchievementIcon;
@@ -160,7 +165,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 		medal: 'gold',
 		date: 'March 2026',
 		year: '2026',
-		summary: 'inter-college competitive programming.',
+		summary: 'an intercollegiate coding contest.',
 		description:
 			'A multi-stage contest: online prelims, then head-to-head cycles offline. 110 teams entered, 40 qualified, 8 reached the final.',
 		tags: [
@@ -349,12 +354,13 @@ export const ACHIEVEMENTS: Achievement[] = [
 	},
 	{
 		slug: 'leetcode-1337',
-		title: 'LeetCode \u2014 1,337 solved',
+		title: 'LeetCode \u2014 1,337+ solved',
 		category: 'competitive',
-		result: '1,337 solved',
+		result: '1,337+ solved',
 		date: 'October 2026',
 		year: '2026',
-		summary: 'a milestone I only posted for the number.',
+		summary:
+			'Not that quantity and quality are the same thing, but Its an achievement of consistancy',
 		description:
 			'I do not usually post solve counts, because quantity is not quality. 1337 was worth the exception.',
 		tags: [
@@ -370,6 +376,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 		],
 		icon: 'leetcode',
 		menu: true,
+		liveCount: true,
 		links: [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/d9qKKzf9', icon: 'linkedin' },
 			{ label: 'my leetcode profile', href: 'https://leetcode.com/u/Anga205', icon: 'leetcode' },
@@ -628,9 +635,9 @@ export const ACHIEVEMENTS: Achievement[] = [
 		result: 'merged',
 		date: 'December 2025',
 		year: '2025',
-		summary: 'a merged fix in the Docker name generator.',
+		summary: 'a merged fix in the Docker name generator, released in 29.2.0.',
 		description:
-			'Corrected "Poincar\u00e9 Price" to "Poincar\u00e9 Prize" in names-generator.go. Small change, real review process, shipped in the 29.2.0 milestone.',
+			'Corrected "Poincar\u00e9 Price" to "Poincar\u00e9 Prize" in names-generator.go. Small change, real review process, merged and released in Docker 29.2.0.',
 		tags: [
 			'open-source',
 			'docker',
@@ -652,11 +659,11 @@ export const ACHIEVEMENTS: Achievement[] = [
 		detail: {
 			overview: [
 				'names-generator.go is the file behind every unnamed container. Docker names containers after scientists and hackers, and the list has been carried forward since the 0.7.x era. One entry described C\u00e9dric Villani as a "Poincar\u00e9 Price" laureate.',
-				'The change is one word. The point is the process around it: finding the file in a large Go repository, making a focused change, opening a pull request that a maintainer will actually read, and getting it merged. It landed in the 29.2.0 milestone.',
+				'The change is one word. The point is the process around it: finding the file in a large Go repository, making a focused change, opening a pull request that a maintainer will actually read, and getting it merged. It was merged and released in Docker 29.2.0.',
 			],
 			highlights: [
 				'Opened as #51670, approved by a Docker maintainer, merged.',
-				'Assigned to the 29.2.0 milestone.',
+				'Merged and released in Docker 29.2.0.',
 				'290 of 294 CI checks passing at review time.',
 			],
 			stack: ['Go', 'Git'],

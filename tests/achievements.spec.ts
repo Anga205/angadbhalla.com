@@ -335,7 +335,7 @@ test('every menu card opens a menu with its links', async ({ page }) => {
 		'Tensor 2026',
 		'IEEE Kalpana 2025',
 		'Hack-o-ween 2025',
-		'LeetCode — 1,337 solved',
+		'LeetCode — 1,337+ solved',
 		'VOSD Newspaper Drive',
 		'TEDx Speaker',
 		'docker/docker #51670',
@@ -357,7 +357,7 @@ test('leetcode card uses the leetcode mark and links to the post and profile', a
 	const card = page.locator('.card').filter({ hasText: 'LeetCode' }).first();
 	await expect(card.locator('.card-icon svg')).toBeVisible();
 
-	await page.getByRole('button', { name: 'LeetCode — 1,337 solved' }).click();
+	await page.getByRole('button', { name: 'LeetCode — 1,337+ solved' }).click();
 
 	const hrefs = await page
 		.locator('dialog.menu[open] .menu-list a')
@@ -376,6 +376,47 @@ test('the leetcode profile link uses the leetcode mark, not the external icon', 
 	// The LeetCode mark is a filled path; lucide's ExternalLink is stroked.
 	await expect(profile.locator('svg[fill="currentColor"]')).toHaveCount(1);
 	await expect(profile.locator('svg[stroke="currentColor"]')).toHaveCount(0);
+});
+
+test('the leetcode card shows the live count rounded down to the nearest hundred', async ({ page }) => {
+	await page.route('https://leetcode-api-faisalshohag.anga.codes/**', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({ totalSolved: 1414 }),
+		}),
+	);
+
+	await page.goto('/achievements');
+
+	const live = page.locator('[data-leetcode-live]');
+	await expect(live).toHaveText('1,400+ solved');
+	await expect(live).toBeVisible();
+});
+
+test('the leetcode card never shows a count below 1,337', async ({ page }) => {
+	await page.route('https://leetcode-api-faisalshohag.anga.codes/**', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({ totalSolved: 1356 }),
+		}),
+	);
+
+	await page.goto('/achievements');
+
+	await expect(page.locator('[data-leetcode-live]')).toHaveText('1,337+ solved');
+});
+
+test('the leetcode card falls back to 1,337+ when the api fails', async ({ page }) => {
+	await page.route('https://leetcode-api-faisalshohag.anga.codes/**', (route) => route.abort());
+
+	await page.goto('/achievements');
+
+	// The static title and result badge carry the fallback; the live line stays
+	// hidden rather than showing a stale or empty value.
+	await expect(page.getByRole('button', { name: 'LeetCode — 1,337+ solved' })).toBeVisible();
+	await expect(page.locator('[data-leetcode-live]')).toBeHidden();
 });
 
 test('page-menu cards list their activity description and every related link', async ({ page }) => {
@@ -423,7 +464,7 @@ test('algomania sits under competitive programming, not hackathons', async ({ pa
 
 	const competitive = page.getByRole('region', { name: 'competitive programming' });
 	await expect(competitive.getByRole('button', { name: 'Algomania 3.0' })).toBeVisible();
-	await expect(competitive.getByRole('button', { name: 'LeetCode — 1,337 solved' })).toBeVisible();
+	await expect(competitive.getByRole('button', { name: 'LeetCode — 1,337+ solved' })).toBeVisible();
 
 	const hackathons = page.getByRole('region', { name: 'hackathons' });
 	await expect(hackathons.getByRole('button', { name: 'Algomania 3.0' })).toHaveCount(0);

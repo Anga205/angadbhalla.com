@@ -65,11 +65,7 @@ const STATUS_LABEL: Record<Project['status'], string> = {
 
 		<div class="body rounded-b-[5px] p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
 			<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ ls ~/portfolio/projects</p>
-			<h1 class="mb-2 text-[1.35rem] font-normal">projects</h1>
-			<p class="lede mb-8 max-w-[62ch] text-[#a5a3a9]">
-				Things I have built. Some are maintained, some are archives, and some are here because
-				the code still explains the idea.
-			</p>
+			<h1 class="mb-8 text-[1.35rem] font-normal">projects</h1>
 
 			<ul class="grid m-0 grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] list-none gap-3 p-0">
 				{PROJECTS.map((project) => {

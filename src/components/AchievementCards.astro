@@ -64,8 +64,6 @@ interface Props {
 	prompt?: string;
 	/** Page heading. */
 	heading?: string;
-	/** Intro paragraph. */
-	lede?: string;
 	/** Section id, used for the scroll container. */
 	sectionId?: string;
 	/** Base path for detail pages, e.g. /achievements or /university. */
@@ -79,7 +77,6 @@ const {
 	windowTitle = 'anga@portfolio — achievements',
 	prompt = '$ ls ~/achievements',
 	heading = 'achievements',
-	lede,
 	sectionId = 'achievements',
 	detailBase = '/achievements',
 	roleMode = false,
@@ -109,11 +106,6 @@ const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
 	youtube: Youtube,
 	leetcode: LeetCode as unknown as typeof Linkedin,
 };
-
-const total = groups.reduce((sum, group) => sum + group.items.length, 0);
-const intro =
-	lede ??
-	`${total} entries. Hackathon results, contest milestones, things I ran, and one merged pull request. Each one opens into the longer version.`;
 ---
 
 <section class="achievements ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24" id={sectionId}>
@@ -128,8 +120,7 @@ const intro =
 
 		<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
 			<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">{prompt}</p>
-			<h1 class="mb-2 text-[1.35rem] font-normal">{heading}</h1>
-			<p class="lede mb-8 max-w-[62ch] text-[#a5a3a9]">{intro}</p>
+			<h1 class="mb-8 text-[1.35rem] font-normal">{heading}</h1>
 
 			{
 				groups.map((group) => (
@@ -257,6 +248,10 @@ const intro =
 													</div>
 												) : (
 													<p class="card-summary mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#a5a3a9]">{achievement.summary}</p>
+												)}
+
+												{achievement.liveCount && (
+													<p class="card-live mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#26a269]" data-leetcode-live hidden></p>
 												)}
 											</div>
 										</div>
@@ -602,5 +597,45 @@ const intro =
 				event.clientY > box.bottom;
 			if (outside) dialog.close();
 		});
+	}
+</script>
+
+<script>
+	/**
+	 * Live LeetCode solve count.
+	 *
+	 * The card ships with a static "1,337+ solved" in its title and result badge,
+	 * so the page is correct before any JavaScript runs. This script upgrades the
+	 * card with the real number once the API answers, and does nothing at all if
+	 * the request fails — the static value is already the fallback.
+	 *
+	 * The displayed number is rounded down to the nearest hundred and never goes
+	 * below 1,337, so the joke survives: 1,414 shows as "1,400+", 1,356 as
+	 * "1,337+".
+	 */
+	const LEETCODE_API = 'https://leetcode-api-faisalshohag.anga.codes/Anga205';
+	const LEETCODE_FLOOR = 1337;
+
+	const liveCounts = document.querySelectorAll<HTMLElement>('[data-leetcode-live]');
+
+	if (liveCounts.length > 0) {
+		const format = (solved: number) => {
+			const rounded = Math.max(LEETCODE_FLOOR, Math.floor(solved / 100) * 100);
+			return `${rounded.toLocaleString('en-US')}+ solved`;
+		};
+
+		fetch(LEETCODE_API)
+			.then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+			.then((data: { totalSolved?: unknown }) => {
+				const solved = Number(data?.totalSolved);
+				if (!Number.isFinite(solved) || solved <= 0) return;
+
+				for (const element of liveCounts) {
+					element.textContent = format(solved);
+					element.hidden = false;
+				}
+			})
+			// A failed request leaves the static "1,337+" in place.
+			.catch(() => {});
 	}
 </script>
