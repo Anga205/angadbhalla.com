@@ -54,6 +54,55 @@ test('achievements index groups every achievement into sections', async ({ page 
 	).toHaveCount(0);
 });
 
+test('group headings show only the title, with the count and blurb kept out of view', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const head = page.locator('.group-head').first();
+
+	// Only the heading is visible; the count and blurb are clipped to 1x1.
+	await expect(head.getByRole('heading', { level: 2 })).toBeVisible();
+	await expect(head.locator('.sr-only')).toHaveCount(2);
+
+	const hidden = await head.locator('.sr-only').evaluateAll((els) =>
+		els.map((el) => {
+			const box = el.getBoundingClientRect();
+			return { width: box.width, height: box.height, text: el.textContent ?? '' };
+		}),
+	);
+
+	for (const item of hidden) {
+		expect(item.width).toBeLessThanOrEqual(1);
+		expect(item.height).toBeLessThanOrEqual(1);
+	}
+
+	// The text is still in the DOM for crawlers.
+	expect(hidden.map((item) => item.text)).toEqual(['02', 'time-boxed builds, judged.']);
+
+	// Nothing else renders in the header row.
+	await expect(head.locator('.group-count')).toHaveCount(0);
+	await expect(head.locator('.group-blurb')).toHaveCount(0);
+});
+
+test('university group headings hide their count and blurb too', async ({ page }) => {
+	await page.goto('/university');
+
+	const head = page.locator('.group-head').first();
+	await expect(head.getByRole('heading', { level: 2 })).toBeVisible();
+	await expect(head.locator('.sr-only')).toHaveCount(2);
+
+	const hidden = await head.locator('.sr-only').evaluateAll((els) =>
+		els.map((el) => {
+			const box = el.getBoundingClientRect();
+			return { width: box.width, height: box.height };
+		}),
+	);
+
+	for (const item of hidden) {
+		expect(item.width).toBeLessThanOrEqual(1);
+		expect(item.height).toBeLessThanOrEqual(1);
+	}
+});
+
 test('achievement cards stay compact: icon, name, one-line summary', async ({ page }) => {
 	await page.goto('/achievements');
 

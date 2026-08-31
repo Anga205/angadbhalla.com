@@ -125,12 +125,15 @@ const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
 			{
 				groups.map((group) => (
 					<section class="group" aria-labelledby={`group-${group.category}`}>
-						<div class="group-head mb-4 grid grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-[0.6rem] max-[639px]:grid-cols-[auto_auto]">
+						<div class="group-head mb-4">
 							<h2 class="m-0 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase" id={`group-${group.category}`}>{group.label}</h2>
-							<span class="group-count text-[0.6875rem] text-[#4a4a4a]" aria-hidden="true">
-								{String(group.items.length).padStart(2, '0')}
-							</span>
-							<p class="group-blurb m-0 text-[0.75rem] text-dim max-[639px]:col-span-full">{group.blurb}</p>
+							{/*
+							 * The count and blurb are kept in the DOM for crawlers and
+							 * scrapers, but they are not part of the visible layout: the
+							 * heading alone is enough for a reader.
+							 */}
+							<span class="sr-only" aria-hidden="true">{String(group.items.length).padStart(2, '0')}</span>
+							<span class="sr-only" aria-hidden="true">{group.blurb}</span>
 						</div>
 
 						<ul

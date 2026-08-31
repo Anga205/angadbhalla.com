@@ -176,6 +176,13 @@ test('the contact section no longer prints a shell prompt', async ({ page }) => 
 	await expect(page.getByText('$ ls ~/links')).toHaveCount(0);
 });
 
+test('the message form no longer prints a shell prompt', async ({ page }) => {
+	await page.goto('/');
+
+	await expect(page.locator('.form-prompt')).toHaveCount(0);
+	await expect(page.getByText('$ send --to anga')).toHaveCount(0);
+});
+
 test('the form heading and note read as plain copy', async ({ page }) => {
 	await page.goto('/');
 
