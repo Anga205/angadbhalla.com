@@ -48,6 +48,8 @@ export type AchievementIcon =
 	| 'graduation'
 	| 'container'
 	| 'heart'
+	| 'dog'
+	| 'atom'
 	| 'git-pull-request';
 
 /** Medal shown in place of the category icon on a hackathon card. */
@@ -204,7 +206,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 		medal: 'gold',
 		date: 'March 2026',
 		year: '2026',
-		summary: 'state-level research hackathon.',
+		summary: 'A state-level research hackathon hosted by Team Arch.',
 		description:
 			'Organisers handed out 40+ research papers instead of problem statements. We picked three and built a cybersecurity log monitoring tool around them.',
 		tags: [
@@ -354,15 +356,15 @@ export const ACHIEVEMENTS: Achievement[] = [
 	},
 	{
 		slug: 'leetcode-1337',
-		title: 'LeetCode \u2014 1,337+ solved',
+		title: 'LeetCode \u2014 1337+ solved',
 		category: 'competitive',
-		result: '1,337+ solved',
+		result: '1337+ solved',
 		date: 'October 2026',
 		year: '2026',
 		summary:
-			'Not that quantity and quality are the same thing, but Its an achievement of consistancy',
+			"Not that quantity and quality are the same thing, but it's an achievement of consistency. This number currently sits at 1337+ solves",
 		description:
-			'I do not usually post solve counts, because quantity is not quality. 1337 was worth the exception.',
+			"Not that quantity and quality are the same thing, but it's an achievement of consistency. This number currently sits at 1337+ solves",
 		tags: [
 			'leetcode',
 			'dsa',
@@ -422,7 +424,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 		metaOnly: true,
 		links: [
 			{
-				label: 'club page',
+				label: 'Club page',
 				href: 'https://clubs.pes.edu/the-alcoding-club/about/',
 				icon: 'info',
 			},
@@ -432,14 +434,14 @@ export const ACHIEVEMENTS: Achievement[] = [
 				icon: 'linkedin',
 			},
 			{
+				label: 'Club instagram',
+				href: 'https://www.instagram.com/p/C_mwH_PykE7/?img_index=2',
+				icon: 'external',
+			},
+			{
 				label: 'Terrathon 4.0',
 				href: 'https://www.linkedin.com/posts/alcoding_terrathon4-hackathon-sustainability-activity-7312160071730221056--2IU',
 				icon: 'linkedin',
-			},
-			{
-				label: 'club instagram',
-				href: 'https://www.instagram.com/p/C_mwH_PykE7/?img_index=2',
-				icon: 'external',
 			},
 		],
 		images: [
@@ -585,7 +587,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 			'outreach',
 			'bengaluru',
 		],
-		icon: 'heart',
+		icon: 'dog',
 		menu: true,
 		links: [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/dHbNECk9', icon: 'linkedin' },
@@ -611,10 +613,10 @@ export const ACHIEVEMENTS: Achievement[] = [
 		result: 'speaker',
 		date: 'August 25, 2017',
 		year: '2017',
-		summary: 'a TEDx talk.',
-		description: 'A TEDx talk delivered at TEDxSNSCE.',
+		summary: 'a talk on quantum physics at TEDxSNSCE.',
+		description: 'A talk on quantum physics delivered at TEDxSNSCE.',
 		tags: ['tedx', 'speaker', 'talk', 'community'],
-		icon: 'heart',
+		icon: 'atom',
 		menu: true,
 		links: [
 			{

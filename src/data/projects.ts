@@ -99,7 +99,7 @@ export const PROJECTS: Project[] = [
 	{
 		id: 'angadrive-v2',
 		name: 'AngaDriveV2',
-		summary: 'unsupported predecessor to AngaDriveV3.',
+		summary: 'Older version of AngaDriveV3, kept as a public archive. Written in Python3 with a NextJS frontend and FastAPI backend.',
 		description:
 		'An older AngaDrive release kept as a public archive. It is no longer supported, but remains useful as a record of the project before the current version.',
 		year: '2024',

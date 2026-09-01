@@ -34,6 +34,8 @@ import {
 	GraduationCap,
 	Container,
 	Heart,
+	Dog,
+	Atom,
 	GitPullRequest,
 	Medal,
 	Linkedin,
@@ -93,6 +95,8 @@ const ICONS: Record<AchievementIcon, typeof Trophy> = {
 	graduation: GraduationCap,
 	container: Container,
 	heart: Heart,
+	dog: Dog,
+	atom: Atom,
 	'git-pull-request': GitPullRequest,
 };
 
@@ -166,6 +170,8 @@ const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
 											isRole && 'card--role',
 										]}
 										data-medal={achievement.medal}
+										itemscope
+										itemtype="https://schema.org/CreativeWork"
 									>
 										<div class="card-bar flex items-center justify-between gap-2 border-b border-[#3d3846] bg-[#303030] px-2 py-[0.3rem] select-none">
 											<span class="card-dots flex gap-1" aria-hidden="true">
@@ -210,7 +216,11 @@ const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
 										<div class="card-body flex items-start gap-[0.6rem] p-3">
 											<span class="card-icon flex size-7 shrink-0 items-center justify-center rounded-sm border border-[#3d3846] text-[#26a269]" data-medal={achievement.medal} aria-hidden="true">
 												{isMedal ? (
-													<Medal size={16} strokeWidth={1.5} />
+													achievement.medal === 'gold' ? (
+														<Trophy size={16} strokeWidth={1.5} />
+													) : (
+														<Medal size={16} strokeWidth={1.5} />
+													)
 												) : (
 													<Icon size={16} strokeWidth={1.5} />
 												)}
@@ -250,11 +260,19 @@ const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
 														{achievement.department && <p class="card-dept m-0">{achievement.department}</p>}
 													</div>
 												) : (
-													<p class="card-summary mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#a5a3a9]">{achievement.summary}</p>
+													<p
+														class="card-summary mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#a5a3a9]"
+														data-leetcode-summary={achievement.liveCount ? '' : undefined}
+													>{achievement.summary}</p>
 												)}
 
-												{achievement.liveCount && (
-													<p class="card-live mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#26a269]" data-leetcode-live hidden></p>
+												{/*
+												 * The long description is kept in the DOM for crawlers, SEO
+												 * engines, and LLM parsers, but clipped out of the visible layout.
+												 * It is skipped when it would only repeat the summary.
+												 */}
+												{achievement.description !== achievement.summary && (
+													<p class="card-description sr-only" itemprop="description">{achievement.description}</p>
 												)}
 											</div>
 										</div>
@@ -607,25 +625,21 @@ const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
 	/**
 	 * Live LeetCode solve count.
 	 *
-	 * The card ships with a static "1,337+ solved" in its title and result badge,
-	 * so the page is correct before any JavaScript runs. This script upgrades the
-	 * card with the real number once the API answers, and does nothing at all if
-	 * the request fails — the static value is already the fallback.
+	 * The card ships with the fallback sentence ending in "1337+ solves", so the
+	 * page is correct before any JavaScript runs. This script swaps in the exact
+	 * number once the API answers, and does nothing at all if the request fails —
+	 * the static sentence is already the fallback.
 	 *
-	 * The displayed number is rounded down to the nearest hundred and never goes
-	 * below 1,337, so the joke survives: 1,414 shows as "1,400+", 1,356 as
-	 * "1,337+".
+	 * The number is the raw `totalSolved` value, formatted with locale commas and
+	 * no rounding, flooring, or "+" suffix: 1414 shows as "1,414".
 	 */
 	const LEETCODE_API = 'https://leetcode-api-faisalshohag.anga.codes/Anga205';
-	const LEETCODE_FLOOR = 1337;
 
-	const liveCounts = document.querySelectorAll<HTMLElement>('[data-leetcode-live]');
+	const summaries = document.querySelectorAll<HTMLElement>('[data-leetcode-summary]');
 
-	if (liveCounts.length > 0) {
-		const format = (solved: number) => {
-			const rounded = Math.max(LEETCODE_FLOOR, Math.floor(solved / 100) * 100);
-			return `${rounded.toLocaleString('en-US')}+ solved`;
-		};
+	if (summaries.length > 0) {
+		const format = (solved: number) =>
+			`Not that quantity and quality are the same thing, but it's an achievement of consistency. This number currently sits at ${solved.toLocaleString('en-US')} solves`;
 
 		fetch(LEETCODE_API)
 			.then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
@@ -633,12 +647,11 @@ const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
 				const solved = Number(data?.totalSolved);
 				if (!Number.isFinite(solved) || solved <= 0) return;
 
-				for (const element of liveCounts) {
+				for (const element of summaries) {
 					element.textContent = format(solved);
-					element.hidden = false;
 				}
 			})
-			// A failed request leaves the static "1,337+" in place.
+			// A failed request leaves the static "1337+ solves" in place.
 			.catch(() => {});
 	}
 </script>

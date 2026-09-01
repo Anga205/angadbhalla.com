@@ -113,8 +113,37 @@ test('achievement cards stay compact: icon, name, one-line summary', async ({ pa
 
 	// Tags and long copy belong on the detail page, not on the card.
 	await expect(card.locator('.stack')).toHaveCount(0);
-	await expect(card.locator('.card-description')).toHaveCount(0);
 	await expect(card.locator('.card-more')).toHaveCount(0);
+});
+
+test('card descriptions stay in the DOM but out of the visible layout', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const descriptions = page.locator('.card-description');
+	expect(await descriptions.count()).toBeGreaterThan(0);
+
+	// Every description is clipped to 1x1, like the group counts and blurbs.
+	const boxes = await descriptions.evaluateAll((els) =>
+		els.map((el) => {
+			const box = el.getBoundingClientRect();
+			return { width: box.width, height: box.height, text: el.textContent ?? '' };
+		}),
+	);
+
+	for (const box of boxes) {
+		expect(box.width).toBeLessThanOrEqual(1);
+		expect(box.height).toBeLessThanOrEqual(1);
+		expect(box.text.length).toBeGreaterThan(0);
+	}
+
+	// The text is still crawlable, and marked up as a schema.org description.
+	const algomania = page.locator('.card').filter({ hasText: 'Algomania 3.0' }).first();
+	await expect(algomania.locator('.card-description')).toHaveAttribute(
+		'itemprop',
+		'description',
+	);
+	await expect(algomania.locator('.card-description')).toContainText('110 teams entered');
+	await expect(algomania).toHaveAttribute('itemtype', 'https://schema.org/CreativeWork');
 });
 
 test('achievement cards show the date and span the full width', async ({ page }) => {
@@ -296,6 +325,46 @@ test('hackathon cards show a gold or silver medal instead of the result text', a
 	await expect(page.getByText('second place')).toHaveCount(0);
 });
 
+test('first place uses a trophy and second place uses a medal', async ({ page }) => {
+	await page.goto('/achievements');
+
+	// Lucide marks each glyph with a `lucide-<name>` class on the svg.
+	const gold = page.locator('.card-icon[data-medal="gold"] svg');
+	const silver = page.locator('.card-icon[data-medal="silver"] svg');
+
+	await expect(gold).toHaveCount(3);
+	await expect(silver).toHaveCount(1);
+
+	for (const icon of await gold.all()) {
+		await expect(icon).toHaveClass(/lucide-trophy/);
+	}
+	await expect(silver).toHaveClass(/lucide-medal/);
+
+	// The colour scheme still separates the two placements.
+	await expect(gold.first()).toHaveCSS('color', 'rgb(229, 165, 10)');
+	await expect(silver).toHaveCSS('color', 'rgb(197, 197, 197)');
+});
+
+test('the vosd card uses a dog icon and the tedx card uses an atom', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const vosd = page.locator('.card').filter({ hasText: 'VOSD Newspaper Drive' }).first();
+	await expect(vosd.locator('.card-icon svg')).toHaveClass(/lucide-dog/);
+
+	const tedx = page.locator('.card').filter({ hasText: 'TEDx Speaker' }).first();
+	await expect(tedx.locator('.card-icon svg')).toHaveClass(/lucide-atom/);
+});
+
+test('the tedx card describes the quantum physics talk', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const tedx = page.locator('.card').filter({ hasText: 'TEDx Speaker' }).first();
+	await expect(tedx.locator('.card-summary')).toHaveText('a talk on quantum physics at TEDxSNSCE.');
+	await expect(tedx.locator('.card-description')).toHaveText(
+		'A talk on quantum physics delivered at TEDxSNSCE.',
+	);
+});
+
 test('hackathon cards carry grayscale link buttons in the headerbar', async ({ page }) => {
 	await page.goto('/achievements');
 
@@ -384,7 +453,7 @@ test('every menu card opens a menu with its links', async ({ page }) => {
 		'Tensor 2026',
 		'IEEE Kalpana 2025',
 		'Hack-o-ween 2025',
-		'LeetCode — 1,337+ solved',
+		'LeetCode — 1337+ solved',
 		'VOSD Newspaper Drive',
 		'TEDx Speaker',
 		'docker/docker #51670',
@@ -406,7 +475,7 @@ test('leetcode card uses the leetcode mark and links to the post and profile', a
 	const card = page.locator('.card').filter({ hasText: 'LeetCode' }).first();
 	await expect(card.locator('.card-icon svg')).toBeVisible();
 
-	await page.getByRole('button', { name: 'LeetCode — 1,337+ solved' }).click();
+	await page.getByRole('button', { name: 'LeetCode — 1337+ solved' }).click();
 
 	const hrefs = await page
 		.locator('dialog.menu[open] .menu-list a')
@@ -427,7 +496,7 @@ test('the leetcode profile link uses the leetcode mark, not the external icon', 
 	await expect(profile.locator('svg[stroke="currentColor"]')).toHaveCount(0);
 });
 
-test('the leetcode card shows the live count rounded down to the nearest hundred', async ({ page }) => {
+test('the leetcode card shows the exact solve count in its summary', async ({ page }) => {
 	await page.route('https://leetcode-api-faisalshohag.anga.codes/**', (route) =>
 		route.fulfill({
 			status: 200,
@@ -438,12 +507,14 @@ test('the leetcode card shows the live count rounded down to the nearest hundred
 
 	await page.goto('/achievements');
 
-	const live = page.locator('[data-leetcode-live]');
-	await expect(live).toHaveText('1,400+ solved');
-	await expect(live).toBeVisible();
+	const summary = page.locator('[data-leetcode-summary]');
+	await expect(summary).toHaveText(
+		"Not that quantity and quality are the same thing, but it's an achievement of consistency. This number currently sits at 1,414 solves",
+	);
+	await expect(summary).toBeVisible();
 });
 
-test('the leetcode card never shows a count below 1,337', async ({ page }) => {
+test('the leetcode summary is not rounded or floored', async ({ page }) => {
 	await page.route('https://leetcode-api-faisalshohag.anga.codes/**', (route) =>
 		route.fulfill({
 			status: 200,
@@ -454,18 +525,17 @@ test('the leetcode card never shows a count below 1,337', async ({ page }) => {
 
 	await page.goto('/achievements');
 
-	await expect(page.locator('[data-leetcode-live]')).toHaveText('1,337+ solved');
+	await expect(page.locator('[data-leetcode-summary]')).toHaveText(/sits at 1,356 solves$/);
 });
 
-test('the leetcode card falls back to 1,337+ when the api fails', async ({ page }) => {
+test('the leetcode summary falls back to 1337+ when the api fails', async ({ page }) => {
 	await page.route('https://leetcode-api-faisalshohag.anga.codes/**', (route) => route.abort());
 
 	await page.goto('/achievements');
 
-	// The static title and result badge carry the fallback; the live line stays
-	// hidden rather than showing a stale or empty value.
-	await expect(page.getByRole('button', { name: 'LeetCode — 1,337+ solved' })).toBeVisible();
-	await expect(page.locator('[data-leetcode-live]')).toBeHidden();
+	// The static sentence carries the fallback, and the title keeps the joke.
+	await expect(page.getByRole('button', { name: 'LeetCode — 1337+ solved' })).toBeVisible();
+	await expect(page.locator('[data-leetcode-summary]')).toHaveText(/sits at 1337\+ solves$/);
 });
 
 test('page-menu cards list their activity description and every related link', async ({ page }) => {
@@ -513,7 +583,7 @@ test('algomania sits under competitive programming, not hackathons', async ({ pa
 
 	const competitive = page.getByRole('region', { name: 'competitive programming' });
 	await expect(competitive.getByRole('button', { name: 'Algomania 3.0' })).toBeVisible();
-	await expect(competitive.getByRole('button', { name: 'LeetCode — 1,337+ solved' })).toBeVisible();
+	await expect(competitive.getByRole('button', { name: 'LeetCode — 1337+ solved' })).toBeVisible();
 
 	const hackathons = page.getByRole('region', { name: 'hackathons' });
 	await expect(hackathons.getByRole('button', { name: 'Algomania 3.0' })).toHaveCount(0);

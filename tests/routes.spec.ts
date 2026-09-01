@@ -113,6 +113,23 @@ test('projects route renders the project cards', async ({ page }) => {
 	await expect(page.locator('.card-actions').first()).toBeVisible();
 });
 
+test('project cards stack one per row', async ({ page }) => {
+	await page.goto('/projects');
+
+	const list = page.locator('.projects ul').first();
+	const columns = await list.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
+	expect(columns.split(' ')).toHaveLength(1);
+
+	// Every card spans the full width of the list.
+	const listWidth = await list.evaluate((el) => el.getBoundingClientRect().width);
+	const widths = await page
+		.locator('.card')
+		.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+	for (const width of widths) {
+		expect(Math.abs(listWidth - width)).toBeLessThanOrEqual(1);
+	}
+});
+
 test('archived project cards explain the warning icon on hover', async ({ page }, testInfo) => {
 	if (testInfo.project.name === 'mobile') testInfo.skip();
 
