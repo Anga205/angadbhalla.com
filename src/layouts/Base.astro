@@ -1,15 +1,38 @@
 ---
 import { Font } from 'astro:assets';
+import Seo from '../components/Seo.astro';
+import { SITE_DESCRIPTION } from '../lib/site';
+import type { JsonLd } from '../lib/seo';
 import '../styles/global.css';
 
 interface Props {
+	/** Document title, shown in the browser tab. */
 	title?: string;
+	/** Meta description. */
 	description?: string;
+	/** Route path, used for the canonical URL. Defaults to the current path. */
+	path?: string;
+	/** Open Graph type. */
+	type?: 'website' | 'article' | 'profile';
+	/** Extra JSON-LD nodes for this page. */
+	schema?: JsonLd[];
+	/** Meta keywords. Never rendered visibly. */
+	keywords?: string[];
+	/** Keep the page out of search results. */
+	noindex?: boolean;
+	/** Social preview image, root-relative or absolute. */
+	image?: string;
 }
 
 const {
 	title = 'anga',
-	description = 'Angad Bhalla. Computer science student in Bengaluru. Systems software, small binaries, boring infrastructure.',
+	description = SITE_DESCRIPTION,
+	path = Astro.url.pathname,
+	type = 'website',
+	schema,
+	keywords,
+	noindex,
+	image,
 } = Astro.props;
 ---
 
@@ -20,13 +43,29 @@ const {
 		<meta name="generator" content={Astro.generator} />
 		<meta name="color-scheme" content="dark" />
 		<meta name="theme-color" content="#000000" />
-		<meta name="description" content={description} />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 		<title>{title}</title>
+		<Seo
+			title={title}
+			{description}
+			{path}
+			{type}
+			{schema}
+			{keywords}
+			{noindex}
+			{image}
+		/>
 		<Font cssVariable="--font-mono" preload />
 	</head>
 	<body class="bg-neutral-900 font-mono text-neutral-200 antialiased">
+		<a
+			href="#main"
+			class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-[#303030] focus:px-3 focus:py-2 focus:text-[0.75rem] focus:text-white"
+		>
+			skip to content
+		</a>
 		<slot />
 	</body>
 </html>

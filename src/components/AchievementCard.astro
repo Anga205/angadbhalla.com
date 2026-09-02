@@ -1,0 +1,338 @@
+---
+/**
+ * AchievementCard.astro
+ *
+ * One card in the achievements / university listing. Extracted from the inline
+ * `.map()` body in AchievementCards.astro so the card shape lives in one place
+ * and the listing component stays readable.
+ *
+ * Three shapes, decided by the data:
+ *   medal      hackathons. Gold/silver medal icon, links in the headerbar, and
+ *              the card opens a link menu instead of navigating.
+ *   pageMenu   keeps its detail page but opens a menu that offers the page as
+ *              an "Activity Description" entry, followed by its links.
+ *   plain      the whole card links to its detail page.
+ */
+import {
+	Trophy,
+	FlaskConical,
+	Accessibility,
+	Ghost,
+	Code,
+	Users,
+	GraduationCap,
+	Container,
+	Heart,
+	Dog,
+	Atom,
+	GitPullRequest,
+	Medal,
+	Linkedin,
+	Info,
+	Github,
+	ExternalLink,
+	Youtube,
+	FileText,
+} from 'lucide-astro';
+import {
+	hasDetailPage,
+	opensMenu,
+	type Achievement,
+	type AchievementIcon,
+	type LinkIcon,
+} from '../data/achievements';
+import LeetCode from './icons/LeetCode.astro';
+
+interface Props {
+	achievement: Achievement;
+	/** Base path for detail pages, e.g. /achievements or /university. */
+	detailBase: string;
+	/** Render as a LinkedIn-style role row (position, org, team). */
+	roleMode: boolean;
+}
+
+const { achievement, detailBase, roleMode } = Astro.props;
+
+const ICONS: Record<AchievementIcon, typeof Trophy> = {
+	trophy: Trophy,
+	flask: FlaskConical,
+	accessibility: Accessibility,
+	ghost: Ghost,
+	code: Code,
+	leetcode: LeetCode as unknown as typeof Trophy,
+	users: Users,
+	graduation: GraduationCap,
+	container: Container,
+	heart: Heart,
+	dog: Dog,
+	atom: Atom,
+	'git-pull-request': GitPullRequest,
+};
+
+const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
+	linkedin: Linkedin,
+	info: Info,
+	github: Github,
+	external: ExternalLink,
+	code: Code,
+	heart: Heart,
+	youtube: Youtube,
+	leetcode: LeetCode as unknown as typeof Linkedin,
+};
+
+const Icon = ICONS[achievement.icon];
+const links = achievement.links ?? [];
+const isMedal = Boolean(achievement.medal);
+
+// A menu card only opens a menu when it has something to list: links, or a
+// detail page offered as "Activity Description".
+const menuCard = opensMenu(achievement) && (links.length > 0 || Boolean(achievement.pageMenu));
+const menuId = `menu-${achievement.slug}`;
+
+// Role cards read like a LinkedIn entry: the role is the heading, then the
+// organisation, then the team. Only the university page renders this shape.
+const isRole = roleMode;
+const cardHeading = isRole ? (achievement.position ?? achievement.title) : achievement.title;
+const headingLabel = isRole
+	? `${achievement.position}, ${achievement.organization}`
+	: undefined;
+const detailHref = achievement.href ?? `${detailBase}/${achievement.slug}`;
+---
+
+<li
+	class:list={[
+		'card relative flex flex-col overflow-hidden rounded-md border border-[#3d3846] bg-[#1c1c1c] hover:border-[#5a5560] focus-within:outline-1 focus-within:outline-[#26a269] focus-within:outline-offset-2',
+		isRole && 'card--role',
+	]}
+	data-medal={achievement.medal}
+	itemscope
+	itemtype="https://schema.org/CreativeWork"
+>
+	<div
+		class="card-bar flex items-center justify-between gap-2 border-b border-[#3d3846] bg-[#303030] px-2 py-[0.3rem] select-none"
+	>
+		<span class="card-dots flex gap-1" aria-hidden="true">
+			<span class="size-1.5 rounded-full bg-[#e01b24]"></span>
+			<span class="size-1.5 rounded-full bg-[#e5a50a]"></span>
+			<span class="size-1.5 rounded-full bg-[#33d17a]"></span>
+		</span>
+
+		{
+			menuCard ? (
+				<span class="card-actions flex items-center gap-1">
+					{achievement.pageMenu && (
+						<a
+							class="card-action inline-flex size-4.5 items-center justify-center rounded-[3px] text-[#8a8a8a] no-underline hover:bg-[#3d3846] hover:text-[#deddda] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-1"
+							href={detailHref}
+							aria-label="Activity Description"
+							title="Activity Description"
+						>
+							<FileText size={12} strokeWidth={1.5} aria-hidden="true" />
+						</a>
+					)}
+					{links.map((link) => {
+						const LinkIconComponent = LINK_ICONS[link.icon ?? 'external'];
+						return (
+							<a
+								class="card-action inline-flex size-4.5 items-center justify-center rounded-[3px] text-[#8a8a8a] no-underline hover:bg-[#3d3846] hover:text-[#deddda] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-1"
+								href={link.href}
+								target="_blank"
+								rel="noreferrer"
+								aria-label={link.label}
+								title={link.label}
+							>
+								<LinkIconComponent size={12} strokeWidth={1.5} aria-hidden="true" />
+							</a>
+						);
+					})}
+				</span>
+			) : (
+				<span class="card-result">{achievement.result}</span>
+			)
+		}
+	</div>
+
+	<div class="card-body flex items-start gap-[0.6rem] p-3">
+		<span
+			class="card-icon flex size-7 shrink-0 items-center justify-center rounded-sm border border-[#3d3846] text-[#26a269]"
+			data-medal={achievement.medal}
+			aria-hidden="true"
+		>
+			{
+				isMedal ? (
+					achievement.medal === 'gold' ? (
+						<Trophy size={16} strokeWidth={1.5} />
+					) : (
+						<Medal size={16} strokeWidth={1.5} />
+					)
+				) : (
+					<Icon size={16} strokeWidth={1.5} />
+				)
+			}
+		</span>
+
+		<div class="card-text min-w-0 flex-1">
+			<div class="card-heading flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+				<h3 class="m-0 text-[0.8125rem] font-medium leading-[1.4]">
+					{
+						!menuCard && hasDetailPage(achievement) ? (
+							<a class="card-link text-white no-underline" href={detailHref} aria-label={headingLabel}>
+								{cardHeading}
+							</a>
+						) : menuCard ? (
+							<button
+								type="button"
+								class="card-open cursor-pointer border-0 bg-transparent p-0 text-left text-[0.8125rem] font-[inherit] font-medium leading-[1.4]"
+								data-menu={menuId}
+								aria-haspopup="dialog"
+								aria-label={headingLabel}
+							>
+								{cardHeading}
+							</button>
+						) : (
+							<span class="card-static text-white">{cardHeading}</span>
+						)
+					}
+				</h3>
+				<span class="card-dates shrink-0 text-[0.6875rem] leading-normal text-[#8a8a8a]"
+					>{achievement.date}</span
+				>
+			</div>
+
+			{
+				isRole ? (
+					<div class="card-role mt-[0.3rem] text-[0.6875rem] leading-normal text-[#a5a3a9]">
+						<p class="card-org m-0 text-[#deddda]">{achievement.organization}</p>
+						{achievement.department && <p class="card-dept m-0">{achievement.department}</p>}
+					</div>
+				) : (
+					<p
+						class="card-summary mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#a5a3a9]"
+						data-leetcode-summary={achievement.liveCount ? '' : undefined}
+					>
+						{achievement.summary}
+					</p>
+				)
+			}
+
+			{/*
+			 * The long description is kept in the DOM for crawlers, SEO engines,
+			 * and LLM parsers, but clipped out of the visible layout. It is
+			 * skipped when it would only repeat the summary.
+			 */}
+			{achievement.description !== achievement.summary && (
+				<p class="card-description sr-only" itemprop="description">
+					{achievement.description}
+				</p>
+			)}
+		</div>
+	</div>
+</li>
+
+<style>
+	.card:hover {
+		border-color: #5a5560;
+	}
+
+	.card:focus-within {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	.card-result {
+		overflow: hidden;
+		color: #a5a3a9;
+		font-size: 0.625rem;
+		letter-spacing: 0.04em;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	/* Cards are full-width rows, so they get more room to breathe. */
+	.card-body {
+		gap: 0.75rem;
+		padding: 0.85rem 1rem;
+	}
+
+	.card-icon {
+		width: 2rem;
+		height: 2rem;
+	}
+
+	.card--role .card-org {
+		color: #deddda;
+	}
+
+	.card--role .card-dept {
+		color: #8a8a8a;
+	}
+
+	.card-dates {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.card:hover .card-dates {
+		color: #a5a3a9;
+	}
+
+	@media (max-width: 639px) {
+		.card-heading {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+	}
+
+	.card:hover .card-result {
+		color: #26a269;
+	}
+
+	.card-action:hover {
+		background: #3d3846;
+		color: #deddda;
+	}
+
+	.card-action:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 1px;
+	}
+
+	/* Medals replace the category icon on hackathon cards. */
+	.card-icon[data-medal='gold'] {
+		border-color: #6b5a2a;
+		background: rgba(229, 165, 10, 0.08);
+		color: #e5a50a;
+	}
+
+	.card-icon[data-medal='silver'] {
+		border-color: #4a4a4a;
+		background: rgba(197, 197, 197, 0.06);
+		color: #c5c5c5;
+	}
+
+	/* Stretch the title link over the whole card. */
+	.card-link::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 6px;
+	}
+
+	.card-link:focus-visible {
+		outline: none;
+	}
+
+	.card-open::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 6px;
+	}
+
+	.card-open:focus-visible {
+		outline: none;
+	}
+
+	.card:hover .card-open {
+		color: #26a269;
+	}
+</style>

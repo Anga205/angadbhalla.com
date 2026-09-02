@@ -268,15 +268,16 @@ test('IAMPro has a research detail page with three gallery slots', async ({ page
 	await expect(page.getByRole('heading', { name: 'Research Intern', level: 1 })).toBeVisible();
 	await expect(page.locator('.thumb')).toHaveCount(3);
 
-	// Real photographs, not the generated placeholders.
+	// Real photographs, not the generated placeholders. The URLs are
+	// fingerprinted and format-negotiated by astro:assets, so assert on the
+	// source file name rather than the emitted path.
 	const sources = await page
 		.locator('.thumb img')
-		.evaluateAll((els) => els.map((el) => el.getAttribute('src')));
-	expect(sources).toEqual([
-		'/achievements/ieee-cs-iampro-2025/certificate.png',
-		'/achievements/ieee-cs-iampro-2025/pic1.jpg',
-		'/achievements/ieee-cs-iampro-2025/pic2.jpg',
-	]);
+		.evaluateAll((els) => els.map((el) => decodeURIComponent(el.getAttribute('src') ?? '')));
+	expect(sources).toHaveLength(3);
+	expect(sources[0]).toContain('certificate');
+	expect(sources[1]).toContain('pic1');
+	expect(sources[2]).toContain('pic2');
 
 	testInfo.project.name === 'mobile' && testInfo.skip();
 
@@ -360,9 +361,9 @@ test('the tedx card describes the quantum physics talk', async ({ page }) => {
 
 	const tedx = page.locator('.card').filter({ hasText: 'TEDx Speaker' }).first();
 	await expect(tedx.locator('.card-summary')).toHaveText('a talk on quantum physics at TEDxSNSCE.');
-	await expect(tedx.locator('.card-description')).toHaveText(
-		'A talk on quantum physics delivered at TEDxSNSCE.',
-	);
+	// The crawlable description carries the talk title and year.
+	await expect(tedx.locator('.card-description')).toContainText('Magic of Quantum Physics');
+	await expect(tedx.locator('.card-description')).toContainText('TEDxSNSCE');
 });
 
 test('hackathon cards carry grayscale link buttons in the headerbar', async ({ page }) => {
@@ -648,11 +649,10 @@ test('detail page gallery opens a lightbox with the image caption', async ({ pag
 	await expect(thumbs).toHaveCount(2);
 	const sources = await page
 		.locator('.thumb img')
-		.evaluateAll((els) => els.map((el) => el.getAttribute('src')));
-	expect(sources).toEqual([
-		'/achievements/alcoding-club-head/alcoding1.jpg',
-		'/achievements/alcoding-club-head/alcoding2.jpg',
-	]);
+		.evaluateAll((els) => els.map((el) => decodeURIComponent(el.getAttribute('src') ?? '')));
+	expect(sources).toHaveLength(2);
+	expect(sources[0]).toContain('alcoding1');
+	expect(sources[1]).toContain('alcoding2');
 
 	await thumbs.first().click();
 

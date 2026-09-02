@@ -250,18 +250,6 @@ const activeId =
 		line-height: 1.6;
 	}
 
-	.waypoint-caret {
-		color: transparent;
-		font-size: 0.875rem;
-		line-height: 1.75;
-	}
-
-	.waypoint-link:hover .waypoint-caret,
-	.waypoint-link:focus-visible .waypoint-caret,
-	.waypoint-link[aria-current='page'] .waypoint-caret {
-		color: #39ff88;
-	}
-
 	.wayfinder-detail {
 		margin-top: 1rem;
 		padding-top: 0.75rem;
@@ -319,7 +307,6 @@ const activeId =
 	}
 
 	.wayfinder.is-minimized .waypoint-description,
-	.wayfinder.is-minimized .waypoint-caret,
 	.wayfinder.is-minimized .wayfinder-detail {
 		display: none;
 	}
@@ -372,13 +359,6 @@ const activeId =
 			min-width: 0;
 		}
 
-		.wayfinder.is-minimized .waypoint-label {
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-			font-size: 0.625rem;
-		}
-
 		/* Five columns at phone widths cannot fit the full names, so the rail
 		   swaps in the short labels and drops the directory slash. */
 		.wayfinder.is-minimized .waypoint-label {
@@ -395,77 +375,78 @@ const activeId =
 
 	/* The mobile rail has no `ls ~/portfolio` prompt, so the trailing slash
 	   that mimics a directory listing is dropped there. */
-	.wayfinder.is-minimized .waypoint-slash {
-		display: none;
-	}
+		.wayfinder.is-minimized .waypoint-slash {
+			display: none;
+		}
 	}
 </style>
 
 <script>
+	/**
+	 * Keyboard navigation for the sidebar.
+	 *
+	 * The menu is optional markup: if a page renders without it, this script
+	 * does nothing rather than throwing and taking the rest of the page's
+	 * scripts down with it.
+	 */
 	const menu = document.getElementById('wayfinder');
 	const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-destination-link]')];
 	const status = document.getElementById('wayfinder-status');
 	const detail = document.getElementById('wayfinder-detail-text');
 
-	if (!menu || !status || !detail || links.length === 0) {
-		throw new Error('PortfolioMenu: missing menu elements');
-	}
+	if (menu && status && detail && links.length > 0) {
+		// The server already marked the current route. Keep that as the resting
+		// state instead of forcing the first item to look active.
+		const currentIndex = Math.max(
+			0,
+			links.findIndex((link) => link.getAttribute('aria-current') === 'page'),
+		);
+		let activeIndex = currentIndex;
 
-	const menuElement = menu;
-	const statusElement = status;
-	const detailElement = detail;
+		function highlight(index: number) {
+			links.forEach((link, linkIndex) => {
+				if (linkIndex === index) link.setAttribute('aria-current', 'page');
+				else link.removeAttribute('aria-current');
+			});
+		}
 
-	// The server already marked the current route. Keep that as the resting
-	// state instead of forcing the first item to look active.
-	const currentIndex = Math.max(
-		0,
-		links.findIndex((link) => link.getAttribute('aria-current') === 'page'),
-	);
-	let activeIndex = currentIndex;
+		function selectIndex(index: number) {
+			activeIndex = (index + links.length) % links.length;
+			highlight(activeIndex);
+			links[activeIndex].focus();
+		}
 
-	function highlight(index: number) {
-		links.forEach((link, linkIndex) => {
-			if (linkIndex === index) link.setAttribute('aria-current', 'page');
-			else link.removeAttribute('aria-current');
+		links.forEach((link, index) => {
+			link.addEventListener('focus', () => {
+				activeIndex = index;
+				highlight(index);
+				const destination = link.dataset.destination ?? '';
+				status.textContent = `cat ${destination}.txt`;
+				detail.textContent = 'enter to open · or click a line';
+			});
+		});
+
+		menu.addEventListener('keydown', (event) => {
+			if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+				event.preventDefault();
+				selectIndex(activeIndex + 1);
+			}
+			if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+				event.preventDefault();
+				selectIndex(activeIndex - 1);
+			}
+			if (event.key === 'Home') {
+				event.preventDefault();
+				selectIndex(0);
+			}
+			if (event.key === 'End') {
+				event.preventDefault();
+				selectIndex(links.length - 1);
+			}
+			if (event.key === 'Enter' || event.key === ' ') {
+				event.preventDefault();
+				links[activeIndex].click();
+			}
 		});
 	}
-
-	function selectIndex(index: number) {
-		activeIndex = (index + links.length) % links.length;
-		highlight(activeIndex);
-		links[activeIndex].focus();
-	}
-
-	links.forEach((link, index) => {
-		link.addEventListener('focus', () => {
-			activeIndex = index;
-			highlight(index);
-			const destination = link.dataset.destination ?? '';
-			statusElement.textContent = `cat ${destination}.txt`;
-			detailElement.textContent = 'enter to open · or click a line';
-		});
-	});
-
-	menuElement.addEventListener('keydown', (event) => {
-		if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
-			event.preventDefault();
-			selectIndex(activeIndex + 1);
-		}
-		if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
-			event.preventDefault();
-			selectIndex(activeIndex - 1);
-		}
-		if (event.key === 'Home') {
-			event.preventDefault();
-			selectIndex(0);
-		}
-		if (event.key === 'End') {
-			event.preventDefault();
-			selectIndex(links.length - 1);
-		}
-		if (event.key === 'Enter' || event.key === ' ') {
-			event.preventDefault();
-			links[activeIndex].click();
-		}
-	});
 </script>

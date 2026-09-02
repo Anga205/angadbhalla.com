@@ -1,0 +1,51 @@
+---
+/**
+ * /404
+ *
+ * A real 404 page. The site used to redirect unknown paths to `/` with a 404
+ * status, which search engines treat as a soft 404 and refuse to index; a
+ * dedicated page with a real status code is the correct signal.
+ */
+import Base from '../layouts/Base.astro';
+import PortfolioMenu from '../components/PortfolioMenu.astro';
+import Window from '../components/Window.astro';
+import { DESTINATIONS } from '../data/destinations';
+---
+
+<Base
+	title="anga / 404"
+	description="That path does not exist on angadbhalla.com."
+	path="/404"
+	noindex
+>
+	<PortfolioMenu minimized />
+
+	<main
+		id="main"
+		class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+	>
+		<Window title="anga@portfolio — 404">
+			<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ cat /dev/null</p>
+			<h1 class="mb-2 text-[1.35rem] font-normal">404</h1>
+			<p class="mb-6 max-w-[52ch] text-[#a5a3a9]">
+				That path does not exist. Nothing was deleted — it was probably never here.
+			</p>
+
+			<p class="mb-3 text-[0.75rem] text-[#26a269]">$ ls ~/portfolio</p>
+			<ul class="m-0 list-none p-0">
+				{
+					DESTINATIONS.map((destination) => (
+						<li class="mb-1">
+							<a
+								class="text-[#deddda] no-underline hover:text-[#26a269] focus-visible:outline-1 focus-visible:outline-[#26a269] focus-visible:outline-offset-2"
+								href={destination.href}
+							>
+								{destination.label.toLowerCase()}/
+							</a>
+						</li>
+					))
+				}
+			</ul>
+		</Window>
+	</main>
+</Base>

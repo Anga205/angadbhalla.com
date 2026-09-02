@@ -2,9 +2,34 @@
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
 import ProjectCards from '../components/ProjectCards.astro';
+import { PROJECTS } from '../data/projects';
+import { collectionPageSchema, softwareSourceCodeSchema, type JsonLd } from '../lib/seo';
+
+const description =
+	'Software Angad Bhalla has built: a self-hosted file host, a sandboxed code execution API, a bare-bones operating system, and more.';
+
+const schema: JsonLd[] = [
+	collectionPageSchema({
+		path: '/projects',
+		name: 'Projects',
+		description,
+		items: PROJECTS.map((project) => ({ name: project.name, path: `/projects#${project.id}` })),
+	}),
+	...PROJECTS.map((project) =>
+		softwareSourceCodeSchema({
+			path: `/projects#${project.id}`,
+			name: project.name,
+			description: project.description,
+			codeRepository: project.repo,
+			programmingLanguage: project.stack,
+			dateCreated: project.dateCreated,
+			url: project.live,
+		}),
+	),
+];
 ---
 
-<Base title="anga / projects" description="Things Angad Bhalla has built.">
+<Base title="anga / projects" {description} path="/projects" {schema}>
 	<PortfolioMenu minimized />
 	<ProjectCards />
 </Base>

@@ -11,8 +11,67 @@
   targetPort = 4321
   port = 8888
 
-# Unknown paths fall back to the home page rather than Netlify's default 404.
-[[redirects]]
-  from = "/*"
-  to = "/"
-  status = 404
+# ---------------------------------------------------------------------------
+# Headers
+# ---------------------------------------------------------------------------
+
+# Astro fingerprints everything under /_astro/, so those files can be cached
+# forever. This is the single biggest repeat-visit win: the font, CSS, and
+# hashed images never revalidate.
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# The 3D model is large and rarely changes. Cache it for a week and let it
+# revalidate in the background.
+[[headers]]
+  for = "/anga.glb"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, stale-while-revalidate=86400"
+
+# Icons and the manifest change rarely.
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/favicon.ico"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/site.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+    Content-Type = "application/manifest+json"
+
+# HTML must always revalidate so a deploy is visible immediately.
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Baseline security headers. The site loads no third-party scripts, so the
+# policy can stay tight.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
+# The text endpoints are generated per deploy, so they should not be cached
+# for long.
+[[headers]]
+  for = "/llms.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/llms-full.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

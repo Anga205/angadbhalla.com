@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
 import AchievementCards from '../components/AchievementCards.astro';
 import { UNIVERSITY_ACHIEVEMENTS, CATEGORY_LABELS, CATEGORY_BLURBS } from '../data/achievements';
+import { collectionPageSchema, type JsonLd } from '../lib/seo';
 
 // Roles first, then anything else surfaced here (e.g. the IAMPro research
 // internship), so the page reads as a career timeline.
@@ -20,12 +21,24 @@ const groups = [
 		items,
 	},
 ];
+
+const description =
+	'Roles, organisations, and extracurricular work by Angad Bhalla at PES University: club leadership, teaching, internships, and talks.';
+
+const schema: JsonLd[] = [
+	collectionPageSchema({
+		path: '/university',
+		name: 'University',
+		description,
+		items: items.map((achievement) => ({
+			name: achievement.position ?? achievement.title,
+			path: `/university/${achievement.slug}`,
+		})),
+	}),
+];
 ---
 
-<Base
-	title="anga / university"
-	description="Roles, organisations, and extracurricular work by Angad Bhalla at PES University."
->
+<Base title="anga / university" {description} path="/university" {schema}>
 	<PortfolioMenu minimized />
 	<AchievementCards
 		groups={groups}

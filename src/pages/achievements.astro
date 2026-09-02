@@ -2,12 +2,28 @@
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
 import AchievementCards from '../components/AchievementCards.astro';
+import { ACHIEVEMENT_INDEX, hasDetailPage } from '../data/achievements';
+import { collectionPageSchema, type JsonLd } from '../lib/seo';
+
+const description =
+	'Hackathon results, contest milestones, research, community work, and open source contributions by Angad Bhalla.';
+
+const schema: JsonLd[] = [
+	collectionPageSchema({
+		path: '/achievements',
+		name: 'Achievements',
+		description,
+		items: ACHIEVEMENT_INDEX.map((achievement) => ({
+			name: achievement.title,
+			path: hasDetailPage(achievement)
+				? `/achievements/${achievement.slug}`
+				: '/achievements',
+		})),
+	}),
+];
 ---
 
-<Base
-	title="anga / achievements"
-	description="Hackathon results, contest milestones, leadership, community work, and open source contributions by Angad Bhalla."
->
+<Base title="anga / achievements" {description} path="/achievements" {schema}>
 	<PortfolioMenu minimized />
 	<AchievementCards />
 </Base>

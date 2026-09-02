@@ -15,7 +15,12 @@ test('home page shows a rounded portrait photo in the intro', async ({ page }) =
 
 	const photo = page.locator('.portrait-photo img');
 	await expect(photo).toBeVisible();
-	await expect(photo).toHaveAttribute('src', '/angad.png');
+	// The portrait is processed by astro:assets, so the URL is either a
+	// fingerprinted build asset or a dev-mode `/_image?href=...` transform.
+	// Either way it must resolve to the angad source, in a modern format.
+	const src = decodeURIComponent((await photo.getAttribute('src')) ?? '');
+	expect(src).toMatch(/angad/);
+	expect(src).toMatch(/\.(avif|webp|jpe?g|png)/);
 	await expect(photo).toHaveAttribute('alt', 'Angad Bhalla');
 
 	const radius = await photo.evaluate((el) => getComputedStyle(el).borderRadius);

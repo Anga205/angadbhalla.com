@@ -1,9 +1,13 @@
 ---
+import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
+import Window from '../components/Window.astro';
 import { Mail, Github, Linkedin, MessageCircle, Instagram, Send } from 'lucide-astro';
 import Duolingo from '../components/icons/Duolingo.astro';
 import { CONTACTS, type ContactIcon } from '../data/contacts';
+import { profilePageSchema, type JsonLd } from '../lib/seo';
+import portrait from '../assets/angad.jpg';
 
 const ICONS: Record<ContactIcon, typeof Mail> = {
 	mail: Mail,
@@ -13,94 +17,96 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 	instagram: Instagram,
 	duolingo: Duolingo as unknown as typeof Mail,
 };
+
+const description =
+	'Angad Bhalla — computer science student at PES University, Bengaluru. Systems software, small binaries, and boring infrastructure.';
+
+const schema: JsonLd[] = [
+	profilePageSchema({ path: '/', name: 'Angad Bhalla', description }),
+];
 ---
 
-<Base title="anga / home" description="Angad Bhalla. Computer science student in Bengaluru.">
+<Base title="anga / home" {description} path="/" type="profile" {schema}>
 	<PortfolioMenu minimized />
 
-	<main class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24">
-		<div class="window mx-auto max-w-240 overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
-			<div class="headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none">
-				<span class="dots flex gap-1.5" aria-hidden="true">
-					<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span class="size-2.5 rounded-full bg-[#e5a50a]"></span><span class="size-2.5 rounded-full bg-[#33d17a]"></span>
-				</span>
-				<span class="title text-center whitespace-nowrap">anga@portfolio — home</span>
-				<span aria-hidden="true"></span>
-			</div>
-
-			<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
-				<div class="intro mb-8 border-b border-line pb-8">
-					<p class="intro-prompt text-[0.75rem] text-[#26a269]">$ cat home.txt</p>
-					<h1 class="intro-heading mb-2 text-[1.35rem] font-normal">Angad Bhalla</h1>
-					<div class="intro-text">
-						<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
-							I'm a <span id="age">21</span> year old software engineer currently pursuing a degree in
-							Computer Science &amp; Engineering at PES University, Bangalore (2023-2027).
-						</p>
-						<p class="mb-0 max-w-[52ch] text-[#a5a3a9]">
-							I like playing Minecraft with my friends, watching Marvel &amp; DC, and I'm also a
-							huge coffee aficionado. In my off hours, I volunteer in community NGOs for animal
-							welfare.
-						</p>
-					</div>
-
-					{/* Portrait photo, fully rounded. */}
-					<div class="portrait-photo">
-						<img
-							src="/angad.png"
-							alt="Angad Bhalla"
-							width="512"
-							height="512"
-							loading="eager"
-							decoding="async"
-						/>
-					</div>
+	<main
+		id="main"
+		class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+	>
+		<Window title="anga@portfolio — home">
+			<div class="intro mb-8 border-b border-line pb-8">
+				<p class="intro-prompt text-[0.75rem] text-[#26a269]">$ cat home.txt</p>
+				<h1 class="intro-heading mb-2 text-[1.35rem] font-normal">Angad Bhalla</h1>
+				<div class="intro-text">
+					<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
+						I'm a <span id="age">21</span> year old software engineer currently pursuing a degree in
+						Computer Science &amp; Engineering at PES University, Bangalore (2023-2027).
+					</p>
+					<p class="mb-0 max-w-[52ch] text-[#a5a3a9]">
+						I like playing Minecraft with my friends, watching Marvel &amp; DC, and I'm also a
+						huge coffee aficionado. In my off hours, I volunteer in community NGOs for animal
+						welfare.
+					</p>
 				</div>
 
-				<div class="contact-grid">
-					<section class="links" aria-labelledby="links-heading">
-						<h2 class="mb-3 text-[1.05rem] font-normal" id="links-heading">find me</h2>
-
-						<ul class="contact-cards">
-							{CONTACTS.map((contact) => {
-								const Icon = ICONS[contact.icon];
-								const external = contact.href.startsWith('http');
-								return (
-									<li>
-										<a
-											class="contact-card"
-											href={contact.href}
-											target={external ? '_blank' : undefined}
-											rel={external ? 'noreferrer' : undefined}
-											aria-label={`${contact.label}: ${contact.value}`}
-										>
-											<span class="contact-icon" aria-hidden="true">
-												<Icon size={18} strokeWidth={1.5} />
-											</span>
-											<span class="contact-text">
-												<span class="contact-label">{contact.label}</span>
-												<span class="contact-value">{contact.value}</span>
-											</span>
-										</a>
-									</li>
-								);
-							})}
-						</ul>
-					</section>
-
-					<section class="form-section" id="contact" aria-labelledby="form-heading">
-						<h2 class="mb-3 text-[1.05rem] font-normal" id="form-heading">Send me a message</h2>
-						<form id="contact-form" novalidate>
-							<label class="field field--email"><input type="email" name="email" id="email" autocomplete="email" required placeholder="your@email-id.com" aria-label="your email" /></label>
-							<label class="field field--message"><textarea name="message" id="message" required placeholder="type any message here....." aria-label="message"></textarea></label>
-							<div class="form-actions"><button type="submit" id="send"><Send size={13} strokeWidth={1.5} aria-hidden="true" />send</button></div>
-						</form>
-					</section>
+				{/* Portrait photo, fully rounded. */}
+				<div class="portrait-photo">
+					<Image
+						src={portrait}
+						alt="Angad Bhalla"
+						widths={[128, 256, 512]}
+						sizes="(max-width: 899px) 6rem, 16rem"
+						format="avif"
+						loading="eager"
+						fetchpriority="high"
+						decoding="async"
+					/>
 				</div>
-
-				<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
 			</div>
-		</div>
+
+			<div class="contact-grid">
+				<section class="links" aria-labelledby="links-heading">
+					<h2 class="mb-3 text-[1.05rem] font-normal" id="links-heading">find me</h2>
+
+					<ul class="contact-cards">
+						{CONTACTS.map((contact) => {
+							const Icon = ICONS[contact.icon];
+							const external = contact.href.startsWith('http');
+							return (
+								<li>
+									<a
+										class="contact-card"
+										href={contact.href}
+										target={external ? '_blank' : undefined}
+										rel={external ? 'noreferrer me' : undefined}
+										aria-label={`${contact.label}: ${contact.value}`}
+									>
+										<span class="contact-icon" aria-hidden="true">
+											<Icon size={18} strokeWidth={1.5} />
+										</span>
+										<span class="contact-text">
+											<span class="contact-label">{contact.label}</span>
+											<span class="contact-value">{contact.value}</span>
+										</span>
+									</a>
+								</li>
+							);
+						})}
+					</ul>
+				</section>
+
+				<section class="form-section" id="contact" aria-labelledby="form-heading">
+					<h2 class="mb-3 text-[1.05rem] font-normal" id="form-heading">Send me a message</h2>
+					<form id="contact-form" novalidate>
+						<label class="field field--email"><input type="email" name="email" id="email" autocomplete="email" required placeholder="your@email-id.com" aria-label="your email" /></label>
+						<label class="field field--message"><textarea name="message" id="message" required placeholder="type any message here....." aria-label="message"></textarea></label>
+						<div class="form-actions"><button type="submit" id="send"><Send size={13} strokeWidth={1.5} aria-hidden="true" />send</button></div>
+					</form>
+				</section>
+			</div>
+
+			<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
+		</Window>
 	</main>
 </Base>
 

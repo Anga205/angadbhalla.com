@@ -1,0 +1,87 @@
+---
+/**
+ * Seo.astro
+ *
+ * Everything that belongs in `<head>` for search engines, social cards, and
+ * LLM crawlers. Nothing here renders in the viewport.
+ *
+ * The component is deliberately the only place that writes canonical, Open
+ * Graph, Twitter, and JSON-LD tags, so a page cannot accidentally emit two
+ * conflicting canonicals.
+ */
+import { SITE_DESCRIPTION, SITE_LOCALE, SITE_NAME, SITE_URL, OG_IMAGE_PATH, absoluteUrl } from '../lib/site';
+import { graph, personSchema, websiteSchema, type JsonLd } from '../lib/seo';
+
+interface Props {
+	/** Page title, without the site suffix. */
+	title: string;
+	/** Meta description. Falls back to the site description. */
+	description?: string;
+	/** Route path, e.g. `/achievements`. Used for the canonical URL. */
+	path: string;
+	/** `website`, `article`, or `profile`. */
+	type?: 'website' | 'article' | 'profile';
+	/** Extra JSON-LD nodes for this page. */
+	schema?: JsonLd[];
+	/** Comma-separated keywords. Rendered as a meta tag, never visibly. */
+	keywords?: string[];
+	/** Set to true for pages that should not be indexed. */
+	noindex?: boolean;
+	/** Absolute or root-relative social image. Defaults to the site card. */
+	image?: string;
+}
+
+const {
+	title,
+	description = SITE_DESCRIPTION,
+	path,
+	type = 'website',
+	schema = [],
+	keywords,
+	noindex = false,
+	image = OG_IMAGE_PATH,
+} = Astro.props;
+
+const canonical = absoluteUrl(path);
+const socialImage = absoluteUrl(image);
+const fullTitle = title.includes(SITE_NAME) ? title : `${title} — ${SITE_NAME}`;
+
+// Every page carries the person and the site; pages append their own nodes.
+const jsonLd = graph([personSchema(), websiteSchema(), ...schema]);
+---
+
+<meta name="description" content={description} />
+{keywords && keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
+<meta name="author" content={SITE_NAME} />
+<meta
+	name="robots"
+	content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'}
+/>
+
+<link rel="canonical" href={canonical} />
+
+<!-- Open Graph -->
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={SITE_NAME} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={socialImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={`${SITE_NAME} — ${title}`} />
+<meta property="og:locale" content={SITE_LOCALE} />
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={socialImage} />
+<meta name="twitter:image:alt" content={`${SITE_NAME} — ${title}`} />
+
+<!-- Discovery -->
+<link rel="sitemap" href={`${SITE_URL}/sitemap-index.xml`} />
+<link rel="alternate" type="text/plain" href={`${SITE_URL}/llms.txt`} title="LLM index" />
+<link rel="manifest" href="/site.webmanifest" />
+
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />

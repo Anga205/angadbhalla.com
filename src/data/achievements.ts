@@ -8,6 +8,14 @@
  * Galleries are declared per entry with `images`. Entries without images
  * simply render no gallery.
  */
+import type { ImageMetadata } from 'astro';
+
+import alcoding1 from '../assets/achievements/alcoding-club-head/alcoding1.jpg';
+import alcoding2 from '../assets/achievements/alcoding-club-head/alcoding2.jpg';
+import iamproCertificate from '../assets/achievements/ieee-cs-iampro-2025/certificate.png';
+import iamproPic1 from '../assets/achievements/ieee-cs-iampro-2025/pic1.jpg';
+import iamproPic2 from '../assets/achievements/ieee-cs-iampro-2025/pic2.jpg';
+
 export const CATEGORIES = [
 	'hackathons',
 	'competitive',
@@ -145,7 +153,12 @@ export interface Achievement {
 }
 
 export interface GalleryImage {
-	src: string;
+	/**
+	 * Imported image asset. Astro processes it at build time, so the gallery
+	 * gets responsive AVIF/WebP sources and intrinsic dimensions instead of a
+	 * raw file copied out of `public/`.
+	 */
+	src: ImageMetadata;
 	alt: string;
 	caption: string;
 }
@@ -262,18 +275,18 @@ export const ACHIEVEMENTS: Achievement[] = [
 		icon: 'flask',
 		images: [
 			{
-				src: '/achievements/ieee-cs-iampro-2025/certificate.png',
+				src: iamproCertificate,
 				alt: 'IAMPro 2025 internship certificate issued by the IEEE Computer Society Bangalore chapter.',
 				caption:
 					'Certificate issued by the IEEE Computer Society Bangalore chapter confirming the internship under the IAMPro 2025 batch.',
 			},
 			{
-				src: '/achievements/ieee-cs-iampro-2025/pic1.jpg',
+				src: iamproPic1,
 				alt: 'Angad Bhalla on the left and Dr. Venugopal N. on the right.',
 				caption: 'Me (left) and Dr. Venugopal N. (right).',
 			},
 			{
-				src: '/achievements/ieee-cs-iampro-2025/pic2.jpg',
+				src: iamproPic2,
 				alt: 'Ankith Khaitan on the left, Dr. Venugopal N. in the middle, and Angad Bhalla on the right.',
 				caption: 'Ankith Khaitan (left), Dr. Venugopal N. (middle), and me (right).',
 			},
@@ -335,8 +348,19 @@ export const ACHIEVEMENTS: Achievement[] = [
 		date: 'October 2025',
 		year: '2025',
 		summary: '24 hours, one idea, something that runs.',
-		description: 'Halloween themed 24 hour hackathon',
-		tags: ['24-hour', 'arch-pesu', 'prototyping', 'team-of-4', 'hackathon', 'ai-ml'],
+		description:
+			'A Halloween-themed 24-hour hackathon. We built a GraphRAG-based cybersecurity tool that discovers connections between log entries produced by different monitoring tools.',
+		tags: [
+			'24-hour',
+			'arch-pesu',
+			'prototyping',
+			'team-of-4',
+			'hackathon',
+			'ai-ml',
+			'graphrag',
+			'cybersecurity',
+			'log-analysis',
+		],
 		icon: 'ghost',
 		links: [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/ddgcuhat', icon: 'linkedin' },
@@ -345,13 +369,16 @@ export const ACHIEVEMENTS: Achievement[] = [
 		detail: {
 			overview: [
 				'Hack-o-ween is a 24-hour hackathon run by ARCH, the technical club of the CSE (AI & ML) department at PESU. The format is unforgiving: scope has to be decided early, because anything left to the last six hours does not ship.',
+				'We built a GraphRAG-based cybersecurity tool. It ingests log entries from several different existing monitoring tools and builds a graph over them, so connections between entries that live in separate systems become visible instead of staying buried in unrelated files.',
 				'We finished second. The useful part was not the placement but the rehearsal of a specific skill \u2014 cutting a feature list down to the one thing that has to work, and getting that one thing working.',
 			],
 			highlights: [
 				'24-hour build window, four-person team.',
+				'GraphRAG-based tool surfacing connections across logs from different monitoring tools.',
 				'Scope locked in the first few hours; integration started early.',
 				'Second place.',
 			],
+			stack: ['GraphRAG', 'LLM agents', 'Python'],
 		},
 	},
 	{
@@ -446,12 +473,12 @@ export const ACHIEVEMENTS: Achievement[] = [
 		],
 		images: [
 			{
-				src: '/achievements/alcoding-club-head/alcoding1.jpg',
+				src: alcoding1,
 				alt: 'Members of The Alcoding Club together at a club gathering.',
 				caption: 'All the members of The Alcoding Club.',
 			},
 			{
-				src: '/achievements/alcoding-club-head/alcoding2.jpg',
+				src: alcoding2,
 				alt: 'The team that hosted the Containerization with Docker workshop.',
 				caption: 'The team responsible for hosting the Containerization with Docker workshop.',
 			},
@@ -525,8 +552,9 @@ export const ACHIEVEMENTS: Achievement[] = [
 		date: 'June \u2014 July 2025',
 		year: '2025',
 		summary: 'worked on the Remote Robotics (ReRo) team.',
-		description: 'A robotics internship with the Remote Robotics (ReRo) team at cRAIS.',
-		tags: ['crais', 'robotics', 'rero', 'internship'],
+		description:
+			'A robotics internship with the Remote Robotics (ReRo) team at cRAIS, the Center for Robotics Automation and Intelligent Systems. Built a ReRo robot that can be driven remotely through a web interface. The internship came through membership of the IEEE Robotics and Automation Society student committee at PES University.',
+		tags: ['crais', 'robotics', 'rero', 'internship', 'ieee', 'ras', 'teleoperation'],
 		icon: 'container',
 		menu: true,
 		links: [
@@ -538,9 +566,14 @@ export const ACHIEVEMENTS: Achievement[] = [
 		],
 		detail: {
 			overview: [
-				'I worked as a robotics intern at cRAIS (Center for Robotics Automation and Intelligent Systems) on the Remote Robotics (ReRo) team.',
+				'I worked as a robotics intern at cRAIS (Center for Robotics Automation and Intelligent Systems) on the Remote Robotics (ReRo) team. The opportunity came through my membership of the IEEE Robotics and Automation Society student committee at PES University.',
+				'On the ReRo team I built a remote robotics robot: a machine that can be driven and operated over the network through a web interface rather than from a local controller.',
 			],
-			highlights: ['Worked with the Remote Robotics (ReRo) team.'],
+			highlights: [
+				'Built a ReRo (remote robotics) robot controlled through a web interface.',
+				'Joined through the IEEE RAS student committee at PES University.',
+			],
+			stack: ['Robotics', 'Remote operation', 'Web interface'],
 		},
 	},
 	{
@@ -554,8 +587,8 @@ export const ACHIEVEMENTS: Achievement[] = [
 		year: '2025',
 		summary: 'spoke on robotics at a TAMS session.',
 		description:
-			'A talk for the IEEE Robotics and Automation Society chapter, hosted by TAMS.',
-		tags: ['ieee', 'ras', 'robotics', 'speaker', 'tams'],
+			'An introductory talk on robotics and electrical engineering for the IEEE Robotics and Automation Society chapter, hosted by TAMS. Aimed at a younger audience, the session was built to introduce students to robotics as a field rather than to teach a specific technique.',
+		tags: ['ieee', 'ras', 'robotics', 'speaker', 'tams', 'electrical-engineering', 'outreach'],
 		icon: 'users',
 		menu: true,
 		links: [
@@ -564,8 +597,12 @@ export const ACHIEVEMENTS: Achievement[] = [
 		detail: {
 			overview: [
 				'I spoke at an IEEE Robotics and Automation Society (RAS) session hosted by TAMS (The Amateur Manager and Scientist).',
+				'The talk covered the basics of robotics and electrical engineering. It was pitched at a younger audience and built as an introduction to robotics as a field: what the discipline actually involves, and why it is worth getting into.',
 			],
-			highlights: ['Talk delivered to the IEEE RAS chapter at TAMS.'],
+			highlights: [
+				'Introductory talk on robotics and electrical engineering.',
+				'Delivered to a younger audience at an IEEE RAS session hosted by TAMS.',
+			],
 		},
 	},
 	{
@@ -614,8 +651,9 @@ export const ACHIEVEMENTS: Achievement[] = [
 		date: 'August 25, 2017',
 		year: '2017',
 		summary: 'a talk on quantum physics at TEDxSNSCE.',
-		description: 'A talk on quantum physics delivered at TEDxSNSCE.',
-		tags: ['tedx', 'speaker', 'talk', 'community'],
+		description:
+			'"Magic of Quantum Physics", a TEDx talk delivered at TEDxSNSCE in 2017.',
+		tags: ['tedx', 'speaker', 'talk', 'community', 'quantum-physics', 'physics'],
 		icon: 'atom',
 		menu: true,
 		links: [
@@ -626,8 +664,10 @@ export const ACHIEVEMENTS: Achievement[] = [
 			},
 		],
 		detail: {
-			overview: ['A TEDx talk delivered at TEDxSNSCE.'],
-			highlights: ['Spoke at TEDxSNSCE.'],
+			overview: [
+				'"Magic of Quantum Physics" is a TEDx talk delivered at TEDxSNSCE in 2017.',
+			],
+			highlights: ['Talk title: "Magic of Quantum Physics".', 'Delivered at TEDxSNSCE in 2017.'],
 		},
 	},
 	{
