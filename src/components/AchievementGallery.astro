@@ -13,6 +13,7 @@
 import { Image } from 'astro:assets';
 import { ArrowLeft, ArrowRight, X } from 'lucide-astro';
 import type { GalleryImage } from '../data/achievements';
+import { GALLERY_QUALITY } from '../lib/images';
 
 interface Props {
 	images: GalleryImage[];
@@ -43,6 +44,7 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 								widths={[176, 352, 528]}
 								sizes="(max-width: 639px) 8rem, 11rem"
 								format="avif"
+								quality={GALLERY_QUALITY}
 								loading="lazy"
 								decoding="async"
 							/>
@@ -76,6 +78,7 @@ const dialogId = `gallery-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 									widths={[640, 1024, 1600]}
 									sizes="(max-width: 1024px) 100vw, 64rem"
 									format="avif"
+									quality={GALLERY_QUALITY}
 									loading="lazy"
 									decoding="async"
 									data-slide={index}

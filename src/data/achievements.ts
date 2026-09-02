@@ -474,12 +474,12 @@ export const ACHIEVEMENTS: Achievement[] = [
 		images: [
 			{
 				src: alcoding1,
-				alt: 'Members of The Alcoding Club together at a club gathering.',
+				alt: 'The Alcoding Club core team at PES University, the competitive programming club Angad Bhalla headed from 2024 to 2025.',
 				caption: 'All the members of The Alcoding Club.',
 			},
 			{
 				src: alcoding2,
-				alt: 'The team that hosted the Containerization with Docker workshop.',
+				alt: 'The student team that hosted the Containerization with Docker workshop at PES University, organised by The Alcoding Club.',
 				caption: 'The team responsible for hosting the Containerization with Docker workshop.',
 			},
 		],
@@ -661,6 +661,11 @@ export const ACHIEVEMENTS: Achievement[] = [
 				label: 'youtube video',
 				href: 'https://www.youtube.com/watch?v=GSN9b3AIITw',
 				icon: 'youtube',
+			},
+			{
+				label: 'amrita foundation feature',
+				href: 'https://amritafoundation.wordpress.com/tag/angad-bhalla/',
+				icon: 'external',
 			},
 		],
 		detail: {

@@ -21,7 +21,12 @@ test('home page shows a rounded portrait photo in the intro', async ({ page }) =
 	const src = decodeURIComponent((await photo.getAttribute('src')) ?? '');
 	expect(src).toMatch(/angad/);
 	expect(src).toMatch(/\.(avif|webp|jpe?g|png)/);
-	await expect(photo).toHaveAttribute('alt', 'Angad Bhalla');
+
+	// The alt text is descriptive rather than just the name, which is what
+	// image search and screen readers need.
+	const alt = (await photo.getAttribute('alt')) ?? '';
+	expect(alt).toContain('Angad Bhalla');
+	expect(alt.length).toBeGreaterThan(20);
 
 	const radius = await photo.evaluate((el) => getComputedStyle(el).borderRadius);
 	expect(radius).toBe('9999px');
