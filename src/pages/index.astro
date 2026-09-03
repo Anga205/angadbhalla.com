@@ -3,8 +3,9 @@ import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
 import Window from '../components/Window.astro';
-import { Mail, Github, Linkedin, MessageCircle, Instagram, Send } from 'lucide-astro';
-import Duolingo from '../components/icons/Duolingo.astro';
+import { Mail, Github, Linkedin, Instagram, Send } from 'lucide-astro';
+import Discord from '../components/icons/Discord.astro';
+import Reddit from '../components/icons/Reddit.astro';
 import { CONTACTS, type ContactIcon } from '../data/contacts';
 import { profilePageSchema, type JsonLd } from '../lib/seo';
 import { PORTRAIT_LQIP, PORTRAIT_QUALITY } from '../lib/images';
@@ -14,9 +15,9 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 	mail: Mail,
 	github: Github,
 	linkedin: Linkedin,
-	discord: MessageCircle,
+	discord: Discord as unknown as typeof Mail,
 	instagram: Instagram,
-	duolingo: Duolingo as unknown as typeof Mail,
+	reddit: Reddit as unknown as typeof Mail,
 };
 
 const description =

@@ -42,11 +42,11 @@ export const CONTACTS = [
 		icon: 'instagram',
 	},
 	{
-		id: 'duolingo',
-		label: 'duolingo',
-		value: 'duolingo.com/profile/AngadBhalla',
-		href: 'https://www.duolingo.com/profile/AngadBhalla',
-		icon: 'duolingo',
+		id: 'reddit',
+		label: 'reddit',
+		value: 'reddit.com/u/Anga205',
+		href: 'https://reddit.com/u/Anga205',
+		icon: 'reddit',
 	},
 ] as const;
 

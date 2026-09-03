@@ -123,8 +123,6 @@ export interface Achievement {
 	organization?: string;
 	/** The role itself. Rendered as the leadership card heading. */
 	position?: string;
-	/** Team or department within the organisation. Leadership cards only. */
-	department?: string;
 	/**
 	 * Overrides the detail-page link. Needed when a card is shown on a page
 	 * whose detail route does not own it (e.g. a research entry surfaced on
@@ -264,9 +262,8 @@ export const ACHIEVEMENTS: Achievement[] = [
 		year: '2025',
 		summary: 'IEEE Computer Society IAMPro 2025 Batch',
 		description: 'IEEE Computer Society IAMPro 2025 Batch',
-		organization: 'IEEE Computer Society Bangalore Chapter',
+		organization: 'IEEE Computer Society IAMPro 2025 Batch',
 		position: 'Research Intern',
-		department: 'IAMPro 2025 Batch',
 		alsoUniversity: true,
 		href: '/achievements/ieee-cs-iampro-2025',
 		pageMenu: true,
@@ -429,7 +426,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 		category: 'leadership',
 		organization: 'The Alcoding Club',
 		position: 'Club Head',
-		department: 'Core Team',
 		result: 'club head',
 		date: 'September 2024 \u2014 April 2025',
 		year: '2025',
@@ -502,7 +498,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 		category: 'leadership',
 		organization: 'PESU I/O',
 		position: 'Subject Matter Expert (SME)',
-		department: 'Competitive Programming',
 		result: 'instructor',
 		date: 'August \u2014 November 2025',
 		year: '2025',
@@ -547,7 +542,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 		category: 'leadership',
 		organization: 'cRAIS (Center for Robotics Automation and Intelligent Systems)',
 		position: 'Robotics Intern',
-		department: 'Remote Robotics (ReRo) team',
 		result: 'intern',
 		date: 'June \u2014 July 2025',
 		year: '2025',

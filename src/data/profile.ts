@@ -63,7 +63,6 @@ export const PROFILE = {
 		'https://www.linkedin.com/in/anga',
 		'https://www.instagram.com/_anga205/',
 		'https://leetcode.com/u/Anga205',
-		'https://www.duolingo.com/profile/AngadBhalla',
 		'https://www.reddit.com/user/Anga205',
 	],
 } as const;

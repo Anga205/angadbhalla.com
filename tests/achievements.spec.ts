@@ -205,25 +205,27 @@ test('university page lists every role as a linkedin-style entry', async ({ page
 	const club = cards.filter({ hasText: 'The Alcoding Club' });
 	await expect(club.getByRole('heading', { level: 3 })).toHaveText('Club Head');
 	await expect(club.locator('.card-org')).toHaveText('The Alcoding Club');
-	await expect(club.locator('.card-dept')).toHaveText('Core Team');
 	await expect(club.locator('.card-dates')).toHaveText('September 2024 — April 2025');
 
 	const course = cards.filter({ hasText: 'PESU I/O' });
 	await expect(course.getByRole('heading', { level: 3 })).toHaveText('Subject Matter Expert (SME)');
-	await expect(course.locator('.card-dept')).toHaveText('Competitive Programming');
+	await expect(course.locator('.card-org')).toHaveText('PESU I/O');
 	await expect(course.locator('.card-dates')).toHaveText('August — November 2025');
 
 	const intern = cards.filter({ hasText: 'cRAIS' });
 	await expect(intern.getByRole('heading', { level: 3 })).toHaveText('Robotics Intern');
-	await expect(intern.locator('.card-dept')).toHaveText('Remote Robotics (ReRo) team');
+	await expect(intern.locator('.card-org')).toHaveText(
+		'cRAIS (Center for Robotics Automation and Intelligent Systems)',
+	);
 	await expect(intern.locator('.card-dates')).toHaveText('June — July 2025');
 
 	const ras = cards.filter({ hasText: 'TAMS' });
 	await expect(ras.getByRole('heading', { level: 3 })).toHaveText('IEEE RAS Speaker');
 	await expect(ras.locator('.card-org')).toHaveText('TAMS (The Amateur Manager and Scientist)');
 
-	// The old label column is gone.
+	// The old label column and the separate department line are both gone.
 	await expect(page.locator('.card-role-label')).toHaveCount(0);
+	await expect(page.locator('.card-dept')).toHaveCount(0);
 });
 
 test('robotics internship opens a menu with its linkedin post', async ({ page }) => {
