@@ -148,8 +148,6 @@ const schema: JsonLd[] = [
 					</form>
 				</section>
 			</div>
-
-				<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
 			</Window>
 		</div>
 	</Pager>
@@ -482,73 +480,6 @@ const schema: JsonLd[] = [
 		outline-offset: 2px;
 	}
 
-	/*
-	 * Toasts stack in the bottom-right corner. On phones the fixed navigation
-	 * rail owns the bottom of the screen, so the stack is lifted above it.
-	 */
-	.toasts {
-		position: fixed;
-		right: 1rem;
-		bottom: 1rem;
-		z-index: 30;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.4rem;
-		pointer-events: none;
-	}
-
-	.toast {
-		max-width: min(22rem, calc(100vw - 2rem));
-		padding: 0.5rem 0.7rem;
-		border: 1px solid #3d3846;
-		border-radius: 4px;
-		background: #1c1c1c;
-		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
-		color: #deddda;
-		font-size: 0.75rem;
-		line-height: 1.5;
-		pointer-events: auto;
-		cursor: pointer;
-		animation: toast-in 140ms ease-out;
-	}
-
-	.toast[data-kind='ok'] {
-		border-color: #2f5c3f;
-		color: #26a269;
-	}
-
-	.toast[data-kind='error'] {
-		border-color: #6b2b2b;
-		color: #ff7b72;
-	}
-
-	.toast.is-leaving {
-		opacity: 0;
-		transition: opacity 160ms ease-in;
-	}
-
-	@keyframes toast-in {
-		from {
-			opacity: 0;
-			transform: translateY(0.35rem);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.toast {
-			animation: none;
-		}
-
-		.toast.is-leaving {
-			transition: none;
-		}
-	}
-
 	@media (max-width: 899px) {
 		.contact-grid {
 			grid-template-columns: minmax(0, 1fr);
@@ -575,19 +506,6 @@ const schema: JsonLd[] = [
 			padding-left: 0;
 			border-top: 1px solid var(--color-line);
 			border-left: 0;
-		}
-	}
-
-	@media (max-width: 639px) {
-		.toasts {
-			right: 0.75rem;
-			bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
-			left: 0.75rem;
-			align-items: stretch;
-		}
-
-		.toast {
-			max-width: none;
 		}
 	}
 

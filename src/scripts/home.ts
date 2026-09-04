@@ -12,13 +12,11 @@ import {
 	EMAILJS_SERVICE_ID,
 	EMAILJS_TEMPLATE_ID,
 } from '../data/emailjs';
+import { showToast } from './toast';
 
-/** How long a toast stays on screen before it fades out. */
-const TOAST_LIFETIME = 4000;
-/** Keep the stack short so it never covers the form it is reporting on. */
-const TOAST_LIMIT = 3;
-
-type ToastKind = 'ok' | 'error' | 'info';
+/** Toasts are document-level, so the in-flight message is told apart by id. */
+const FORM_STATUS = 'contact-status';
+const VALIDATION = 'contact-validation';
 
 const initialized = new WeakSet<object>();
 
@@ -81,33 +79,6 @@ function scrollToHash(root: ParentNode): void {
 function initContactForm(root: ParentNode): void {
 	const form = root.querySelector<HTMLFormElement>('#contact-form');
 	const send = root.querySelector<HTMLButtonElement>('#send');
-	const toasts = root.querySelector<HTMLElement>('#toasts');
-
-	function dismiss(toast: HTMLElement) {
-		toast.classList.add('is-leaving');
-		toast.addEventListener('transitionend', () => toast.remove(), { once: true });
-		// Reduced motion skips the transition, so remove on a timer as well.
-		window.setTimeout(() => toast.remove(), 400);
-	}
-
-	function showToast(kind: ToastKind, text: string) {
-		if (!toasts) return;
-
-		const toast = document.createElement('p');
-		toast.className = 'toast';
-		toast.dataset.kind = kind;
-		toast.textContent = text;
-		toast.addEventListener('click', () => dismiss(toast));
-
-		toasts.append(toast);
-
-		// Drop the oldest toasts once the stack is full.
-		while (toasts.children.length > TOAST_LIMIT) {
-			toasts.firstElementChild?.remove();
-		}
-
-		window.setTimeout(() => dismiss(toast), TOAST_LIFETIME);
-	}
 
 	if (!form || !send) return;
 
@@ -119,12 +90,14 @@ function initContactForm(root: ParentNode): void {
 		const message = String(data.get('message') ?? '').trim();
 
 		if (!email || !message) {
-			showToast('error', 'email and message are required.');
+			showToast('error', 'email and message are required.', { id: VALIDATION });
 			return;
 		}
 
 		send.disabled = true;
-		showToast('info', 'sending...');
+		// Held open for a slow send, but replaced in place as soon as the
+		// result arrives, so it never lingers beside the outcome.
+		showToast('info', 'sending...', { id: FORM_STATUS, duration: 30_000 });
 
 		try {
 			await emailjs.send(
@@ -139,9 +112,9 @@ function initContactForm(root: ParentNode): void {
 				{ publicKey: EMAILJS_PUBLIC_KEY },
 			);
 			form.reset();
-			showToast('ok', 'sent. thanks.');
+			showToast('ok', 'sent. thanks.', { id: FORM_STATUS });
 		} catch {
-			showToast('error', 'could not send. email me directly instead.');
+			showToast('error', 'could not send. email me directly instead.', { id: FORM_STATUS });
 		} finally {
 			send.disabled = false;
 		}
