@@ -59,26 +59,52 @@ const schema: JsonLd[] = [
 				</div>
 
 				{/*
-				 * Portrait photo, fully rounded.
+				 * Portrait photo, fully rounded, with a coin-flip on hover.
 				 *
-				 * The LQIP is painted as the background so the circle is filled
-				 * the moment the box exists; the real AVIF fades in over it once
-				 * decoded. `quality` is raised from Astro's default of 50, which
-				 * visibly smeared the face.
+				 * Two faces sit back to back inside a `preserve-3d` box: the
+				 * photo on the front, the site mark on the back. Hovering the
+				 * outer `.portrait-photo` (which never rotates, so the pointer
+				 * cannot fall off an edge-on element mid-flip) turns the box
+				 * 180deg around Y and the back face comes into view.
+				 *
+				 * The LQIP is painted as the background of the front face so the
+				 * circle is filled the moment the box exists; the real AVIF fades
+				 * in over it once decoded. `quality` is raised from Astro's
+				 * default of 50, which visibly smeared the face.
 				 */}
 				<div class="portrait-photo" style={`--lqip: url(${PORTRAIT_LQIP})`}>
-					<Image
-						src={portrait}
-						alt="Angad Bhalla, a software engineer in Bengaluru, smiling in a black beanie and glasses."
-						widths={[128, 256, 512]}
-						sizes="(max-width: 899px) 6rem, 16rem"
-						format="avif"
-						quality={PORTRAIT_QUALITY}
-						loading="eager"
-						fetchpriority="high"
-						decoding="async"
-						class="portrait-img"
-					/>
+					<div class="portrait-flip">
+						<div class="portrait-face portrait-face--front">
+							<Image
+								src={portrait}
+								alt="Angad Bhalla, a software engineer in Bengaluru, smiling in a black beanie and glasses."
+								widths={[128, 256, 512]}
+								sizes="(max-width: 899px) 6rem, 16rem"
+								format="avif"
+								quality={PORTRAIT_QUALITY}
+								loading="eager"
+								fetchpriority="high"
+								decoding="async"
+								class="portrait-img"
+							/>
+						</div>
+						{/*
+						 * Decorative: the mark repeats the identity the alt text
+						 * already carries, so it is hidden from assistive tech.
+						 * The SVG is transparent and already oval, so it gets no
+						 * border radius and no border of its own.
+						 */}
+						<div class="portrait-face portrait-face--back" aria-hidden="true">
+							<img
+								src="/favicon.svg"
+								alt=""
+								width="955"
+								height="927"
+								decoding="async"
+								class="portrait-mark"
+							/>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -160,12 +186,48 @@ const schema: JsonLd[] = [
 		display: grid;
 		align-items: start;
 		justify-items: center;
+		position: relative;
+		/* Depth for the flip. Without it the rotation reads as a flat squash. */
+		perspective: 900px;
 	}
 
-	.portrait-photo img {
-		display: block;
+	/*
+	 * The flipping box. It is the only element that rotates, and it is sized
+	 * here rather than on the faces so both faces share one square.
+	 */
+	.portrait-flip {
+		position: relative;
 		width: 100%;
 		max-width: 16rem;
+		aspect-ratio: 1;
+		transform-style: preserve-3d;
+		transition: transform 600ms cubic-bezier(0.45, 0, 0.55, 1);
+	}
+
+	.portrait-photo:hover .portrait-flip {
+		transform: rotateY(180deg);
+	}
+
+	/*
+	 * Both faces are stacked in the same box and hidden when they turn away.
+	 * `transform-style` stays flat on the faces themselves so their contents
+	 * are hidden along with them.
+	 */
+	.portrait-face {
+		position: absolute;
+		inset: 0;
+		backface-visibility: hidden;
+		-webkit-backface-visibility: hidden;
+	}
+
+	.portrait-face--back {
+		transform: rotateY(180deg);
+	}
+
+	.portrait-img {
+		display: block;
+		width: 100%;
+		height: 100%;
 		aspect-ratio: 1;
 		border-radius: 9999px;
 		border: 1px solid #3d3846;
@@ -173,21 +235,27 @@ const schema: JsonLd[] = [
 	}
 
 	/*
-	 * Blur-up: the 24x24 LQIP is painted as the background of the circle, so
-	 * the portrait is never an empty box. The real image fades in over it once
-	 * it has decoded, which keeps the sharp version from popping in abruptly.
+	 * The mark is transparent and already oval, so it is deliberately not
+	 * rounded and carries no border — a circle would clip its edges.
 	 */
-	.portrait-photo {
-		position: relative;
+	.portrait-mark {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
 	}
 
-	.portrait-photo::before {
+	/*
+	 * Blur-up: the 24x24 LQIP is painted as the background of the front face,
+	 * so the portrait is never an empty box. The real image fades in over it
+	 * once it has decoded, which keeps the sharp version from popping in
+	 * abruptly. It lives on the face, not the outer box, so it flips away with
+	 * the photo instead of showing through the transparent mark.
+	 */
+	.portrait-face--front::before {
 		content: '';
 		position: absolute;
 		inset: 0;
-		width: 100%;
-		max-width: 16rem;
-		aspect-ratio: 1;
 		border-radius: 9999px;
 		background-image: var(--lqip);
 		background-size: cover;
@@ -196,7 +264,7 @@ const schema: JsonLd[] = [
 		transition: opacity 300ms ease-out;
 	}
 
-	:global(html.js) .portrait-photo:has(.portrait-img.is-loaded)::before {
+	:global(html.js) .portrait-face--front:has(.portrait-img.is-loaded)::before {
 		opacity: 0;
 	}
 
@@ -214,9 +282,18 @@ const schema: JsonLd[] = [
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.portrait-photo::before,
+		.portrait-face--front::before,
 		.portrait-img {
 			transition: none;
+		}
+
+		/* No flip at all: the photo simply stays put. */
+		.portrait-flip {
+			transition: none;
+		}
+
+		.portrait-photo:hover .portrait-flip {
+			transform: none;
 		}
 	}
 
@@ -530,7 +607,7 @@ const schema: JsonLd[] = [
 			margin-bottom: 0.5rem;
 		}
 
-		.portrait-photo img {
+		.portrait-flip {
 			width: 6rem;
 			max-width: 6rem;
 		}
