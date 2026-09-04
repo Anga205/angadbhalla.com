@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
+import Pager from '../components/Pager.astro';
 import Window from '../components/Window.astro';
 import { Mail, Github, Linkedin, Instagram, Send } from 'lucide-astro';
 import Discord from '../components/icons/Discord.astro';
@@ -37,11 +38,11 @@ const schema: JsonLd[] = [
 >
 	<PortfolioMenu minimized />
 
-	<main
-		id="main"
-		class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
-	>
-		<Window title="anga@portfolio — home">
+	<Pager active="home">
+		<div
+			class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+		>
+			<Window title="anga@portfolio — home">
 			<div class="intro mb-8 border-b border-line pb-8">
 				<p class="intro-prompt text-[0.75rem] text-[#26a269]">$ cat home.txt</p>
 				<h1 class="intro-heading mb-2 text-[1.35rem] font-normal">Angad Bhalla</h1>
@@ -122,9 +123,10 @@ const schema: JsonLd[] = [
 				</section>
 			</div>
 
-			<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
-		</Window>
-	</main>
+				<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
+			</Window>
+		</div>
+	</Pager>
 </Base>
 
 <style>
@@ -536,128 +538,7 @@ const schema: JsonLd[] = [
 </style>
 
 <script>
-	/*
-	 * Blur-up for the portrait.
-	 *
-	 * `html.js` is set first so the fade-in styles only apply when this script
-	 * is actually running; without it the image is visible immediately. The
-	 * class is added on load, or straight away if the image was already cached.
-	 */
-	document.documentElement.classList.add('js');
+	import { initHome } from '../scripts/home';
 
-	const portraitImage = document.querySelector<HTMLImageElement>('.portrait-img');
-	if (portraitImage) {
-		const reveal = () => portraitImage.classList.add('is-loaded');
-		if (portraitImage.complete && portraitImage.naturalWidth > 0) reveal();
-		else portraitImage.addEventListener('load', reveal, { once: true });
-		// Never leave the image hidden if decoding fails.
-		portraitImage.addEventListener('error', reveal, { once: true });
-	}
-</script>
-
-<script>
-	// Age is computed on the client so it stays correct without a rebuild.
-	const ageElement = document.getElementById('age');
-	if (ageElement) {
-		const birthday = new Date(1117650600 * 1000);
-		const now = new Date();
-		let age = now.getUTCFullYear() - birthday.getUTCFullYear();
-		const monthDelta = now.getUTCMonth() - birthday.getUTCMonth();
-		if (monthDelta < 0 || (monthDelta === 0 && now.getUTCDate() < birthday.getUTCDate())) {
-			age -= 1;
-		}
-		ageElement.textContent = String(age);
-	}
-
-	// `/contact` redirects to `/#contact`. The page scrolls inside `main`, not
-	// the document, so the browser's own anchor jump never moves anything and
-	// the form has to be brought into view by hand.
-	if (window.location.hash === '#contact') {
-		document.getElementById('contact')?.scrollIntoView({ block: 'start' });
-	}
-</script>
-
-<script>
-	import emailjs from '@emailjs/browser';
-	import {
-		EMAILJS_APP,
-		EMAILJS_PUBLIC_KEY,
-		EMAILJS_SERVICE_ID,
-		EMAILJS_TEMPLATE_ID,
-	} from '../data/emailjs';
-
-	const form = document.getElementById('contact-form') as HTMLFormElement | null;
-	const send = document.getElementById('send') as HTMLButtonElement | null;
-	const toasts = document.getElementById('toasts');
-
-	/** How long a toast stays on screen before it fades out. */
-	const TOAST_LIFETIME = 4000;
-	/** Keep the stack short so it never covers the form it is reporting on. */
-	const TOAST_LIMIT = 3;
-
-	type ToastKind = 'ok' | 'error' | 'info';
-
-	function dismiss(toast: HTMLElement) {
-		toast.classList.add('is-leaving');
-		toast.addEventListener('transitionend', () => toast.remove(), { once: true });
-		// Reduced motion skips the transition, so remove on a timer as well.
-		window.setTimeout(() => toast.remove(), 400);
-	}
-
-	function showToast(kind: ToastKind, text: string) {
-		if (!toasts) return;
-
-		const toast = document.createElement('p');
-		toast.className = 'toast';
-		toast.dataset.kind = kind;
-		toast.textContent = text;
-		toast.addEventListener('click', () => dismiss(toast));
-
-		toasts.append(toast);
-
-		// Drop the oldest toasts once the stack is full.
-		while (toasts.children.length > TOAST_LIMIT) {
-			toasts.firstElementChild?.remove();
-		}
-
-		window.setTimeout(() => dismiss(toast), TOAST_LIFETIME);
-	}
-
-	if (form && send) {
-		form.addEventListener('submit', async (event) => {
-			event.preventDefault();
-
-			const data = new FormData(form);
-			const email = String(data.get('email') ?? '').trim();
-			const message = String(data.get('message') ?? '').trim();
-
-			if (!email || !message) {
-				showToast('error', 'email and message are required.');
-				return;
-			}
-
-			send.disabled = true;
-			showToast('info', 'sending...');
-
-			try {
-				await emailjs.send(
-					EMAILJS_SERVICE_ID,
-					EMAILJS_TEMPLATE_ID,
-					{
-						time: new Date().toLocaleString(),
-						app: EMAILJS_APP,
-						message,
-						contact: email,
-					},
-					{ publicKey: EMAILJS_PUBLIC_KEY },
-				);
-				form.reset();
-				showToast('ok', 'sent. thanks.');
-			} catch {
-				showToast('error', 'could not send. email me directly instead.');
-			} finally {
-				send.disabled = false;
-			}
-		});
-	}
+	initHome(document);
 </script>

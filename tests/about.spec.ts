@@ -35,9 +35,13 @@ test('home page shows a rounded portrait photo in the intro', async ({ page }) =
 test('philosophy does not live on the home page any more', async ({ page }) => {
 	await page.goto('/');
 
-	await expect(page.locator('.philosophy')).toHaveCount(0);
-	await expect(page.locator('#portrait')).toHaveCount(0);
-	await expect(page.getByText('The goofier the project, the better.')).toHaveCount(0);
+	// Scoped to the home panel: on mobile the pager prefetches the other
+	// destinations into their own panels, so their markup is in the DOM.
+	const home = page.locator('[data-panel="home"]');
+
+	await expect(home.locator('.philosophy')).toHaveCount(0);
+	await expect(home.locator('#portrait')).toHaveCount(0);
+	await expect(home.getByText('The goofier the project, the better.')).toHaveCount(0);
 });
 
 test('home page links out to every social profile', async ({ page }) => {

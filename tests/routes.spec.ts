@@ -4,8 +4,16 @@ test('sidebar uses the Adwaita dark palette', async ({ page }) => {
 	await page.goto('/');
 
 	await expect(page.locator('#wayfinder')).toHaveCSS('background-color', 'rgb(23, 23, 23)');
-	await expect(page.locator('main .window')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
-	await expect(page.locator('main .headerbar')).toHaveCSS('background-color', 'rgb(48, 48, 48)');
+	// Scoped to the home panel: on mobile the pager also holds the other
+	// destinations, which are prefetched into their own panels.
+	await expect(page.locator('[data-panel="home"] .window')).toHaveCSS(
+		'background-color',
+		'rgb(0, 0, 0)',
+	);
+	await expect(page.locator('[data-panel="home"] .headerbar')).toHaveCSS(
+		'background-color',
+		'rgb(48, 48, 48)',
+	);
 	await expect(page.locator('#wayfinder .terminal')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
 	await expect(
 		page.locator('.waypoint-link[aria-current="page"] .waypoint-icon'),

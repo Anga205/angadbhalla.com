@@ -70,7 +70,7 @@ const menuCards = groups
 ---
 
 <section
-	class="achievements ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+	class="page achievements ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
 	id={sectionId}
 >
 	<Window title={windowTitle} width="wide">
@@ -154,36 +154,7 @@ const menuCards = groups
 </style>
 
 <script>
-	/**
-	 * Live LeetCode solve count.
-	 *
-	 * The card ships with the fallback sentence ending in "1337+ solves", so the
-	 * page is correct before any JavaScript runs. This script swaps in the exact
-	 * number once the API answers, and does nothing at all if the request fails —
-	 * the static sentence is already the fallback.
-	 *
-	 * The number is the raw `totalSolved` value, formatted with locale commas and
-	 * no rounding, flooring, or "+" suffix: 1414 shows as "1,414".
-	 */
-	const LEETCODE_API = 'https://leetcode-api-faisalshohag.anga.codes/Anga205';
+	import { initLeetCodeCounts } from '../scripts/achievement-cards';
 
-	const summaries = document.querySelectorAll<HTMLElement>('[data-leetcode-summary]');
-
-	if (summaries.length > 0) {
-		const format = (solved: number) =>
-			`Not that quantity and quality are the same thing, but it's an achievement of consistency. This number currently sits at ${solved.toLocaleString('en-US')} solves`;
-
-		fetch(LEETCODE_API)
-			.then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
-			.then((data: { totalSolved?: unknown }) => {
-				const solved = Number(data?.totalSolved);
-				if (!Number.isFinite(solved) || solved <= 0) return;
-
-				for (const element of summaries) {
-					element.textContent = format(solved);
-				}
-			})
-			// A failed request leaves the static "1337+ solves" in place.
-			.catch(() => {});
-	}
+	initLeetCodeCounts(document);
 </script>

@@ -1,0 +1,92 @@
+---
+/**
+ * Pager.astro
+ *
+ * The mobile swipe pager: the five top-level destinations laid out side by
+ * side in one horizontally scroll-snapping container, so a drag follows the
+ * finger and snaps to the nearest page on release.
+ *
+ * Only the active panel is server-rendered. The rest are empty placeholders
+ * that `src/scripts/pager.ts` fills in on demand, which keeps the first paint
+ * as cheap as a single page.
+ *
+ * On desktop the pager is a plain block wrapper: the panels stack as ordinary
+ * blocks and the active page's own `main.page` keeps its sidebar offset and
+ * its own scroll container.
+ */
+import { DESTINATIONS, type DestinationId } from '../data/destinations';
+
+interface Props {
+	/** The destination this page renders. */
+	active: DestinationId;
+}
+
+const { active } = Astro.props;
+---
+
+<main class="pager" id="main" data-pager data-active={active}>
+	{
+		DESTINATIONS.map((destination) =>
+			destination.id === active ? (
+				<div class="pager-panel" data-panel={destination.id} data-href={destination.href}>
+					<slot />
+				</div>
+			) : (
+				<div
+					class="pager-panel"
+					data-panel={destination.id}
+					data-href={destination.href}
+					inert
+				/>
+			),
+		)
+	}
+</main>
+
+<style>
+	@media (max-width: 639px) {
+		.pager {
+			display: flex;
+			height: 100vh;
+			height: 100dvh;
+			overflow-x: auto;
+			overflow-y: hidden;
+			scroll-snap-type: x mandatory;
+			overscroll-behavior-x: contain;
+			scrollbar-width: none;
+			-webkit-overflow-scrolling: touch;
+		}
+
+		.pager::-webkit-scrollbar {
+			display: none;
+		}
+
+		.pager-panel {
+			display: block;
+			position: relative;
+			flex: 0 0 100%;
+			width: 100%;
+			height: 100%;
+			overflow-x: hidden;
+			overflow-y: auto;
+			scroll-snap-align: start;
+			scroll-snap-stop: always;
+			overscroll-behavior-y: contain;
+		}
+
+		/* The panel is the scroll container on mobile, so the page inside it
+		   must not be a second one. `.page` belongs to a child component, so it
+		   needs `:global()` to escape this component's style scope. */
+		.pager-panel > :global(.page) {
+			height: auto;
+			min-height: 100%;
+			overflow: visible;
+		}
+	}
+</style>
+
+<script>
+	import { initPager } from '../scripts/pager';
+
+	initPager();
+</script>
