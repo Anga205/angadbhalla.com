@@ -76,6 +76,26 @@ function scrollToHash(root: ParentNode): void {
 	root.querySelector('#contact')?.scrollIntoView({ block: 'start' });
 }
 
+/**
+ * The timestamp shown in the notification email's subject.
+ *
+ * `toLocaleString()` follows the visitor's locale, which produced
+ * `11/17/2026, 5:27:56 AM` — and EmailJS HTML-escapes the slashes into
+ * `&#x2F;`, so the subject arrived mangled. A fixed `en-GB` format gives
+ * `20 Nov 2026, 3:17 am`: unambiguous, no slashes to escape, and no seconds
+ * to make the subject noisy.
+ */
+function formatTimestamp(date: Date): string {
+	return new Intl.DateTimeFormat('en-GB', {
+		day: 'numeric',
+		month: 'short',
+		year: 'numeric',
+		hour: 'numeric',
+		minute: '2-digit',
+		hour12: true,
+	}).format(date);
+}
+
 function initContactForm(root: ParentNode): void {
 	const form = root.querySelector<HTMLFormElement>('#contact-form');
 	const send = root.querySelector<HTMLButtonElement>('#send');
@@ -104,7 +124,7 @@ function initContactForm(root: ParentNode): void {
 				EMAILJS_SERVICE_ID,
 				EMAILJS_TEMPLATE_ID,
 				{
-					time: new Date().toLocaleString(),
+					time: formatTimestamp(new Date()),
 					app: EMAILJS_APP,
 					message,
 					contact: email,
