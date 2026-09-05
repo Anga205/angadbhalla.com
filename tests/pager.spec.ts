@@ -145,6 +145,98 @@ test('a swipe settles on the next panel and updates the URL', async ({ page }) =
 	await expect(pager).toHaveAttribute('data-active', 'projects');
 });
 
+test('the rail follows the swipe continuously', async ({ page }) => {
+	const pager = page.locator('[data-pager]');
+	const rail = page.locator('#wayfinder');
+	const width = await pager.evaluate((el) => el.clientWidth);
+
+	// Mandatory snapping would yank the pager back to a panel, so suspend it
+	// to park the pager exactly halfway between projects and university.
+	await pager.evaluate((el, distance) => {
+		el.style.scrollSnapType = 'none';
+		el.scrollLeft = distance;
+	}, width * 1.5);
+
+	// The indicator's progress is the fractional panel index.
+	await expect
+		.poll(() => rail.evaluate((el) => Number(el.style.getPropertyValue('--pager-progress'))))
+		.toBeCloseTo(1.5, 2);
+
+	// Both neighbours sit at 50% brightness, and the rest are at 0.
+	const proximity = await page
+		.locator('[data-destination-link]')
+		.evaluateAll((links) =>
+			links.map((link) => ({
+				id: (link as HTMLElement).dataset.destination,
+				value: Number((link as HTMLElement).style.getPropertyValue('--proximity')),
+			})),
+		);
+	const byId = Object.fromEntries(proximity.map((item) => [item.id, item.value]));
+	expect(byId.projects).toBeCloseTo(0.5, 2);
+	expect(byId.university).toBeCloseTo(0.5, 2);
+	expect(byId.home).toBe(0);
+	expect(byId.achievements).toBe(0);
+
+	// The bar itself has moved half a column past the projects column: one
+	// step is the bar's own width plus the grid gap, so 1.5 steps is 1.5x that.
+	const bar = page.locator('.rail-progress');
+	const geometry = await bar.evaluate((el) => {
+		const box = el.getBoundingClientRect();
+		const railBox = el.parentElement!.getBoundingClientRect();
+		return { left: box.left - railBox.left, width: box.width };
+	});
+	const gap = 4; // 0.25rem
+	const expected = 9.6 + 1.5 * (geometry.width + gap); // 0.6rem rail padding
+	expect(geometry.left).toBeCloseTo(expected, 0);
+});
+
+test('the URL and rail flip at the midpoint, before the swipe settles', async ({ page }) => {
+	const pager = page.locator('[data-pager]');
+	const width = await pager.evaluate((el) => el.clientWidth);
+
+	// Just past halfway to projects, with no pause for the settle timer.
+	// Snapping is suspended so the pager can rest between panels.
+	await pager.evaluate((el, distance) => {
+		el.style.scrollSnapType = 'none';
+		el.scrollLeft = distance;
+	}, width * 0.6);
+
+	await expect(page).toHaveURL(/\/projects$/);
+	await expect(page.locator('[data-pager]')).toHaveAttribute('data-active', 'projects');
+	await expect(page.locator('[data-destination-link][aria-current="page"]')).toHaveAttribute(
+		'data-destination',
+		'projects',
+	);
+});
+
+test('a swipe dragged back to its origin adds no history entry', async ({ page }) => {
+	const pager = page.locator('[data-pager]');
+	const width = await pager.evaluate((el) => el.clientWidth);
+	const before = await page.evaluate(() => history.length);
+
+	// One continuous gesture: press, cross the midpoint, then drag back to
+	// where it began. The steps are closer together than the settle delay, so
+	// the gesture is never mistaken for two separate swipes. Snapping is
+	// suspended so the browser does not animate between panels underneath.
+	await pager.evaluate(async (el, distance) => {
+		el.style.scrollSnapType = 'none';
+		el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+		const step = (value: number) =>
+			new Promise<void>((resolve) => {
+				el.scrollLeft = value;
+				setTimeout(resolve, 20);
+			});
+		for (const fraction of [0.3, 0.6, 0.7, 0.5, 0.2, 0]) {
+			await step(distance * fraction);
+		}
+		el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+	}, width);
+
+	await expect(page).toHaveURL(/\/$/);
+	await expect(page.locator('[data-pager]')).toHaveAttribute('data-active', 'home');
+	expect(await page.evaluate(() => history.length)).toBe(before);
+});
+
 test('each panel keeps its own vertical scroll position', async ({ page }) => {
 	const home = page.locator('[data-panel="home"]');
 

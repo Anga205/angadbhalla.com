@@ -24,12 +24,23 @@ const activeId =
 		return path === href || (href !== '/' && path.startsWith(`${href}/`));
 	})?.id ?? DESTINATIONS[0].id;
 
+// The mobile rail's indicator and brightness are driven by these two custom
+// properties. `src/scripts/pager.ts` rewrites them on every scroll frame; the
+// server-rendered values keep the rail correct before that script runs (and
+// for visitors without JavaScript).
+const activeIndex = Math.max(
+	0,
+	DESTINATIONS.findIndex((destination) => destination.id === activeId),
+);
+const railStyle = `--pager-progress: ${activeIndex};`;
+
 ---
 
 <section
 	class:list={['wayfinder', minimized && 'is-minimized']}
 	id="wayfinder"
 	tabindex="-1"
+	style={railStyle}
 >
 	<div class="window">
 		<div class="headerbar">
@@ -41,6 +52,14 @@ const activeId =
 		</div>
 
 		<div class="terminal">
+			{/*
+			 * The mobile rail's sliding indicator. `--pager-progress` is written
+			 * by `src/scripts/pager.ts` on every scroll frame, so the bar tracks
+			 * the finger instead of jumping once the swipe settles. Hidden on
+			 * desktop, where the sidebar has no rail.
+			 */}
+			<span class="rail-progress" aria-hidden="true"></span>
+
 			<div class="command-line" aria-hidden="true">
 				<span class="prompt">$</span>
 				<span>ls ~/portfolio</span>
@@ -64,6 +83,7 @@ const activeId =
 									aria-label={`${destination.label}: ${destination.description}`}
 									data-destination={destination.id}
 									data-destination-link={destination.id}
+									style={`--proximity: ${index === activeIndex ? 1 : 0};`}
 								>
 									<span class="waypoint-icon" aria-hidden="true">
 										<Icon size={16} strokeWidth={1.5} />
@@ -315,6 +335,11 @@ const activeId =
 		font-size: 0.8125rem;
 	}
 
+	/* The sliding indicator only exists in the mobile rail. */
+	.rail-progress {
+		display: none;
+	}
+
 	@media (max-width: 639px) {
 		.wayfinder.is-minimized {
 			inset: auto 0 0;
@@ -332,6 +357,44 @@ const activeId =
 
 		.wayfinder.is-minimized .terminal {
 			padding: 0.5rem 0.6rem;
+			position: relative;
+		}
+
+		/*
+		 * The indicator is one column wide and slides by one column plus the
+		 * grid gap per unit of `--pager-progress`. A percentage translate is
+		 * relative to the bar's own width, so `100% + gap` is exactly one step
+		 * and `--pager-progress: 1.5` lands halfway between two columns.
+		 */
+		.wayfinder.is-minimized .rail-progress {
+			display: block;
+			position: absolute;
+			top: 0;
+			left: 0.6rem;
+			width: calc((100% - 2.2rem) / 5);
+			height: 2px;
+			border-radius: 1px;
+			background: #39ff88;
+			transform: translateX(calc(var(--pager-progress, 0) * (100% + 0.25rem)));
+			will-change: transform;
+		}
+
+		/*
+		 * Brightness follows proximity: `--proximity` is 1 on the panel the
+		 * visitor is looking at and falls to 0 one panel away, so a half-swipe
+		 * leaves both neighbours at 50%.
+		 *
+		 * These only apply while a swipe is in flight (`is-swiping`, set by
+		 * `src/scripts/pager.ts`). At rest the rail keeps its exact palette
+		 * colours, so the current item is the plain accent green rather than a
+		 * colour-mix of it.
+		 */
+		.wayfinder.is-minimized.is-swiping .waypoint-icon {
+			color: color-mix(in srgb, #39ff88 calc(var(--proximity, 0) * 100%), #737373);
+		}
+
+		.wayfinder.is-minimized.is-swiping .waypoint-label-short {
+			color: color-mix(in srgb, #ffffff calc(var(--proximity, 0) * 100%), #a5a3a9);
 		}
 
 		.wayfinder.is-minimized .listing {
