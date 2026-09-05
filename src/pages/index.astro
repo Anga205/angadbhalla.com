@@ -218,6 +218,22 @@ const schema: JsonLd[] = [
 		-webkit-backface-visibility: hidden;
 	}
 
+	/*
+	 * The front face needs a transform of its own, even though it is the
+	 * identity. `backface-visibility` only applies to an element that is
+	 * itself 3D-transformed and participates in a 3D rendering context; an
+	 * untransformed child of a `preserve-3d` parent is flattened into the
+	 * parent's plane, so it has no back face to hide. Chromium hides it
+	 * anyway, but Firefox follows the spec and keeps painting the photo
+	 * through the flipped mark (Bugzilla 1201471). `rotateY(0deg)` is an
+	 * identity transform, so nothing moves — it only opts the face into the
+	 * 3D context. It also keeps the transition interpolating as a clean
+	 * `rotateY` pair rather than falling back to matrix decomposition.
+	 */
+	.portrait-face--front {
+		transform: rotateY(0deg);
+	}
+
 	.portrait-face--back {
 		transform: rotateY(180deg);
 	}
