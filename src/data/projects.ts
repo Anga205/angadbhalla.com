@@ -33,6 +33,12 @@ export interface Project {
 	repo?: string;
 	docs?: string;
 	post?: string;
+	/**
+	 * Root-relative path to a long-form write-up for this project. When set,
+	 * the card's title links here instead of opening the links dialog, so the
+	 * card has exactly one primary destination.
+	 */
+	detail?: string;
 }
 
 export const PROJECTS: Project[] = [
@@ -50,6 +56,7 @@ export const PROJECTS: Project[] = [
 		live: 'https://drive.anga.codes',
 		repo: 'https://github.com/Anga205/AngaDriveV3',
 		post: 'https://lnkd.in/p/dknw77Br',
+		detail: '/projects/angadrive',
 	},
 	{
 		id: 'leetcode-tracker',

@@ -1,0 +1,174 @@
+---
+/**
+ * /projects/angadrive
+ *
+ * A long-form technical report on AngaDriveV3. Deliberately outside the
+ * five-destination mobile pager: `Pager` only has five panels, and this is a
+ * deep page reached from a project card, so it is an ordinary route with the
+ * standard `main.page` scroll container and the minimized sidebar.
+ *
+ * The page is laid out as a document: a title block, a short abstract, and the
+ * report body. There is no table of contents, no badge row, and no card grid —
+ * those are product-page patterns, and this is a write-up.
+ *
+ * Everything in `<head>` is produced by `Seo.astro` via `Base`; this file only
+ * supplies the values and the JSON-LD nodes.
+ */
+import Base from '../../layouts/Base.astro';
+import PortfolioMenu from '../../components/PortfolioMenu.astro';
+import Window from '../../components/Window.astro';
+import AngaDriveWriteUp from '../../components/AngaDriveWriteUp.astro';
+import { ANGADRIVE_META } from '../../data/angadrive';
+import { PROJECTS } from '../../data/projects';
+import {
+	breadcrumbSchema,
+	creativeWorkSchema,
+	softwareSourceCodeSchema,
+	type JsonLd,
+} from '../../lib/seo';
+import { ArrowLeft } from 'lucide-astro';
+
+const meta = ANGADRIVE_META;
+const project = PROJECTS.find((item) => item.id === 'angadrive');
+
+const schema: JsonLd[] = [
+	softwareSourceCodeSchema({
+		path: '/projects/angadrive',
+		name: meta.name,
+		description: meta.description,
+		codeRepository: project?.repo,
+		programmingLanguage: project?.stack,
+		dateCreated: project?.dateCreated,
+		url: project?.live,
+	}),
+	creativeWorkSchema({
+		path: '/projects/angadrive',
+		name: `${meta.name} — technical report`,
+		description: meta.description,
+		type: 'TechArticle',
+		keywords: [
+			'Go',
+			'SolidJS',
+			'SQLite',
+			'WebSocket',
+			'in-memory cache',
+			'content-addressed storage',
+			'ffmpeg',
+			'chunked uploads',
+			'bounded concurrency',
+			'self-hosted',
+		],
+	}),
+	breadcrumbSchema([
+		{ name: 'home', path: '/' },
+		{ name: 'projects', path: '/projects' },
+		{ name: 'angadrive', path: '/projects/angadrive' },
+	]),
+];
+---
+
+<Base
+	title={meta.title}
+	description={meta.description}
+	path="/projects/angadrive"
+	type="article"
+	keywords={[...meta.keywords]}
+	{schema}
+	publishedTime="2025-01-01"
+>
+	<PortfolioMenu minimized />
+
+	<main
+		id="main"
+		class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+	>
+		<Window title="anga@portfolio — projects/angadrive" width="wide">
+			<nav
+				class="crumbs mb-4 flex items-center gap-[0.4rem] text-[0.6875rem] text-dim"
+				aria-label="Breadcrumb"
+			>
+				<a
+					class="text-dim no-underline hover:text-[#26a269] focus-visible:outline-1 focus-visible:outline-[#26a269] focus-visible:outline-offset-2"
+					href="/projects">projects</a
+				>
+				<span aria-hidden="true">/</span>
+				<span aria-current="page">angadrive</span>
+			</nav>
+
+			<p class="prompt mb-5 text-[0.75rem] text-[#26a269]">$ cat projects/angadrive.md</p>
+
+			<header class="head mb-8 border-b border-line pb-6">
+				<h1 class="mb-[0.35rem] text-[1.35rem] font-normal">{meta.name}</h1>
+				<p class="subtitle mb-[1.1rem] text-[0.8125rem] text-[#8a8a8a]">
+					A description of a file hosting platform I built for latency
+				</p>
+
+				<p class="abstract text-[0.875rem] leading-[1.75] text-[#a5a3a9]">
+					A Go server keeps its working set in RAM over SQLite, drives the whole client over a
+					single WebSocket, and pushes every expensive operation into a bounded worker pool. This is
+					how each layer works and what it costs.
+				</p>
+
+				<dl class="facts mt-5 grid gap-x-6 gap-y-1 text-[0.6875rem] max-[639px]:grid-cols-1">
+					<div class="fact flex gap-2">
+						<dt class="w-22 shrink-0 text-dim">Last updated</dt>
+						<dd class="m-0 text-[#a5a3a9]">{meta.updated}</dd>
+					</div>
+					<div class="fact flex gap-2">
+						<dt class="w-22 shrink-0 text-dim">Source</dt>
+						<dd class="m-0 text-[#a5a3a9]">
+							<a
+								class="text-[#26a269] no-underline hover:underline"
+								href={project?.repo}
+								target="_blank"
+								rel="noreferrer">github.com/Anga205/AngaDriveV3</a
+							>
+						</dd>
+					</div>
+					<div class="fact flex gap-2">
+						<dt class="w-22 shrink-0 text-dim">Deployment</dt>
+						<dd class="m-0 text-[#a5a3a9]">
+							<a
+								class="text-[#26a269] no-underline hover:underline"
+								href={project?.live}
+								target="_blank"
+								rel="noreferrer">drive.anga.codes</a
+							>
+						</dd>
+					</div>
+					<div class="fact flex gap-2">
+						<dt class="w-22 shrink-0 text-dim">Licence</dt>
+						<dd class="m-0 text-[#a5a3a9]">AGPL-3.0</dd>
+					</div>
+				</dl>
+			</header>
+
+			<AngaDriveWriteUp />
+
+			<footer
+				class="foot mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6 max-[639px]:flex-col max-[639px]:items-start"
+			>
+				<a
+					class="back inline-flex items-center gap-[0.35rem] text-[0.75rem] text-[#a5a3a9] no-underline hover:text-[#26a269] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-2"
+					href="/projects"
+				>
+					<ArrowLeft size={13} strokeWidth={1.5} aria-hidden="true" />
+					all projects
+				</a>
+
+				<a
+					class="text-[0.75rem] text-[#a5a3a9] no-underline hover:text-[#26a269] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-2"
+					href={project?.post}
+					target="_blank"
+					rel="noreferrer">original write-up</a
+				>
+			</footer>
+		</Window>
+	</main>
+</Base>
+
+<style>
+	.facts {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+</style>

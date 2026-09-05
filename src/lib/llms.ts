@@ -80,8 +80,9 @@ export function renderLlmsIndex(): string {
 	lines.push('');
 	for (const project of PROJECTS) {
 		const links = [project.live, project.repo].filter(Boolean).join(', ');
+		const detail = project.detail ? ` [write-up](${absoluteUrl(project.detail)})` : '';
 		lines.push(
-			`- **${project.name}** (${project.year}, ${project.status}): ${project.summary} Stack: ${project.stack.join(', ')}.${links ? ` Links: ${links}.` : ''}`,
+			`- **${project.name}** (${project.year}, ${project.status}): ${project.summary} Stack: ${project.stack.join(', ')}.${detail}${links ? ` Links: ${links}.` : ''}`,
 		);
 	}
 	lines.push('');
@@ -142,6 +143,7 @@ export function renderLlmsFull(): string {
 			project.repo && `repo: ${project.repo}`,
 			project.docs && `docs: ${project.docs}`,
 			project.post && `post: ${project.post}`,
+			project.detail && `write-up: ${absoluteUrl(project.detail)}`,
 		].filter(Boolean);
 		if (links.length > 0) {
 			lines.push(links.join(' · '));

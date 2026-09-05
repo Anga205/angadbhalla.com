@@ -1,0 +1,113 @@
+---
+/**
+ * CodeBlock.astro
+ *
+ * A fenced code block, styled the way a rendered markdown document shows one:
+ * a thin border, a small language label in the corner, and nothing else.
+ *
+ * Highlighting is Astro's built-in `<Code>` (Shiki) with the `css-variables`
+ * theme, so every token colour is a `--astro-code-*` custom property mapped
+ * onto the site palette below. This component is the only place that knows how
+ * highlighting is configured.
+ *
+ * Snippets are illustrative: they reconstruct the patterns the project uses
+ * rather than quoting a build of the repository verbatim.
+ */
+import { Code } from 'astro:components';
+
+interface Props {
+	/** The snippet itself. Written as a template literal in `data/angadrive.ts`. */
+	code: string;
+	/** Shiki language id. Falls back to plaintext for pseudo-code and diagrams. */
+	lang?: string;
+	/** Shown in the corner, e.g. `database/caches.go`. */
+	filename?: string;
+	/** Wrap long lines instead of scrolling horizontally. */
+	wrap?: boolean;
+}
+
+const { code, lang = 'plaintext', filename, wrap = false } = Astro.props;
+---
+
+<figure class="codeblock m-0">
+	<span class="codeblock-label">{filename ?? lang}</span>
+
+	<div class:list={['codeblock-body', wrap && 'codeblock-body--wrap']} tabindex="0">
+		<Code code={code} lang={lang as never} theme="css-variables" wrap={wrap} />
+	</div>
+</figure>
+
+<style>
+	.codeblock {
+		/* Site palette mapped onto Shiki's variables. Keywords and functions
+		   carry the accent; everything else stays neutral so the block reads as
+		   terminal output rather than a rainbow. */
+		--astro-code-foreground: #deddda;
+		--astro-code-background: #1a1a1a;
+		--astro-code-token-comment: #6f6f6f;
+		--astro-code-token-keyword: #57c78a;
+		--astro-code-token-string: #c8c47e;
+		--astro-code-token-string-expression: #c8c47e;
+		--astro-code-token-function: #8fd5ff;
+		--astro-code-token-constant: #e5a50a;
+		--astro-code-token-parameter: #deddda;
+		--astro-code-token-punctuation: #8a8a8a;
+		--astro-code-token-link: #26a269;
+
+		position: relative;
+		margin-block: 1.25rem;
+		border: 1px solid #2e2e2e;
+		border-radius: 3px;
+		background: #1a1a1a;
+	}
+
+	.codeblock-label {
+		position: absolute;
+		top: 0;
+		right: 0;
+		padding: 0.2rem 0.45rem;
+		border-bottom: 1px solid #2e2e2e;
+		border-left: 1px solid #2e2e2e;
+		border-bottom-left-radius: 3px;
+		background: #1a1a1a;
+		font-size: 0.625rem;
+		line-height: 1.4;
+		color: #6f6f6f;
+		pointer-events: none;
+	}
+
+	.codeblock-body {
+		overflow-x: auto;
+		outline-offset: -1px;
+	}
+
+	.codeblock-body:focus-visible {
+		outline: 1px solid #26a269;
+	}
+
+	/*
+	 * Shiki emits `overflow-x: auto` inline on the <pre>. The wrapper is the
+	 * focusable scroll container, so the inner <pre> has to stop scrolling or
+	 * keyboard users focus an element whose arrows do nothing.
+	 */
+	.codeblock-body :global(pre) {
+		margin: 0;
+		padding: 0.85rem 0.9rem;
+		overflow-x: visible !important;
+		background: var(--astro-code-background);
+		font-size: 0.75rem;
+		line-height: 1.7;
+		tab-size: 2;
+	}
+
+	.codeblock-body :global(code) {
+		display: block;
+		width: max-content;
+		min-width: 100%;
+		font-family: inherit;
+	}
+
+	.codeblock-body--wrap :global(code) {
+		width: auto;
+	}
+</style>

@@ -16,6 +16,7 @@ const PAGES = [
 	{ path: '/philosophy', title: /Angad Bhalla/ },
 	{ path: '/achievements/ieee-cs-iampro-2025', title: /Angad Bhalla/ },
 	{ path: '/university/alcoding-club-head', title: /Angad Bhalla/ },
+	{ path: '/projects/angadrive', title: /Angad Bhalla/ },
 ] as const;
 
 test('every page leads its title with the name', async ({ page }) => {

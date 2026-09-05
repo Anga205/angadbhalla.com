@@ -1,0 +1,937 @@
+---
+/**
+ * AngaDriveWriteUp.astro
+ *
+ * The body of the AngaDriveV3 report. Sits inside the route's window chrome and
+ * owns nothing but prose, tables, diagrams, and code blocks.
+ *
+ * The typography is deliberately document-like rather than product-like: the
+ * reader's own sans-serif stack, numbered sections, `##` markers on headings,
+ * and plain rules instead of cards, badges, or callouts. It should read as a
+ * rendered markdown file, not a landing page.
+ *
+ * Snippets come from `src/data/angadrive.ts` so they can be reviewed as code
+ * rather than markup.
+ */
+import CodeBlock from './CodeBlock.astro';
+import { SNIPPETS } from '../data/angadrive';
+---
+
+<article class="report">
+	<section id="brief" aria-labelledby="h-brief">
+		<h2 id="h-brief"><span class="marker" aria-hidden="true">##</span> The brief</h2>
+
+		<p>
+			AngaDriveV3 is a remote file host, which is basically the part of Google Drive that
+			stores and serves bytes, except it's one Go binary that also ships its own client. It does the
+			things you'd expect: accounts, folders nested as deep as you want, sharing, conversion between
+			media formats, thumbnails, bulk operations, and importing a GitHub repository as a folder tree.
+			None of that is particularly hard, and realistically you could get a working version of it in a
+			weekend.
+		</p>
+
+		<p>
+			What took the time was making every operation cheap. The whole architecture is really a series
+			of answers to one question: <em>what work can I move out of the request path?</em> The README
+			puts it as "a specific focus on performance and scalability", and I think the product is what
+			happens when you take that literally instead of treating it as a tagline.
+		</p>
+
+		<p>
+			That shows up as four structural decisions rather than a long list of micro-optimisations. The
+			database keeps its hot working set in RAM and writes through to SQLite. One persistent
+			WebSocket carries every state change in both directions. Files live in a single
+			content-addressed directory, so identical bytes are only ever stored once. And a bounded worker
+			pool absorbs transcoding, thumbnailing and repository import, which is why an upload burst
+			never competes with a page load for CPU.
+		</p>
+
+		<p>
+			The live instance runs on a single Raspberry Pi and currently reports 172 registered users,
+			4,132 hosted files, roughly a thousand state-change pulses a day, and 200 ms at P95 against
+			750 ms at P99. Those numbers describe one deployment on one board, not a benchmark of the code
+			on arbitrary hardware, and I think that distinction matters more than the numbers themselves.
+		</p>
+	</section>
+
+	<section id="stack" aria-labelledby="h-stack">
+		<h2 id="h-stack"><span class="marker" aria-hidden="true">##</span> Stack</h2>
+
+		<p>
+			Every choice below was made for a reason that shows up later in the architecture. Nothing here
+			is a default I just went along with.
+		</p>
+
+		<table>
+			<thead>
+				<tr>
+					<th scope="col">Layer</th>
+					<th scope="col">Choice</th>
+					<th scope="col">Why it is here</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Backend</td>
+					<td>Go + gin</td>
+					<td>
+						Compiled, small resident set, real concurrency primitives. The whole server is one
+						statically linked binary with no runtime to install.
+					</td>
+				</tr>
+				<tr>
+					<td>Transport</td>
+					<td>gorilla/websocket</td>
+					<td>
+						Nearly every state change travels over one persistent socket instead of a request
+						per action.
+					</td>
+				</tr>
+				<tr>
+					<td>Storage</td>
+					<td>SQLite via gorm</td>
+					<td>
+						A file, not a service. There is no network hop between the application and its
+						database, and the schema migrates itself at boot.
+					</td>
+				</tr>
+				<tr>
+					<td>Working set</td>
+					<td>in-RAM indexes</td>
+					<td>
+						Hot metadata and every relationship lives in Go maps and sets; SQLite is the
+						durable record behind it.
+					</td>
+				</tr>
+				<tr>
+					<td>Client</td>
+					<td>SolidJS + Vite</td>
+					<td>
+						Fine-grained reactivity with no virtual DOM, so the bundle stays small and updates
+						touch only the nodes that changed.
+					</td>
+				</tr>
+				<tr>
+					<td>Media</td>
+					<td>ffmpeg, imaging, go-fitz</td>
+					<td>
+						Transcoding, thumbnails, and PDF page rendering, all invoked only from background
+						workers.
+					</td>
+				</tr>
+				<tr>
+					<td>Assets</td>
+					<td>brotli + gzip</td>
+					<td>
+						Every static file is compressed once at startup and served from memory with an
+						encoding negotiated per request.
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<p>
+			One omission is deliberate. There's no Redis, no message queue, and no object store, because
+			every component that would normally be a separate process is either a Go data structure or a
+			goroutine. That's the whole reason the deployment story is a single command, and honestly it's
+			the part I'm most pleased with.
+		</p>
+	</section>
+
+	<section id="architecture" aria-labelledby="h-architecture">
+		<h2 id="h-architecture"><span class="marker" aria-hidden="true">##</span> Architecture</h2>
+
+		<p>
+			The request path has three tiers: the browser, the Go process, and durable state. The browser
+			holds one bundle and one socket. The Go process holds the in-RAM indexes, the SQLite handle,
+			and the worker pool. Durable state is a database file plus a content-addressed upload
+			directory.
+		</p>
+
+		<CodeBlock code={SNIPPETS.architecture} lang="plaintext" filename="data flow" />
+
+		<p>
+			Two things in that diagram matter more than the rest. The first is that the WebSocket is
+			<em>bidirectional</em>, so the client sends commands and the server pushes state changes nobody
+			asked for. The second is that uploads and asset downloads deliberately bypass the socket and
+			travel over plain HTTP, because a 7 MB chunk has no business being in a JSON frame and a range
+			request for a video needs the browser's own machinery.
+		</p>
+
+		<p>Configuration is entirely environmental, which means there's no config file to keep in sync:</p>
+
+		<CodeBlock code={SNIPPETS.envExample} lang="bash" filename="shell" />
+
+		<p>
+			<code>WEB_URL</code> is doing double duty here: it's the origin the client is served from, and
+			the only origin allowed to open the socket. <code>ASSETS_URL</code> exists so that an HTML or
+			SVG file someone uploaded gets served from a host that shares no cookies, no storage, and no
+			origin with the application, which is a security boundary rather than a performance trick.
+		</p>
+	</section>
+
+	<section id="socket" aria-labelledby="h-socket">
+		<h2 id="h-socket">
+			<span class="marker" aria-hidden="true">##</span> One socket instead of a request per action
+		</h2>
+
+		<p>
+			A conventional client does a lot of small round trips. It lists files, then fetches each
+			collection's metadata, then polls for changes, and each of those spends a TLS handshake's worth
+			of latency on headers, cookies and routing before it does any actual work. AngaDrive collapses
+			all of that into a single upgrade at page load and a dispatch table after it.
+		</p>
+
+		<CodeBlock code={SNIPPETS.dispatch} lang="go" filename="requestHandler/dispatch.go" />
+
+		<p>
+			Roughly two dozen message types share one connection, and each frame is a JSON envelope with a
+			type and a payload. The consequence is a different data ownership model, because once the
+			connection stays open the server can notify instead of waiting to be asked. That's what makes
+			the pulse system possible: when a file is uploaded, renamed, converted or deleted, the server
+			pushes an update to every connection that should see it, and the client applies the change to
+			local state without ever refetching a listing.
+		</p>
+
+		<p>
+			Connection bookkeeping is where this design can go wrong, and the failure mode is subtle. One
+			slow socket must not stall the others. So fan-out takes a snapshot of the recipient set under a
+			read lock, releases it, and then writes to each connection in its own goroutine holding only
+			that connection's write mutex. A blocked write costs one goroutine instead of the whole
+			broadcast, which is the difference between a slow client and a dead server.
+		</p>
+	</section>
+
+	<section id="database" aria-labelledby="h-database">
+		<h2 id="h-database"><span class="marker" aria-hidden="true">##</span> The database layer</h2>
+
+		<p>
+			SQLite is the durable record, but almost nothing reads it on the hot path. At startup the
+			server loads the metadata into Go data structures, and from then on a read is a lock
+			acquisition and a map lookup. Writes go to SQLite and to the in-memory index in the same call,
+			so the two never diverge for longer than the duration of one function.
+		</p>
+
+		<h3>Indexes, not a cache</h3>
+
+		<p>
+			The vocabulary matters here, because this isn't a cache with a TTL sitting in front of a
+			database. It's the primary read path, and SQLite is the write-ahead log that survives restarts.
+			There's no invalidation problem because nothing is ever stale, since every mutation updates RAM
+			synchronously.
+		</p>
+
+		<CodeBlock code={SNIPPETS.caches} lang="go" filename="database/caches.go" />
+
+		<p>
+			Six indexes, each with its own mutex, and the sets store <code>map[string]struct{}</code> so
+			membership costs no allocation. Splitting into six rather than one is what keeps contention
+			low. Listing a user's drive touches <code>UserFiles</code>, checking what's inside a folder
+			touches <code>CollectionFiles</code>, and resolving a file's metadata touches
+			<code>FileCache</code>. Those are different mutexes, so readers on different paths don't queue
+			behind each other.
+		</p>
+
+		<h3>Warm at boot</h3>
+
+		<CodeBlock code={SNIPPETS.loadCache} lang="go" filename="database/load.go" />
+
+		<p>
+			Eight loaders in parallel, one pass each, joined before the server accepts traffic. The whole
+			database is in memory before the first request lands.
+		</p>
+
+		<h3>Reads: cache first, populate behind</h3>
+
+		<CodeBlock code={SNIPPETS.getFile} lang="go" filename="database/file_fetch.go" />
+
+		<p>
+			The asymmetry is the point. The read lock is held only long enough to copy the value out, and
+			the expensive repair happens in a goroutine that takes the write lock. A cold key costs one
+			query once, not once per reader that arrives before the repair lands, and because the repair
+			re-reads under the write lock it can't clobber a concurrent mutation.
+		</p>
+
+		<h3>Writes: through, not behind</h3>
+
+		<CodeBlock code={SNIPPETS.insert} lang="go" filename="database/insert.go" />
+
+		<p>
+			Returning from <code>Insert</code> means every subsequent read observes the row, so there's no
+			window where the UI and the database disagree. That's the trade the whole design rests on. A
+			write-through index is more expensive on the write path than a fire-and-forget one, and it's
+			the right call here because writes are rare relative to reads in a file host. A drive gets
+			listed far more often than it gets modified.
+		</p>
+
+		<p>
+			Deletes follow the same shape but do more work. They remove the row, invalidate every
+			relationship edge, then recompute the sizes of the affected collections and their ancestors,
+			which is where the next section starts to matter.
+		</p>
+	</section>
+
+	<section id="locks" aria-labelledby="h-locks">
+		<h2 id="h-locks">
+			<span class="marker" aria-hidden="true">##</span> Lock discipline as a correctness invariant
+		</h2>
+
+		<p>
+			Six indexes means a read can legitimately need three of them at once, and that's exactly where
+			concurrent code goes wrong in ways tests rarely catch. Two things make it tractable. Locks are
+			always acquired in one documented order, and any helper that requires locks to already be held
+			checks that at runtime.
+		</p>
+
+		<CodeBlock code={SNIPPETS.lockOrder} lang="go" filename="database/size.go" />
+
+		<p>
+			Imposing a global order removes the possibility of a cycle, which removes deadlock by
+			construction instead of by careful reasoning about every call site. The naming convention
+			reinforces it too: functions that require the caller to hold locks are called
+			<code>unsafe*</code>, and the exported functions acquire whatever the unsafe ones need.
+		</p>
+
+		<CodeBlock code={SNIPPETS.guaranteeLocks} lang="go" filename="database/caches.go" />
+
+		<p>
+			<code>TryLock</code> only succeeds if nobody holds the lock, which for a lock the caller was
+			supposed to hold means the contract was violated. So that check is a development-time
+			assertion with a production-time cost of one atomic operation, and it turns the most common
+			concurrency bug (an <code>unsafe</code> helper called from a new site that forgot its lock)
+			into an immediate panic in the test suite rather than a data race that surfaces months later as
+			a wrong file size.
+		</p>
+	</section>
+
+	<section id="relationships" aria-labelledby="h-relationships">
+		<h2 id="h-relationships"><span class="marker" aria-hidden="true">##</span> Relationships in RAM</h2>
+
+		<p>
+			The object model is small. A file has an owner and a size. A collection has a name, an editor
+			list and a size. Membership is a set of edges, collection to file and collection to collection.
+			In a normalised SQL schema both of those are joins, and a nested folder view becomes a
+			recursive query. Here they're two more maps.
+		</p>
+
+		<p>
+			<code>CollectionFiles[collectionID]</code> is a <code>FileSet</code> of file directories, and
+			<code>CollectionFolders[collectionID]</code> is a <code>CollectionSet</code> of child
+			collection IDs. Listing a folder is <code>Keys()</code> on a set, so no query is issued at all.
+			The normalised tables still exist and are still written, because they're what lets the indexes
+			be rebuilt at boot and what a future reader would query directly.
+		</p>
+
+		<h3>Sizes, with cycles and double counting</h3>
+
+		<p>
+			A folder's size is the sum of its files plus the sizes of its children, recursively. That's a
+			graph traversal, and the graph isn't necessarily a tree, since the same sub-folder can appear
+			under two parents and a cycle is possible. Both are handled explicitly rather than assumed
+			away.
+		</p>
+
+		<CodeBlock code={SNIPPETS.collectionSize} lang="go" filename="database/size.go" />
+
+		<p>
+			Two seen-sets: one prevents infinite recursion through the folder graph, the other counts a
+			file once even if it's reachable twice. The second one matters more than it looks. A file
+			placed in two sub-collections is still one file occupying one quantum of disk, and counting it
+			twice would overstate the size of the parent and eventually the size reported on the dashboard.
+			Sizes get recomputed on mutation and propagated up the ancestor chain, so the stored value is a
+			read rather than a calculation.
+		</p>
+
+		<p>
+			There's a useful side effect to all of this. Because <code>Sha256sum</code> is stored on every
+			row and the physical filename is derived from it, "is this file already on disk?" becomes an
+			indexed question instead of a hash of every byte uploaded. Deduplication turns into a lookup.
+		</p>
+	</section>
+
+	<section id="uploads" aria-labelledby="h-uploads">
+		<h2 id="h-uploads"><span class="marker" aria-hidden="true">##</span> Uploads</h2>
+
+		<p>
+			A single request carrying a 1 GB body is a bad idea. You get no progress, no resume, no
+			parallelism, and a server that has to either buffer the whole thing or fail. So uploads are
+			chunked at 7 MB, compressed in the browser, and sent with a small number of chunks in flight.
+		</p>
+
+		<CodeBlock
+			code={SNIPPETS.uploadClient}
+			lang="typescript"
+			filename="web/src/pages/MyDrive/shared/uploadChunks.ts"
+		/>
+
+		<p>
+			Two constants are doing the real work. Six chunks in flight per file keeps the pipe full
+			without making a single upload look like a burst, and three files at once respects the
+			browser's per-origin connection budget. Together they mean a batch of large files saturates the
+			link without any single response becoming the bottleneck.
+		</p>
+
+		<p>
+			Each chunk is written to a temporary file keyed by upload id and index, and an inactivity timer
+			reclaims abandoned uploads, so a closed tab doesn't leave 600 MB of orphans on disk.
+		</p>
+
+		<h3>Finalisation</h3>
+
+		<CodeBlock code={SNIPPETS.uploadServer} lang="go" filename="endpoints/upload.go" />
+
+		<p>
+			The ordering here is deliberate. Hashing happens during assembly rather than in a second pass,
+			because the file may be large and the bytes are already in the page cache. The finished file is
+			moved with <code>rename</code>, which is atomic on POSIX, so a reader can never observe a
+			half-written upload at its final path. And because the destination filename is the SHA-256, two
+			users uploading the same file converge on the same inode. The second upload is a rename over an
+			identical file, and the database gains a row without gaining storage.
+		</p>
+
+		<p>
+			The visible latency of an upload isn't the time it takes to write bytes, it's the time until
+			the file appears. Because the pulse is emitted from the insert path, the card shows up as soon
+			as the rename and row are done, while thumbnailing and any requested conversion happen
+			afterwards in the runner pool. That's the trick that makes uploads feel instant even when the
+			work behind them isn't.
+		</p>
+	</section>
+
+	<section id="runners" aria-labelledby="h-runners">
+		<h2 id="h-runners"><span class="marker" aria-hidden="true">##</span> Background compute</h2>
+
+		<p>
+			Transcoding a video is unbounded work. An arbitrary file on an arbitrary machine can occupy a
+			core for minutes, and doing that inside an HTTP handler means a request burst can starve the
+			server of CPU while the queue grows without limit. The runners package is the answer: a small,
+			generic, bounded job system.
+		</p>
+
+		<CodeBlock code={SNIPPETS.runnerManager} lang="go" filename="runners/runners.go" />
+
+		<p>
+			Three properties matter. It's <strong>bounded</strong>, because the semaphore caps concurrent
+			workers at <code>MAX_RUNNER_COUNT</code> (default 5), so a queue of forty conversions still
+			leaves cores for request handling. It's <strong>non-blocking</strong>, because
+			<code>Submit</code> uses a <code>select</code> with a <code>default</code>, so a full queue
+			returns an error immediately instead of parking the caller. Backpressure is a rejected request,
+			not a stall. And it's <strong>idempotent</strong>, because <code>LoadOrStore</code> on the
+			job's content hash means submitting the same video twice queues it once.
+		</p>
+
+		<CodeBlock code={SNIPPETS.runnerWorker} lang="go" filename="runners/runners.go" />
+
+		<p>
+			Each job runs in its own goroutine but has to hold a semaphore slot, which is released on the
+			way out. The <code>Notifier</code> interface is the seam that keeps this decoupled: runners
+			report completion through it and the WebSocket layer supplies the implementation. The runner
+			framework has no import of the socket layer at all, which means it would keep working if the
+			transport changed tomorrow.
+		</p>
+
+		<h3>Previews for a library that already exists</h3>
+
+		<CodeBlock code={SNIPPETS.backfill} lang="go" filename="runners/backfill.go" />
+
+		<p>
+			Backfill only ever runs when the queue is empty and nothing is executing, so it can never delay
+			a user-initiated job. It's a small piece of scheduling with an outsized effect on perceived
+			quality. A library uploaded before preview generation existed slowly acquires thumbnails in the
+			background, without anyone waiting and without any job competing with a real request. On a
+			machine that's genuinely idle it works through the backlog, and on a busy one it makes no
+			progress at all, which is exactly what you want.
+		</p>
+	</section>
+
+	<section id="previews" aria-labelledby="h-previews">
+		<h2 id="h-previews"><span class="marker" aria-hidden="true">##</span> Previews</h2>
+
+		<p>
+			Every preview type follows the same contract. It's keyed by the content hash, generated at most
+			once, written atomically, and never larger than the source file. The differences are only in
+			how the bytes get produced.
+		</p>
+
+		<h3>Images</h3>
+
+		<CodeBlock code={SNIPPETS.imagePreview} lang="go" filename="previews/image_preview.go" />
+
+		<p>
+			Three failure modes are handled explicitly. Photos straight off a phone carry an EXIF
+			orientation tag and no rotation in their pixels, so a naive decode renders them sideways, which
+			is why the tag gets applied during decode. Transparency is measured rather than assumed from
+			the format, because a PNG can be fully opaque and a JPEG never has alpha, and encoding an
+			opaque image as PNG would multiply its size for nothing. And a preview larger than its source
+			is pointless, so in that case the original gets copied instead.
+		</p>
+
+		<p>
+			SVG is a special case. It's served as-is below a size threshold rather than rasterised, because
+			the browser renders it natively and a bitmap would lose resolution while gaining bytes.
+		</p>
+
+		<h3>PDF</h3>
+
+		<p>
+			Page one is rendered through MuPDF bindings (<code>go-fitz</code>), resized to the same 512 px
+			ceiling, and encoded as JPEG. PDF pages are opaque by definition, so the PNG branch would never
+			apply anyway.
+		</p>
+
+		<h3>Video</h3>
+
+		<CodeBlock code={SNIPPETS.videoPreview} lang="go" filename="previews/video_preview.go" />
+
+		<p>
+			The format choice is what makes this cheap. A GIF is limited to 256 colours, which is visible
+			on any real footage, and its inter-frame compression is primitive. Animated WebP gives full
+			colour and a modern encoder, and at quality 80 with maximum compression effort it produces a
+			preview roughly an order of magnitude smaller than the equivalent GIF. Fifteen seconds at 24
+			fps and 350 px is the size budget, and long clips get time-compressed with
+			<code>setpts</code> rather than cut, so the preview represents the whole video instead of its
+			first few moments.
+		</p>
+
+		<p>
+			Corrupt input is expected, because a <code>.mp4</code> that isn't one or a truncated download
+			will happen. Encoding failures write a minimal valid WebP instead of leaving nothing behind.
+			That distinction matters more than it sounds, because "generated, but empty" is cacheable and
+			stops a retry loop, whereas a missing file would be retried on every single request.
+		</p>
+	</section>
+
+	<section id="frontend" aria-labelledby="h-frontend">
+		<h2 id="h-frontend"><span class="marker" aria-hidden="true">##</span> The client</h2>
+
+		<p>
+			The client is a SolidJS single-page app. Solid's model is compile-time reactivity, so
+			components run once and updates mutate the exact DOM nodes bound to a changed signal. There's
+			no virtual DOM and no diffing pass, which is why a file grid with a thousand cards stays
+			responsive while pulses are arriving.
+		</p>
+
+		<h3>Nothing loads until it is about to be seen</h3>
+
+		<CodeBlock code={SNIPPETS.observer} lang="tsx" filename="web/src/components/FilePreview.tsx" />
+
+		<p>
+			Two layers make this work. The observer means a folder with 400 images issues a handful of
+			preview requests rather than 400. The <code>loadedFiles</code> set persists across navigation,
+			so returning to a folder re-renders previews from the browser cache instead of asking the
+			server again. The same observer pattern drives infinite scroll in the grid, where a sentinel at
+			the bottom extends the rendered window by a page at a time.
+		</p>
+
+		<h3>The server is the only writer</h3>
+
+		<CodeBlock code={SNIPPETS.pulse} lang="tsx" filename="web/src/library/functions.tsx" />
+
+		<p>
+			Three cases: insert, delete, replace. The client never refetches a listing in response to a
+			change. Actions are optimistic, so a rename applies locally at once, and the pulse is what
+			reconciles the client with the authoritative record, including on other devices and other tabs.
+			That's why the protocol carries an explicit insert/delete/replace distinction instead of a
+			generic "list changed" event. The client can apply a surgical update rather than rebuilding its
+			state.
+		</p>
+
+		<h3>Recovery</h3>
+
+		<p>
+			The socket reconnects 300 ms after a close, and before it does, every handler on the old
+			instance gets nulled out. That detail prevents the classic leak where a stale socket's
+			<code>onmessage</code> keeps firing into a component tree that's already been replaced.
+			Credentials in storage are replayed on open, so a reconnect restores an authenticated session
+			without a login round trip.
+		</p>
+
+		<p>
+			Charts are configured with zero animation duration. A real-time CPU graph animating every
+			update spends its time interpolating rather than showing you the truth, and rendering each
+			sample instantly makes the panel read as an instrument instead of a decoration.
+		</p>
+	</section>
+
+	<section id="assets" aria-labelledby="h-assets">
+		<h2 id="h-assets"><span class="marker" aria-hidden="true">##</span> Build and serve</h2>
+
+		<p>
+			Static assets get the same treatment as database reads. The expensive work happens once, and
+			the request path does as little as possible.
+		</p>
+
+		<h3>Rebuild only when the sources changed</h3>
+
+		<CodeBlock code={SNIPPETS.frontendHash} lang="go" filename="endpoints/frontend.go" />
+
+		<p>
+			Hashing relative paths and contents means adding, deleting and editing a file all invalidate
+			the cached build, which is the three cases a timestamp misses. The binary owns its client. On
+			first run it builds the frontend and caches the result, and on later runs it hashes the
+			sources, compares, and skips the build entirely. That's what makes <code>go run main.go</code>
+			a complete deployment, and it removes the usual class of bug where a stale bundle gets served
+			against a newer backend.
+		</p>
+
+		<h3>Compress once, negotiate per request</h3>
+
+		<CodeBlock code={SNIPPETS.cachedFile} lang="go" filename="endpoints/frontend_cache.go" />
+
+		<CodeBlock code={SNIPPETS.negotiate} lang="go" filename="endpoints/frontend_cache.go" />
+
+		<p>
+			Compressing at the maximum level is a bad idea per request and a very good one per deployment.
+			Brotli level 11 on a JavaScript bundle takes seconds, and doing that on every request would be
+			a denial of service. Doing it once, holding all three variants in memory, and answering with
+			whichever the <code>Accept-Encoding</code> header prefers means the client gets the smallest
+			possible payload and the server does a map lookup. The <code>Vary</code> header is mandatory
+			here, or an intermediary cache will happily hand a Brotli body to a client that only
+			understands gzip.
+		</p>
+
+		<p>
+			The build itself can inline CSS and JavaScript into a single HTML document, which trades
+			caching granularity for one round trip on first load. For a UI that's then entirely
+			socket-driven, that's usually the right side of the trade.
+		</p>
+	</section>
+
+	<section id="deploy" aria-labelledby="h-deploy">
+		<h2 id="h-deploy"><span class="marker" aria-hidden="true">##</span> Deployment</h2>
+
+		<p>
+			Self-hosting is three dependencies and one command: Go, Bun for the build, and ffmpeg for
+			media. The server creates its own directory tree, migrates its own schema, and builds its own
+			client.
+		</p>
+
+		<CodeBlock
+			code={`git clone git@github.com:Anga205/AngaDriveV3.git --depth 1
+cd AngaDriveV3
+export WEB_URL=drive.example.com ASSETS_URL=i.example.com GIN_MODE=release
+go run main.go`}
+			lang="bash"
+			filename="shell"
+		/>
+
+		<p>
+			Schema changes are applied at boot, including a completed migration of file hashes from MD5 to
+			SHA-256 that renames existing objects rather than re-uploading them. That's the kind of thing a
+			self-hosted project has to get right, because an operator who upgraded in place shouldn't have
+			to run a manual script afterwards.
+		</p>
+
+		<h3>Two origins, one application</h3>
+
+		<p>
+			Serving user content from <code>ASSETS_URL</code> is a security boundary, not a performance
+			trick. An uploaded HTML or SVG file served from the app's own origin could read its storage and
+			make authenticated requests. From a second origin it's inert: no cookies, no storage, no
+			same-origin fetch. CORS on the asset host is restricted to the web origin so legitimate
+			previews still load.
+		</p>
+
+		<h3>Continuous integration</h3>
+
+		<CodeBlock code={SNIPPETS.ci} lang="yaml" filename=".github/workflows/integration.yml" />
+
+		<p>
+			The frontend and server are built once and shared as artifacts, and the tests then fan out
+			across a matrix against a real server and a real socket. They're integration tests in the
+			strict sense: they start the built binary, connect a real WebSocket, upload real chunks, and
+			assert on the pulses that come back. Running them with <code>SAVE_DRIVE_RAM=true</code> is
+			deliberate, since that setting trades a little latency for a smaller resident set, so using it
+			in CI exercises the alternate code path and keeps the runners from competing with the
+			assertions.
+		</p>
+	</section>
+
+	<section id="numbers" aria-labelledby="h-numbers">
+		<h2 id="h-numbers"><span class="marker" aria-hidden="true">##</span> Production numbers</h2>
+
+		<p>
+			The live instance is the only benchmark that exists, and it's a single machine. Read these as
+			characteristics of the design under real load rather than as a comparison against a
+			hyperscaler.
+		</p>
+
+		<table>
+			<thead>
+				<tr>
+					<th scope="col">Metric</th>
+					<th scope="col">Value</th>
+					<th scope="col">Note</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Hardware</td>
+					<td>1 Raspberry Pi</td>
+					<td>one node, no replicas, no managed services</td>
+				</tr>
+				<tr>
+					<td>Users</td>
+					<td>172</td>
+					<td>registered accounts</td>
+				</tr>
+				<tr>
+					<td>Files</td>
+					<td>4,132</td>
+					<td>hosted, after deduplication</td>
+				</tr>
+				<tr>
+					<td>Activity</td>
+					<td>~1,000/day</td>
+					<td>state-change pulses emitted</td>
+				</tr>
+				<tr>
+					<td>Latency</td>
+					<td>200 ms P95</td>
+					<td>750 ms at P99</td>
+				</tr>
+				<tr>
+					<td>Memory</td>
+					<td>under 1 GB</td>
+					<td>typical, with headroom for one transcode</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<p>
+			The memory figure is the one that constrains the design. Holding every index in RAM is only
+			viable because the indexes are compact: a set of file directories and a set of collection IDs
+			per user, not whole rows. Four thousand files of metadata is a small fraction of a gigabyte,
+			which is what makes the expensive part of the design affordable in the first place.
+			<code>SAVE_DRIVE_RAM</code> exists for the operator whose library is large enough that it
+			isn't.
+		</p>
+
+		<p>
+			Latency at the tail is dominated by operations that are intentionally not on the hot path. A
+			P99 of 750 ms on a Pi is the cost of a conversion or a large chunk finalising, not of listing a
+			folder. The median request doesn't do I/O at all.
+		</p>
+	</section>
+
+	<section id="reading" aria-labelledby="h-reading">
+		<h2 id="h-reading"><span class="marker" aria-hidden="true">##</span> Further reading</h2>
+
+		<p>
+			The source is the complete specification and the live instance is the running one. Both are
+			worth more than any summary, including this one, so if any of the above was interesting, the
+			code is where the details actually live.
+		</p>
+
+		<ul>
+			<li>
+				<a href="https://github.com/Anga205/AngaDriveV3" target="_blank" rel="noreferrer"
+					>github.com/Anga205/AngaDriveV3</a
+				>: Go, SolidJS, and the Python integration suite.
+			</li>
+			<li>
+				<a href="https://drive.anga.codes" target="_blank" rel="noreferrer">drive.anga.codes</a>: the
+				numbers above, in production.
+			</li>
+			<li>
+				<a href="https://lnkd.in/p/dknw77Br" target="_blank" rel="noreferrer">the original write-up</a
+				>: the notes on the measurements.
+			</li>
+		</ul>
+	</section>
+</article>
+
+<style>
+	/*
+	 * A report, not a product page. The body face is the reader's own sans-serif
+	 * stack, so the prose looks like a document rendered by their browser; the
+	 * mono face is reserved for code, headings, and inline identifiers, which is
+	 * where it carries meaning. The report fills the width of the window it sits
+	 * in rather than imposing its own measure.
+	 */
+	.report {
+		--report-sans:
+			'Open Sans', Calibri, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+			'Helvetica Neue', Arial, sans-serif;
+		--report-ink: #c9c7c4;
+		--report-ink-dim: #8f8d8a;
+		--report-rule: #2b2b2b;
+
+		font-family: var(--report-sans);
+		font-size: 0.9375rem;
+		line-height: 1.75;
+		color: var(--report-ink);
+	}
+
+	.report section + section {
+		margin-top: 2.75rem;
+	}
+
+	.report h2 {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		margin: 0 0 1rem;
+		padding-bottom: 0.4rem;
+		border-bottom: 1px solid var(--report-rule);
+		font-family: var(--font-mono);
+		font-size: 0.875rem;
+		font-weight: 500;
+		line-height: 1.5;
+		color: #e6e4e1;
+	}
+
+	.report h2 .marker {
+		flex-shrink: 0;
+		color: #26a269;
+		font-weight: 400;
+	}
+
+	.report h3 {
+		margin: 1.9rem 0 0.6rem;
+		font-family: var(--font-mono);
+		font-size: 0.8125rem;
+		font-weight: 500;
+		color: #deddda;
+	}
+
+	.report p {
+		margin: 0 0 1.05rem;
+	}
+
+	.report p:last-child,
+	.report ul:last-child,
+	.report table:last-child,
+	.report figure:last-child {
+		margin-bottom: 0;
+	}
+
+	.report strong {
+		font-weight: 600;
+		color: #e6e4e1;
+	}
+
+	.report em {
+		font-style: italic;
+		color: #e6e4e1;
+	}
+
+	.report code {
+		padding: 0.05em 0.3em;
+		border-radius: 2px;
+		background: #232323;
+		font-family: var(--font-mono);
+		font-size: 0.82em;
+		color: #deddda;
+	}
+
+	.report a {
+		color: #4fb37f;
+		text-decoration: underline;
+		text-decoration-thickness: 1px;
+		text-underline-offset: 2px;
+	}
+
+	.report a:hover {
+		color: #6fd39b;
+	}
+
+	.report a:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	/* ---- tables: markdown style, rules only ------------------------------ */
+	.report table {
+		width: 100%;
+		margin: 1.25rem 0;
+		border-collapse: collapse;
+		font-family: var(--font-mono);
+		font-size: 0.75rem;
+		line-height: 1.6;
+	}
+
+	.report thead th {
+		padding: 0 0.7rem 0.4rem 0;
+		border-bottom: 1px solid #3a3a3a;
+		font-weight: 500;
+		text-align: left;
+		color: #deddda;
+	}
+
+	.report tbody td {
+		padding: 0.45rem 0.7rem 0.45rem 0;
+		border-bottom: 1px solid var(--report-rule);
+		vertical-align: top;
+		color: var(--report-ink-dim);
+	}
+
+	.report tbody tr:last-child td {
+		border-bottom: 0;
+	}
+
+	.report tbody td:first-child {
+		white-space: nowrap;
+		color: #deddda;
+	}
+
+	.report tbody td:nth-child(2) {
+		white-space: nowrap;
+		color: #b9b7b4;
+	}
+
+	@media (max-width: 639px) {
+		.report thead {
+			display: none;
+		}
+
+		.report table,
+		.report tbody,
+		.report tr,
+		.report td {
+			display: block;
+			width: 100%;
+		}
+
+		.report tr {
+			padding: 0.4rem 0;
+			border-bottom: 1px solid var(--report-rule);
+		}
+
+		.report tr:last-child {
+			border-bottom: 0;
+		}
+
+		.report td {
+			border: 0;
+			padding: 0.1rem 0;
+		}
+
+		.report td::before {
+			content: attr(data-label);
+		}
+
+		.report tbody td:nth-child(2) {
+			white-space: normal;
+		}
+	}
+
+	/* ---- lists ----------------------------------------------------------- */
+	.report ul {
+		margin: 0 0 1.05rem;
+		padding-left: 1.15rem;
+		list-style: none;
+	}
+
+	.report ul li {
+		position: relative;
+		margin-bottom: 0.6rem;
+	}
+
+	.report ul li::before {
+		content: '-';
+		position: absolute;
+		left: -1.15rem;
+		color: #6f6f6f;
+	}
+</style>

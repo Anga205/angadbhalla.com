@@ -7,7 +7,7 @@
  * The card lives in ProjectCard.astro and the link menu in LinkMenu.astro;
  * this component owns the page shell and the menu wiring.
  */
-import { BookOpen, Github, Linkedin, ExternalLink } from 'lucide-astro';
+import { BookOpen, FileText, Github, Linkedin, ExternalLink } from 'lucide-astro';
 import { PROJECTS } from '../data/projects';
 import LinkMenu, { type MenuLink } from './LinkMenu.astro';
 import ProjectCard from './ProjectCard.astro';
@@ -35,6 +35,13 @@ import Window from './Window.astro';
 {
 	PROJECTS.map((project) => {
 		const links: MenuLink[] = [
+			// A write-up is offered first, the way achievements offer their
+			// detail page as "Activity Description".
+			project.detail && {
+				label: 'Project Description',
+				href: project.detail,
+				icon: FileText,
+			},
 			project.live && {
 				label: 'live deployment',
 				href: project.live,
