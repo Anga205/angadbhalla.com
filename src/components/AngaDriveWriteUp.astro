@@ -14,12 +14,30 @@
  * rather than markup.
  */
 import CodeBlock from './CodeBlock.astro';
-import { SNIPPETS } from '../data/angadrive';
+import AchievementGallery from './AchievementGallery.astro';
+import { ANGADRIVE_GALLERY, SNIPPETS } from '../data/angadrive';
 ---
 
 <article class="report">
+
+	<section id="gallery" aria-labelledby="h-gallery">
+		<h2 id="h-gallery"><span class="marker" aria-hidden="true">##</span> Gallery</h2>
+
+		<p>
+			The dashboard, the benchmarks, and the repository, as they actually look. Each one opens
+			full-size.
+		</p>
+
+		<AchievementGallery
+			images={ANGADRIVE_GALLERY}
+			title="AngaDriveV3"
+			aspect="16/9"
+			fit="contain"
+		/>
+	</section>
+
 	<section id="brief" aria-labelledby="h-brief">
-		<h2 id="h-brief"><span class="marker" aria-hidden="true">##</span> The brief</h2>
+		<h2 id="h-brief"><span class="marker" aria-hidden="true">##</span> Introduction</h2>
 
 		<p>
 			AngaDriveV3 is a remote file host, which is basically the part of Google Drive that
@@ -31,10 +49,11 @@ import { SNIPPETS } from '../data/angadrive';
 		</p>
 
 		<p>
-			What took the time was making every operation cheap. The whole architecture is really a series
-			of answers to one question: <em>what work can I move out of the request path?</em> The README
-			puts it as "a specific focus on performance and scalability", and I think the product is what
-			happens when you take that literally instead of treating it as a tagline.
+			The thing that sets AngaDrive apart from other file hosts is that it makes every operation cheap.
+			The whole architecture is really a series of answers to one question: <em>what work can I move 
+			out of the request path?</em> It's a question that shows up in every web application, and the 
+			answer is usually "some of it," but here what I've implemented is pretty analagous to "almost all 
+			of it."
 		</p>
 
 		<p>
@@ -933,5 +952,24 @@ go run main.go`}
 		position: absolute;
 		left: -1.15rem;
 		color: #6f6f6f;
+	}
+
+	/*
+	 * The gallery is a child component, so its markup does not carry this
+	 * component's scope attribute. `:global()` reaches into it to undo the
+	 * report's list styling: without this the thumbnail grid would inherit the
+	 * `-` bullets and the prose indent.
+	 */
+	.report :global(.gallery ul) {
+		margin: 0;
+		padding: 0;
+	}
+
+	.report :global(.gallery li) {
+		margin: 0;
+	}
+
+	.report :global(.gallery li::before) {
+		content: none;
 	}
 </style>

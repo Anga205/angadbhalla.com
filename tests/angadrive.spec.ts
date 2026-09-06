@@ -24,7 +24,7 @@ const SECTION_IDS = [
 	'assets',
 	'deploy',
 	'numbers',
-	'limits',
+	'gallery',
 	'reading',
 ] as const;
 
@@ -137,6 +137,49 @@ test('the page does not overflow horizontally at mobile width', async ({ page })
 
 	// Tables reflow into stacked rows instead of scrolling.
 	await expect(page.locator('.report thead').first()).toBeHidden();
+});
+
+test('the screenshots render as an optimised, accessible gallery', async ({ page }) => {
+	await page.goto('/projects/angadrive');
+
+	const gallery = page.locator('.report .gallery');
+	await expect(gallery).toBeVisible();
+
+	const thumbs = gallery.locator('.thumb');
+	await expect(thumbs).toHaveCount(3);
+
+	// Every image is processed by astro:assets, so it is served as AVIF from
+	// the image endpoint rather than copied verbatim out of `public/`. In a
+	// build that is a fingerprinted `.avif` file; in dev it is `/_image?...&f=avif`.
+	const sources = await gallery
+		.locator('.thumb img')
+		.evaluateAll((els) => els.map((el) => decodeURIComponent(el.getAttribute('src') ?? '')));
+	for (const src of sources) {
+		expect(src).toMatch(/\.avif|f=avif/);
+		expect(src).not.toMatch(/^\/AngaDrive/);
+	}
+
+	// The alt text carries the numbers the screenshots show, so the content is
+	// indexable rather than decorative.
+	const alts = await gallery
+		.locator('.thumb img')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('alt') ?? ''));
+	expect(alts.every((alt) => alt.length > 80)).toBe(true);
+	expect(alts.join(' ')).toContain('0.098s');
+	expect(alts.join(' ')).toContain('172 users');
+
+	// The report's list styling must not leak into the thumbnail grid.
+	const bullets = await gallery
+		.locator('li')
+		.evaluateAll((els) => els.map((el) => getComputedStyle(el, '::before').content));
+	expect(bullets.every((content) => content === 'none' || content === 'normal')).toBe(true);
+
+	// Clicking a thumbnail opens the lightbox on that image.
+	await thumbs.nth(1).click();
+	const dialog = gallery.locator('dialog[open]');
+	await expect(dialog).toBeVisible();
+	await expect(dialog.locator('[data-count]')).toHaveText('02 / 03');
+	await expect(dialog.locator('[data-caption-text]')).toContainText('benchmarks');
 });
 
 test('structured data describes the software and the breadcrumb trail', async ({ page }) => {
