@@ -3,8 +3,18 @@ import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
 import Pager from '../components/Pager.astro';
 import AchievementCards from '../components/AchievementCards.astro';
-import { UNIVERSITY_ACHIEVEMENTS, CATEGORY_LABELS, CATEGORY_BLURBS } from '../data/achievements';
-import { collectionPageSchema, type JsonLd } from '../lib/seo';
+import {
+	UNIVERSITY_ACHIEVEMENTS,
+	CATEGORY_LABELS,
+	CATEGORY_BLURBS,
+	hasDetailPage,
+} from '../data/achievements';
+import {
+	collectionPageSchema,
+	galleryImageObjects,
+	organizationRoleSchema,
+	type JsonLd,
+} from '../lib/seo';
 
 // Roles first, then anything else surfaced here (e.g. the IAMPro research
 // internship), so the page reads as a career timeline.
@@ -26,20 +36,58 @@ const groups = [
 const description =
 	'Roles, organisations, and extracurricular work by Angad Bhalla at PES University: club leadership, teaching, internships, and talks.';
 
+const keywords = [
+	'Angad Bhalla',
+	'PES University',
+	'PESU I/O',
+	'The Alcoding Club',
+	'competitive programming',
+	'teaching assistant',
+	'robotics internship',
+	'IEEE',
+	'Bengaluru',
+];
+
+// `href` overrides win: the IAMPro internship is documented under
+// /achievements even though it is listed here. Entries without a detail page
+// stay name-only so the ItemList never points at a 404.
+const listItems = items.map((achievement) => ({
+	name: achievement.position ?? achievement.title,
+	path: hasDetailPage(achievement)
+		? (achievement.href ?? `/university/${achievement.slug}`)
+		: undefined,
+}));
+
 const schema: JsonLd[] = [
 	collectionPageSchema({
 		path: '/university',
 		name: 'University',
 		description,
-		items: items.map((achievement) => ({
-			name: achievement.position ?? achievement.title,
-			path: `/university/${achievement.slug}`,
-		})),
+		items: listItems,
 	}),
+	// The peer-taught PESU I/O course, described as a role rather than a page.
+	organizationRoleSchema({
+		roleName: 'Subject Matter Expert (SME)',
+		organization: 'PESU I/O, PES University',
+		organizationType: 'EducationalOrganization',
+		startDate: '2025-08',
+		endDate: '2025-11',
+		description:
+			'Taught a peer-led competitive programming and DSA course to 55 students at PES University, focused on pattern recognition and contest strategy.',
+	}),
+	...galleryImageObjects(
+		UNIVERSITY_ACHIEVEMENTS.flatMap((achievement) => achievement.images ?? []),
+	),
 ];
 ---
 
-<Base title="Angad Bhalla — University & Extracurriculars" {description} path="/university" {schema}>
+<Base
+	title="Angad Bhalla — University & Extracurriculars"
+	{description}
+	path="/university"
+	{keywords}
+	{schema}
+>
 	<PortfolioMenu minimized />
 	<Pager active="university">
 		<AchievementCards
@@ -50,6 +98,7 @@ const schema: JsonLd[] = [
 			sectionId="university"
 			detailBase="/university"
 			roleMode
+			intro="Club leadership, peer teaching, internships, and talks at PES University — from heading The Alcoding Club to teaching DSA to 55 students through PESU I/O."
 		/>
 	</Pager>
 </Base>

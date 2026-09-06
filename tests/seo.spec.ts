@@ -177,6 +177,156 @@ test('the sitemap lists every page without trailing slashes', async ({ request }
 	expect(body).not.toContain('llms');
 });
 
+test('the sitemap dates each URL from its source, not the build', async ({ request }) => {
+	const response = await request.get('/sitemap-0.xml');
+	test.skip(response.status() === 404, 'sitemap only exists in a production build');
+	expect(response.status()).toBe(200);
+
+	const body = await response.text();
+	const lastmods = [...body.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map((match) => match[1]);
+	expect(lastmods.length).toBeGreaterThan(0);
+
+	// A build-time stamp would be today's date for every URL. Commit dates are
+	// real ISO timestamps and are not all identical.
+	for (const lastmod of lastmods) {
+		expect(lastmod).toMatch(/^\d{4}-\d{2}-\d{2}/);
+	}
+	expect(new Set(lastmods).size).toBeGreaterThan(1);
+});
+
+const INDEX_PAGES = ['/', '/projects', '/achievements', '/university', '/philosophy'] as const;
+
+test('every index page carries keyword metadata', async ({ page }) => {
+	for (const path of INDEX_PAGES) {
+		await page.goto(path);
+		const content = await page.locator('meta[name="keywords"]').getAttribute('content');
+		expect(content, path).toBeTruthy();
+		expect(content, path).toContain('Angad Bhalla');
+	}
+
+	// The terms the brief calls out must appear somewhere across the pages.
+	const all: string[] = [];
+	for (const path of INDEX_PAGES) {
+		await page.goto(path);
+		all.push((await page.locator('meta[name="keywords"]').getAttribute('content')) ?? '');
+	}
+	const joined = all.join(', ').toLowerCase();
+	for (const term of [
+		'systems programming',
+		'go',
+		'rust',
+		'self-hosted',
+		'competitive programming',
+		'pes university',
+		'bengaluru',
+	]) {
+		expect(joined, term).toContain(term);
+	}
+});
+
+test('index pages open with a keyword-rich intro and a section heading', async ({ page }) => {
+	await page.goto('/projects');
+	await expect(page.locator('.projects .intro')).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'selected projects', level: 2 })).toBeVisible();
+
+	await page.goto('/achievements');
+	await expect(page.locator('.achievements .intro')).toBeVisible();
+
+	await page.goto('/university');
+	await expect(page.locator('.achievements .intro')).toBeVisible();
+});
+
+test('collection lists never advertise fragment or missing URLs', async ({ page }) => {
+	for (const path of ['/projects', '/achievements', '/university']) {
+		await page.goto(path);
+		const raw = await page.locator('script[type="application/ld+json"]').first().textContent();
+		const data = JSON.parse(raw!);
+		const list = data['@graph'].find(
+			(node: { '@type': string }) => node['@type'] === 'CollectionPage',
+		);
+		expect(list, path).toBeTruthy();
+
+		for (const item of list.mainEntity.itemListElement) {
+			expect(item.name, path).toBeTruthy();
+			if (item.url) {
+				expect(item.url, `${path} ${item.name}`).not.toContain('#');
+				expect(item.url, `${path} ${item.name}`).toMatch(/^https:\/\/angadbhalla\.com\//);
+			}
+		}
+	}
+});
+
+test('the achievements index describes the four medals as Award nodes', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const raw = await page.locator('script[type="application/ld+json"]').first().textContent();
+	const data = JSON.parse(raw!);
+	const awards = data['@graph'].filter(
+		(node: { additionalType?: string }) => node.additionalType === 'https://schema.org/Award',
+	);
+
+	expect(awards).toHaveLength(4);
+	for (const award of awards) {
+		expect(award['@type']).toBe('CreativeWork');
+		expect(award.awardedBy.name.length).toBeGreaterThan(3);
+		expect(award.datePublished).toMatch(/^\d{4}-\d{2}/);
+		expect(award.recipient['@id']).toBe('https://angadbhalla.com/#person');
+	}
+
+	const names = awards.map((award: { name: string }) => award.name).join(' ');
+	for (const title of ['Kalpana', 'Algomania', 'Tensor', 'Hack-o-ween']) {
+		expect(names, title).toContain(title);
+	}
+});
+
+test('the university index describes the PESU I/O teaching role', async ({ page }) => {
+	await page.goto('/university');
+
+	const raw = await page.locator('script[type="application/ld+json"]').first().textContent();
+	const data = JSON.parse(raw!);
+	const role = data['@graph'].find(
+		(node: { '@type': string }) => node['@type'] === 'OrganizationRole',
+	);
+
+	expect(role).toBeTruthy();
+	expect(role.roleName).toContain('Subject Matter Expert');
+	expect(role.memberOf['@type']).toBe('EducationalOrganization');
+	expect(role.memberOf.name).toContain('PESU I/O');
+	expect(role.startDate).toBe('2025-08');
+	expect(role.endDate).toBe('2025-11');
+	expect(role.description).toContain('55 students');
+});
+
+test('index pages emit gallery ImageObject nodes', async ({ page }) => {
+	for (const path of ['/achievements', '/university']) {
+		await page.goto(path);
+		const raw = await page.locator('script[type="application/ld+json"]').first().textContent();
+		const data = JSON.parse(raw!);
+		const images = data['@graph'].filter(
+			(node: { '@type': string }) => node['@type'] === 'ImageObject',
+		);
+		expect(images.length, path).toBeGreaterThan(0);
+		for (const image of images) {
+			expect(image.contentUrl, path).toMatch(/^https:\/\/angadbhalla\.com\//);
+			expect(image.description.length, path).toBeGreaterThan(10);
+		}
+	}
+});
+
+test('the Person image is a described ImageObject', async ({ page }) => {
+	await page.goto('/');
+
+	const raw = await page.locator('script[type="application/ld+json"]').first().textContent();
+	const data = JSON.parse(raw!);
+	const person = data['@graph'].find((node: { '@type': string }) => node['@type'] === 'Person');
+
+	expect(typeof person.image).toBe('object');
+	expect(person.image['@type']).toBe('ImageObject');
+	expect(person.image.url).toBe('https://angadbhalla.com/og.jpg');
+	expect(person.image.width).toBe(1200);
+	expect(person.image.height).toBe(630);
+});
+
 test('the portrait is not over-compressed', async ({ page }) => {
 	await page.goto('/');
 

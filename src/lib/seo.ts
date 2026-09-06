@@ -30,7 +30,16 @@ export function personSchema(): JsonLd {
 		email: `mailto:${PROFILE.email}`,
 		jobTitle: PROFILE.jobTitle,
 		description: PROFILE.description,
-		image: absoluteUrl('/og.jpg'),
+		// A described image node rather than a bare URL, so the portrait carries
+		// its dimensions and caption for image search and entity association.
+		image: {
+			'@type': 'ImageObject',
+			url: absoluteUrl('/og.jpg'),
+			contentUrl: absoluteUrl('/og.jpg'),
+			width: 1200,
+			height: 630,
+			caption: `${PROFILE.name}, software engineer in Bengaluru.`,
+		},
 		address: {
 			'@type': 'PostalAddress',
 			...PROFILE.address,
@@ -97,12 +106,18 @@ export function profilePageSchema(options: {
 	};
 }
 
-/** A page that lists other things, with the list itself described. */
+/**
+ * A page that lists other things, with the list itself described.
+ *
+ * `path` is optional on purpose. Only entries with a real detail route should
+ * carry a `url`; advertising a fragment (`/achievements#slug`) or a route that
+ * does not exist would point crawlers at a 404.
+ */
 export function collectionPageSchema(options: {
 	path: string;
 	name: string;
 	description: string;
-	items: Array<{ name: string; path: string }>;
+	items: Array<{ name: string; path?: string }>;
 }): JsonLd {
 	return {
 		'@type': 'CollectionPage',
@@ -115,14 +130,84 @@ export function collectionPageSchema(options: {
 		mainEntity: {
 			'@type': 'ItemList',
 			numberOfItems: options.items.length,
-			itemListElement: options.items.map((item, index) => ({
-				'@type': 'ListItem',
-				position: index + 1,
-				name: item.name,
-				url: absoluteUrl(item.path),
-			})),
+			itemListElement: options.items.map((item, index) => {
+				const node: JsonLd = {
+					'@type': 'ListItem',
+					position: index + 1,
+					name: item.name,
+				};
+				if (item.path) node.url = absoluteUrl(item.path);
+				return node;
+			}),
 		},
 	};
+}
+
+/**
+ * A prize or medal.
+ *
+ * schema.org has no `Award` class, only the `award` property, so the node is a
+ * `CreativeWork` tagged with `additionalType` and linked to the person through
+ * `recipient`. That is the shape search engines understand for rich results.
+ */
+export function awardSchema(options: {
+	name: string;
+	description: string;
+	/** The organisation that granted the award. */
+	awardedBy: string;
+	/** ISO date, e.g. `2025-02`. */
+	date: string;
+	/** Detail page, when one exists. */
+	url?: string;
+}): JsonLd {
+	const node: JsonLd = {
+		'@type': 'CreativeWork',
+		additionalType: 'https://schema.org/Award',
+		name: options.name,
+		description: options.description,
+		awardedBy: { '@type': 'Organization', name: options.awardedBy },
+		recipient: { '@id': PERSON_ID },
+		datePublished: options.date,
+	};
+
+	if (options.url) node.url = absoluteUrl(options.url);
+
+	return node;
+}
+
+/**
+ * A role held at an organisation, e.g. teaching or a club position.
+ *
+ * `OrganizationRole` is the schema.org way to qualify a membership with a
+ * title and a date range; `memberOf` names the organisation.
+ */
+export function organizationRoleSchema(options: {
+	roleName: string;
+	organization: string;
+	/** Narrower type for the organisation, e.g. `EducationalOrganization`. */
+	organizationType?: string;
+	/** ISO date, e.g. `2025-08`. */
+	startDate?: string;
+	/** ISO date, e.g. `2025-11`. */
+	endDate?: string;
+	description?: string;
+	url?: string;
+}): JsonLd {
+	const node: JsonLd = {
+		'@type': 'OrganizationRole',
+		roleName: options.roleName,
+		memberOf: {
+			'@type': options.organizationType ?? 'Organization',
+			name: options.organization,
+		},
+	};
+
+	if (options.startDate) node.startDate = options.startDate;
+	if (options.endDate) node.endDate = options.endDate;
+	if (options.description) node.description = options.description;
+	if (options.url) node.url = absoluteUrl(options.url);
+
+	return node;
 }
 
 /** A single achievement, award, or role. */
@@ -182,6 +267,35 @@ export function imageObjectSchema(options: {
 	if (options.height) node.height = options.height;
 
 	return node;
+}
+
+/**
+ * Every gallery photograph as its own `ImageObject` node.
+ *
+ * Index pages use this so the images are indexable even though they only
+ * render inside a lightbox on the detail page. Duplicate URLs are dropped, so
+ * an image shared by two entries is described once.
+ */
+export function galleryImageObjects(
+	images: Array<{ src: { src: string; width: number; height: number }; caption: string }>,
+): JsonLd[] {
+	const seen = new Set<string>();
+	const nodes: JsonLd[] = [];
+
+	for (const image of images) {
+		if (seen.has(image.src.src)) continue;
+		seen.add(image.src.src);
+		nodes.push(
+			imageObjectSchema({
+				url: image.src.src,
+				caption: image.caption,
+				width: image.src.width,
+				height: image.src.height,
+			}),
+		);
+	}
+
+	return nodes;
 }
 
 /** A software project, with its repository and language list. */
