@@ -1,51 +1,43 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
+/* ---------------------------------------------------------------------------
+   Theme tokens.
+   Dark only, by design. There is no light mode.
+
+   The canvas is neutral-900. `--color-line` and `--color-dim` are the two
+   greys the terminal chrome needs; everything else comes from Tailwind's
+   neutral scale directly in the markup.
+   --------------------------------------------------------------------------- */
+@theme {
+	--color-line: #262626; /* neutral-800 */
+	--color-dim: #737373; /* neutral-500 */
+	--color-accent: #7d9b76;
+}
+
+/* `hidden` has to win over component display rules. */
 @layer base {
+	[hidden] {
+		display: none !important;
+	}
+
+	html {
+		color-scheme: dark;
+		-webkit-text-size-adjust: 100%;
+	}
+
 	html,
 	body {
 		height: 100%;
-		scroll-snap-type: y mandatory;
-		scrollbar-width: thin;
-		scrollbar-color: rgba(255, 255, 255, 0.22) #171717;
 	}
 
-	html::-webkit-scrollbar,
-	body::-webkit-scrollbar {
-		width: 10px;
+	body {
+		/* The opening sequence is a single viewport that gets replaced, not a
+		   scroll target. Each section is its own fixed, scrolling viewport. */
+		overflow: hidden;
 	}
 
-	html::-webkit-scrollbar-track,
-	body::-webkit-scrollbar-track {
-		background: #171717;
+	::selection {
+		background: var(--color-accent);
+		color: var(--color-neutral-900);
 	}
-
-	html::-webkit-scrollbar-thumb,
-	body::-webkit-scrollbar-thumb {
-		border-radius: 9999px;
-		border: 2px solid #171717;
-		background: rgba(255, 255, 255, 0.22);
-	}
-
-	html::-webkit-scrollbar-thumb:hover,
-	body::-webkit-scrollbar-thumb:hover {
-		background: rgba(255, 255, 255, 0.3);
-	}
-}
-
-.spin-scale-hover {
-    display: inline-block;
-    transition: transform 0.6s ease-out;
-}
-  
-.spin-scale-hover:hover {
-    animation: spinOnce 0.5s forwards;
-}
-
-@keyframes spinOnce {
-    0% {
-        transform: rotate(0deg) scale(1);
-    }
-    100% {
-        transform: rotate(360deg) scale(1.2);
-    }
 }

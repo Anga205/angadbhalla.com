@@ -1,15 +1,28 @@
 ---
-import DesktopHome from "@/components/views/desktop/Home.astro";
-import MobileHome from "@/components/views/mobile/Home.astro";
-
-export const prerender = false;
-
-const userAgent = Astro.request.headers.get("user-agent") ?? "";
-const mobileHint = Astro.request.headers.get("sec-ch-ua-mobile");
-
-const isMobile =
-    mobileHint === "?1" ||
-    /Android|iPhone|iPad|Mobile/i.test(userAgent);
+import { Font } from 'astro:assets';
+import OpeningSequence from '../components/OpeningSequence.astro';
+import CodeDemo from '../components/CodeDemo.astro';
+import '../styles/global.css';
 ---
 
-{isMobile ? <MobileHome /> : <DesktopHome />}
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="generator" content={Astro.generator} />
+		<meta name="color-scheme" content="dark" />
+		<meta name="theme-color" content="#000000" />
+		<meta
+			name="description"
+			content="Angad Bhalla. Computer science student in Bengaluru. Systems software, small binaries, boring infrastructure."
+		/>
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="icon" href="/favicon.ico" sizes="32x32" />
+		<title>anga</title>
+		<Font cssVariable="--font-mono" preload />
+	</head>
+	<body class="bg-neutral-900 font-mono text-neutral-200 antialiased">
+		<OpeningSequence />
+		<CodeDemo />
+	</body>
+</html>

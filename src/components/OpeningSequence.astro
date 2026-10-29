@@ -1,0 +1,351 @@
+---
+/**
+ * OpeningSequence.astro
+ *
+ * The first thing a visitor sees: a black screen, then a terminal frame that
+ * types a short greeting, backspaces it, and types the real message.
+ *
+ * ---------------------------------------------------------------------------
+ * SEQUENCE STATES
+ * ---------------------------------------------------------------------------
+ * The sequence is a declarative list of steps walked by `run()`. Each step is
+ * one of:
+ *
+ *   hold    pause for N ms. The cursor blinks during holds (it is idle).
+ *   frame   fade the terminal frame in, then wait for the fade to finish.
+ *   type    append one character at a time, BASE_MS +/- JITTER_MS apart.
+ *   delete  remove one character at a time, BACKSPACE_MS apart (no jitter).
+ *   newline append a hard line break (instant, no delay).
+ *   button  reveal the `next` button.
+ *
+ * The order is:
+ *
+ *   hold 600      black screen, nothing on it
+ *   frame         frame fades in
+ *   type          "Hello there!"
+ *   hold 900      cursor blinks on the greeting
+ *   delete        backspace the greeting at roughly 2x typing speed
+ *   hold 250      empty line, cursor blinks
+ *   type          "I could write a paragraph about who I am and what I do,"
+ *   hold 700      the comma lands, then a beat
+ *   newline       cursor drops to line two
+ *   type          "but thats what everyone does,"
+ *   hold 450      the second comma lands, then a beat
+ *   newline       cursor drops to line three
+ *   type          "so imma just show you"
+ *   hold 400
+ *   button        `next` fades in
+ *
+ * ---------------------------------------------------------------------------
+ * CHANGING TIMINGS
+ * ---------------------------------------------------------------------------
+ * BASE_MS is the single knob for overall speed. Everything else is a hold
+ * length in STEPS. At BASE_MS = 45 the whole sequence runs in about 9.0s.
+ *
+ * ---------------------------------------------------------------------------
+ * REDUCED MOTION
+ * ---------------------------------------------------------------------------
+ * If the visitor prefers reduced motion, the typing is skipped entirely: the
+ * final text is rendered at once and the button appears after 1s.
+ *
+ * ---------------------------------------------------------------------------
+ * SKIP (not built)
+ * ---------------------------------------------------------------------------
+ * `renderFinal()` + `showButton()` jump straight to the end state. Wiring a
+ * keypress or click to those two calls is all a skip needs. It is left out
+ * because an accidental keypress during load would kill the sequence.
+ */
+
+// Server-rendered into the frame so the page still reads without JS. The
+// script reads this back and clears it before the frame becomes visible, so
+// it is never seen when JS runs. This is the single source of truth for the
+// final copy; the script's LINE_* constants only drive the typing.
+const FINAL_TEXT =
+	'I could write a paragraph about who I am and what I do,\nbut thats what everyone does,\nso imma just show you';
+---
+
+<section
+	class="fixed inset-0 flex overflow-y-auto bg-neutral-900 px-3 py-6 transition-opacity duration-[350ms] sm:px-5 sm:py-10"
+	id="opening"
+>
+	<div class="m-auto w-full max-w-[720px]">
+		<div
+			class="border border-line opacity-0 transition-opacity duration-300"
+			id="frame"
+			aria-hidden="true"
+		>
+			<div
+				class="select-none border-b border-line px-3.5 py-2 text-xs leading-snug tracking-[0.02em] text-dim sm:px-4 sm:py-[9px]"
+			>
+				anga@portfolio
+			</div>
+			<div class="px-3.5 py-5 text-sm leading-[1.75] sm:px-5 sm:py-[26px] sm:pb-[30px] sm:text-[15px]">
+				<div class="flex gap-[0.9ch]">
+					<span class="shrink-0 select-none text-accent">$</span>
+					<span class="min-w-0 flex-1 whitespace-pre-wrap break-words"
+						><span id="typed">{FINAL_TEXT}</span><span
+							class="ml-[0.1em] inline-block h-[1.05em] w-[0.55em] translate-y-[0.16em] bg-accent"
+							id="cursor"></span
+						></span
+					>
+				</div>
+			</div>
+		</div>
+
+		{/* Reserves the button's space so the frame does not jump when it appears. */}
+		<div class="mt-3.5 h-10">
+			<button
+				class="inline-flex items-center gap-2 border border-line px-3 py-1.5 text-sm text-neutral-400 opacity-0 transition-[opacity,color,border-color] duration-200 hover:border-neutral-600 hover:text-neutral-100 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-accent"
+				id="next"
+				type="button"
+				hidden
+			>
+				next
+				<svg
+					class="h-3.5 w-3.5"
+					viewBox="0 0 16 16"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="square"
+					aria-hidden="true"
+				>
+					<path d="M3 8h10M9 4l4 4-4 4"></path>
+				</svg>
+			</button>
+		</div>
+	</div>
+
+	<p class="sr-only">{FINAL_TEXT}</p>
+</section>
+
+{/*
+  No-JS fallback. The frame starts at opacity 0 and is only revealed by the
+  script, so the text above is never seen before JS runs. If JS never runs,
+  this reveals the frame with the final text already in place.
+*/}
+<noscript>
+	<style>
+		#frame {
+			opacity: 1;
+		}
+
+		#cursor,
+		#next {
+			display: none;
+		}
+	</style>
+</noscript>
+
+{/*
+  Only the state classes Tailwind cannot express live here. Everything else is
+  utility classes in the markup above.
+*/}
+<style>
+	/* Solid while typing; blinks only during the pauses. */
+	#cursor.is-idle {
+		animation: blink 1.06s step-end infinite;
+	}
+
+	@keyframes blink {
+		50% {
+			opacity: 0;
+		}
+	}
+
+	#opening.is-leaving {
+		opacity: 0;
+	}
+
+	#frame.is-visible {
+		opacity: 1;
+	}
+
+	#next.is-visible {
+		opacity: 1;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#opening,
+		#frame,
+		#next {
+			transition: none;
+		}
+
+		#cursor.is-idle {
+			animation: none;
+		}
+	}
+</style>
+
+<script>
+	const BASE_MS = 45;
+	const JITTER_MS = 15;
+	const BACKSPACE_MS = 25;
+	const FRAME_FADE_MS = 300;
+	const LEAVE_MS = 350;
+	const REDUCED_HOLD_MS = 1000;
+
+	const LINE_1 = 'Hello there!';
+	const LINE_2 = 'I could write a paragraph about who I am and what I do,';
+	const LINE_3 = 'but thats what everyone does,';
+	const LINE_4 = 'so imma just show you';
+
+	type Step =
+		| { kind: 'hold'; ms: number }
+		| { kind: 'frame' }
+		| { kind: 'type'; text: string }
+		| { kind: 'delete'; count: number }
+		| { kind: 'newline' }
+		| { kind: 'button' };
+
+	const STEPS: Step[] = [
+		{ kind: 'hold', ms: 600 },
+		{ kind: 'frame' },
+		{ kind: 'type', text: LINE_1 },
+		{ kind: 'hold', ms: 1500 },
+		{ kind: 'delete', count: LINE_1.length },
+		{ kind: 'hold', ms: 250 },
+		{ kind: 'type', text: LINE_2 },
+		{ kind: 'hold', ms: 1000 },
+		{ kind: 'newline' },
+		{ kind: 'type', text: LINE_3 },
+		{ kind: 'hold', ms: 700 },
+		{ kind: 'newline' },
+		{ kind: 'type', text: LINE_4 },
+		{ kind: 'hold', ms: 700 },
+		{ kind: 'button' },
+	];
+
+	function byId<T extends HTMLElement>(id: string): T {
+		const el = document.getElementById(id);
+		if (!el) throw new Error(`OpeningSequence: missing #${id}`);
+		return el as T;
+	}
+
+	const frame = byId('frame');
+	const typed = byId('typed');
+	const cursor = byId('cursor');
+	const nextBtn = byId<HTMLButtonElement>('next');
+	const opening = byId('opening');
+	// The second section. Owned by CodeDemo.astro; this only reveals it.
+	const demo = byId('demo');
+
+	const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	let buffer = '';
+	let cancelled = false;
+	let leaving = false;
+
+	// The final text is server-rendered as a no-JS fallback. Read it back, then
+	// clear it before anything becomes visible so typing starts from an empty
+	// line. Reading it here keeps the copy in one place.
+	const FINAL_TEXT = typed.textContent ?? '';
+	render();
+
+	const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+	const jitter = () => (Math.random() * 2 - 1) * JITTER_MS;
+
+	function render() {
+		typed.textContent = buffer;
+	}
+
+	function setIdle(idle: boolean) {
+		cursor.classList.toggle('is-idle', idle);
+	}
+
+	function fadeIn(el: HTMLElement) {
+		el.hidden = false;
+		// Two frames so the browser commits the visible-but-transparent state
+		// before the transition to opacity 1 starts.
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => el.classList.add('is-visible'));
+		});
+	}
+
+	function showButton() {
+		fadeIn(nextBtn);
+	}
+
+	function renderFinal() {
+		cancelled = true;
+		buffer = FINAL_TEXT;
+		render();
+		frame.classList.add('is-visible');
+		setIdle(true);
+	}
+
+	async function run() {
+		for (const step of STEPS) {
+			if (cancelled) return;
+
+			switch (step.kind) {
+				case 'hold': {
+					setIdle(true);
+					await sleep(step.ms);
+					break;
+				}
+				case 'frame': {
+					frame.classList.add('is-visible');
+					await sleep(FRAME_FADE_MS);
+					break;
+				}
+				case 'type': {
+					setIdle(false);
+					for (const ch of step.text) {
+						if (cancelled) return;
+						buffer += ch;
+						render();
+						await sleep(BASE_MS + jitter());
+					}
+					break;
+				}
+				case 'delete': {
+					setIdle(false);
+					for (let i = 0; i < step.count; i++) {
+						if (cancelled) return;
+						buffer = buffer.slice(0, -1);
+						render();
+						await sleep(BACKSPACE_MS);
+					}
+					break;
+				}
+				case 'newline': {
+					buffer += '\n';
+					render();
+					break;
+				}
+				case 'button': {
+					showButton();
+					break;
+				}
+			}
+		}
+	}
+
+	nextBtn.addEventListener('click', () => {
+		if (leaving) return;
+		leaving = true;
+
+		opening.classList.add('is-leaving');
+
+		setTimeout(
+			() => {
+				opening.hidden = true;
+				fadeIn(demo);
+				demo.focus();
+			},
+			reduced ? 0 : LEAVE_MS,
+		);
+	});
+
+	// Skip hook (not wired): any keypress or click jumps to the end state.
+	// window.addEventListener('keydown', () => { renderFinal(); showButton(); }, { once: true });
+
+	if (reduced) {
+		renderFinal();
+		setTimeout(showButton, REDUCED_HOLD_MS);
+	} else {
+		run();
+	}
+</script>

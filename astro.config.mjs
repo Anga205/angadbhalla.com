@@ -1,39 +1,32 @@
 // @ts-check
-import netlify from '@astrojs/netlify';
+import { defineConfig, fontProviders } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'astro/config';
-
-import solidJs from '@astrojs/solid-js';
 
 // https://astro.build/config
 export default defineConfig({
-    output: 'server',
-    adapter: netlify(),
-    vite: {
-        resolve: {
-            alias: {
-                '@': new URL('./src', import.meta.url).pathname
-            }
-        },
-        build: {
-            rollupOptions: {
-                output: {
-                    assetFileNames: (assetInfo) => {
-                        const assetName = assetInfo.name ?? '';
-
-                        if (assetName.startsWith('.')) {
-                            const safeName = assetName.slice(1).replace(/\.css$/, '');
-                            return `_astro/${safeName}-[hash][extname]`;
-                        }
-
-                        return '[name].[hash][extname]';
-                    }
-                }
-            }
-        },
-        plugins: [
-            tailwindcss()
-        ]
-    },
-    integrations: [solidJs()]
+	vite: {
+		plugins: [tailwindcss()],
+	},
+	// One font for the whole site: JetBrains Mono, latin subset only.
+	// The woff2 is ~40KB and is preloaded from the page head, so the black
+	// first paint is never blocked on it. Astro fingerprints and serves the
+	// file itself; nothing is fetched from a third party.
+	fonts: [
+		{
+			provider: fontProviders.local(),
+			name: 'JetBrains Mono',
+			cssVariable: '--font-mono',
+			fallbacks: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+			options: {
+				variants: [
+					{
+						src: ['@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2'],
+						weight: '100 800',
+						style: 'normal',
+						display: 'swap',
+					},
+				],
+			},
+		},
+	],
 });

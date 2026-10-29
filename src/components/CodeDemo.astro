@@ -1,0 +1,513 @@
+---
+/**
+ * CodeDemo.astro
+ *
+ * The second viewport: a live demo of the code execution API, a short
+ * explanation of the sandbox, and links.
+ *
+ * ---------------------------------------------------------------------------
+ * API CONTRACT
+ * ---------------------------------------------------------------------------
+ * POST https://codeapi.anga.codes/v2/execute
+ *   request   { language, code, timeout?, max_memory?, inputs? }
+ *   response  { output, error, cpu_time, memory_used }
+ *
+ * `cpu_time` is nanoseconds and `memory_used` is kilobytes. Both are raw
+ * numbers on the wire and are formatted for display in the script below.
+ * `cpu_time` is labelled "runtime" because it reflects wall-clock time to
+ * termination, not CPU time.
+ *
+ * The API appends a suffix to its sentinel errors, so `error` for a timeout is
+ * actually "Execution Timed Out\nProcess terminated by signal SIGKILL (9):
+ * killed". Matching is done on the first line, not the whole string.
+ *
+ * ---------------------------------------------------------------------------
+ * CAPS
+ * ---------------------------------------------------------------------------
+ * The API allows up to 60s and 128MB. The demo asks for 10s and 64MB so a
+ * single visitor cannot exhaust the shared global RAM budget. See TIMEOUT_NS
+ * and MAX_MEMORY_KB in the script.
+ *
+ * ---------------------------------------------------------------------------
+ * SNIPPETS
+ * ---------------------------------------------------------------------------
+ * All starter code lives in src/data/snippets.ts, keyed by algorithm then
+ * language. Adding an algorithm means adding one entry there.
+ *
+ * ---------------------------------------------------------------------------
+ * MONACO
+ * ---------------------------------------------------------------------------
+ * Monaco is imported dynamically the first time this section scrolls into
+ * view, so it lands in its own chunk and never touches the opening sequence's
+ * first paint. A plain <script> is used rather than a framework island: Astro
+ * already scopes it to this page, and this avoids shipping a framework runtime
+ * just to get client:visible behaviour.
+ *
+ * ---------------------------------------------------------------------------
+ * EXPLANATION
+ * ---------------------------------------------------------------------------
+ * The explanation is static text styled to match the terminal voice rather
+ * than a second typing state machine. Simpler, and it cannot fight the opening
+ * sequence for attention.
+ */
+import {
+	ALGORITHMS,
+	ALGORITHM_LABELS,
+	LANGUAGES,
+	LANGUAGE_LABELS,
+	SNIPPETS,
+} from '../data/snippets';
+---
+
+<section
+	class="fixed inset-0 overflow-y-auto bg-neutral-900 opacity-0 transition-opacity duration-[350ms] focus:outline-none"
+	id="demo"
+	tabindex="-1"
+	hidden
+>
+	<div class="mx-auto max-w-[1080px] px-3 pt-6 pb-12 sm:px-5 sm:pt-8 sm:pb-10">
+		{/* The 1px gap over a line-coloured background is the divider between
+		    panes. No cards, no shadows. */}
+		<div
+			class="grid grid-cols-1 gap-px border border-line bg-line lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
+			id="workbench"
+		>
+			<div class="flex min-w-0 flex-col bg-neutral-900">
+				<div class="flex flex-wrap gap-x-5 gap-y-2 border-b border-line px-3.5 py-2.5">
+					<label class="flex items-baseline gap-2">
+						<span class="text-[11px] text-dim">algorithm</span>
+						<select
+							class="cursor-pointer border border-line bg-neutral-900 px-1 py-0.5 text-xs text-neutral-200 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-accent"
+							id="algorithm"
+						>
+							{ALGORITHMS.map((a) => <option value={a}>{ALGORITHM_LABELS[a]}</option>)}
+						</select>
+					</label>
+					<label class="flex items-baseline gap-2">
+						<span class="text-[11px] text-dim">language</span>
+						<select
+							class="cursor-pointer border border-line bg-neutral-900 px-1 py-0.5 text-xs text-neutral-200 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-accent"
+							id="language"
+						>
+							{LANGUAGES.map((l) => <option value={l}>{LANGUAGE_LABELS[l]}</option>)}
+						</select>
+					</label>
+				</div>
+
+				<div class="relative h-[260px] lg:h-[clamp(220px,34vh,340px)]" id="editor-shell">
+					<div class="absolute inset-0" id="editor"></div>
+					{/* Shown until Monaco mounts, and forever if it never does. */}
+					<pre
+						class="absolute inset-0 m-0 overflow-auto px-3.5 py-3 text-[13px] leading-[1.6] whitespace-pre text-neutral-200"
+						id="editor-fallback">{SNIPPETS.fibonacci.python}</pre>
+				</div>
+			</div>
+
+			<div class="flex min-w-0 flex-col bg-neutral-900">
+				<div class="flex items-center gap-3 border-b border-line px-3.5 py-2.5">
+					<button
+						class="cursor-pointer border border-line px-3 py-[3px] text-xs text-neutral-200 transition-colors hover:border-neutral-600 hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default disabled:text-dim disabled:hover:border-line"
+						id="run"
+						type="button"
+						disabled>run</button
+					>
+					<span class="text-[11px] text-dim" id="run-status" role="status"></span>
+				</div>
+				<div
+					class="max-h-[260px] min-h-40 flex-1 overflow-auto px-3.5 py-3 text-[12.5px] leading-[1.6] lg:max-h-[clamp(220px,34vh,340px)]"
+					id="output"
+					aria-live="polite"
+				>
+					<p class="m-0 text-dim">hit run to execute</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="mt-5 max-w-[62ch] text-[13.5px] leading-[1.7] text-neutral-400">
+			<p class="mb-3">
+				<span class="mr-[0.6ch] text-accent">$</span> the sandbox is built by hand. namespaces, cgroups
+				v2, chroot, seccomp-bpf, straight against the kernel. no docker, no container runtime in
+				between.
+			</p>
+			<p class="mb-3">
+				less overhead per execution, and the part i actually care about is the isolation boundary,
+				not the compiler.
+			</p>
+			<p class="mb-3">
+				four languages, hard limits on time and memory. the point is running untrusted code without
+				it escaping, not being a general purpose compute service.
+			</p>
+			<p class="mb-3">
+				honest limitation: this is a demo on a shared host with a 1gb global ram budget, so heavy
+				requests may get rejected. if it says no, thats why.
+			</p>
+		</div>
+
+		<div class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[13px]">
+			<a
+				class="text-neutral-400 no-underline hover:text-neutral-100 hover:underline"
+				href="https://github.com/Anga205/CodeExecutionAPI">github.com/Anga205/CodeExecutionAPI</a
+			>
+			<a
+				class="text-neutral-400 no-underline hover:text-neutral-100 hover:underline"
+				href="https://compiler.anga.codes">compiler.anga.codes</a
+			>
+		</div>
+
+		<div class="mt-5">
+			<button
+				class="inline-flex items-center gap-2 border border-line px-3 py-1.5 text-sm text-neutral-400 transition-[color,border-color] duration-200 hover:border-neutral-600 hover:text-neutral-100 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-accent"
+				id="demo-next"
+				type="button"
+			>
+				next
+				<svg
+					class="h-3.5 w-3.5"
+					viewBox="0 0 16 16"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					stroke-linecap="square"
+					aria-hidden="true"
+				>
+					<path d="M3 8h10M9 4l4 4-4 4"></path>
+				</svg>
+			</button>
+		</div>
+	</div>
+</section>
+
+<section
+	class="fixed inset-0 grid place-items-center bg-neutral-900 p-5 text-[13px] text-dim opacity-0 transition-opacity duration-[350ms] focus:outline-none"
+	id="next-placeholder"
+	tabindex="-1"
+	hidden
+>
+	<p class="m-0">[third section, not built yet]</p>
+</section>
+
+{/*
+  Only the state classes Tailwind cannot express live here. Everything else is
+  utility classes in the markup above.
+*/}
+<style>
+	#demo.is-visible,
+	#next-placeholder.is-visible {
+		opacity: 1;
+	}
+
+	#demo.is-leaving {
+		opacity: 0;
+	}
+
+	/* Shown until Monaco mounts, and forever if it never does. */
+	#editor-shell.is-ready #editor-fallback {
+		display: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#demo,
+		#next-placeholder {
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	import { SNIPPETS, type Algorithm, type Language } from '../data/snippets';
+
+	const API_URL = 'https://codeapi.anga.codes/v2/execute';
+
+	// Well under the API maximums (60s / 128MB) so one visitor cannot exhaust
+	// the shared global RAM budget.
+	const TIMEOUT_NS = 10_000_000_000;
+	const MAX_MEMORY_KB = 65_536;
+
+	// Client-side guard, above the server cap so the server's own timeout wins.
+	const CLIENT_TIMEOUT_MS = 20_000;
+
+	const LEAVE_MS = 350;
+
+	const MONACO_LANGUAGE: Record<Language, string> = {
+		python: 'python',
+		cpp: 'cpp',
+		c: 'c',
+		java: 'java',
+	};
+
+	// The API appends a suffix to these, so match on the first line only.
+	const SENTINELS: Record<string, string> = {
+		'Execution Timed Out': 'it ran past the 10s limit and got killed.',
+		'Memory limit exceeded': 'it asked for more than 64mb and got killed.',
+	};
+
+	function byId<T extends HTMLElement>(id: string): T {
+		const el = document.getElementById(id);
+		if (!el) throw new Error(`CodeDemo: missing #${id}`);
+		return el as T;
+	}
+
+	const section = byId('demo');
+	const editorHost = byId('editor');
+	const editorShell = byId('editor-shell');
+	const algorithmSelect = byId<HTMLSelectElement>('algorithm');
+	const languageSelect = byId<HTMLSelectElement>('language');
+	const runBtn = byId<HTMLButtonElement>('run');
+	const runStatus = byId('run-status');
+	const output = byId('output');
+	const nextBtn = byId<HTMLButtonElement>('demo-next');
+	const placeholder = byId('next-placeholder');
+
+	const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	type Monaco = typeof import('monaco-editor/editor/editor.api');
+
+	let monaco: Monaco | null = null;
+	let editor: import('monaco-editor/editor/editor.api').editor.IStandaloneCodeEditor | null = null;
+	let running = false;
+
+	const currentAlgorithm = () => algorithmSelect.value as Algorithm;
+	const currentLanguage = () => languageSelect.value as Language;
+	const snippet = () => SNIPPETS[currentAlgorithm()][currentLanguage()];
+
+	/* ---------------------------------------------------------------- editor */
+
+	async function initEditor() {
+		if (editor) return;
+
+		// The worker has to be registered before the first editor is created.
+		const workerMod = await import('monaco-editor/editor/editor.worker?worker');
+		(self as unknown as { MonacoEnvironment: unknown }).MonacoEnvironment = {
+			getWorker: () => new workerMod.default(),
+		};
+
+		// editor.api is the lean entry: it has no language definitions and no
+		// editor contributions. The full `monaco-editor` entry pulls in all 81
+		// language stubs plus the TypeScript, CSS, HTML and JSON workers, which
+		// came to ~14MB of build output for four languages. Only the three
+		// grammars actually offered are registered below.
+		monaco = await import('monaco-editor/editor/editor.api');
+		await Promise.all([
+			import('monaco-editor/languages/definitions/python/register'),
+			// This one registers both the "c" and "cpp" language ids.
+			import('monaco-editor/languages/definitions/cpp/register'),
+			import('monaco-editor/languages/definitions/java/register'),
+		]);
+
+		editor = monaco.editor.create(editorHost, {
+			value: snippet(),
+			language: MONACO_LANGUAGE[currentLanguage()],
+			// VS Code's built-in dark theme, unmodified.
+			theme: 'vs-dark',
+			fontFamily: getComputedStyle(document.body).fontFamily,
+			fontSize: 13,
+			lineHeight: 21,
+			minimap: { enabled: false },
+			// Breadcrumbs are off by default in the standalone editor and the
+			// option is not in the standalone options type, so nothing to set.
+			glyphMargin: false,
+			folding: false,
+			lineDecorationsWidth: 8,
+			lineNumbersMinChars: 3,
+			renderLineHighlight: 'none',
+			scrollBeyondLastLine: false,
+			automaticLayout: true,
+			wordWrap: 'on',
+			tabSize: 4,
+			padding: { top: 12, bottom: 12 },
+			scrollbar: {
+				verticalScrollbarSize: 8,
+				horizontalScrollbarSize: 8,
+				// Let the page scroll once the editor hits its own limit, so the
+				// editor does not trap touch scrolling on mobile.
+				alwaysConsumeMouseWheel: false,
+			},
+		});
+
+		editorShell.classList.add('is-ready');
+		runBtn.disabled = false;
+		section.dataset.ready = 'true';
+
+		// Test seam so the Playwright suite can read and set editor content
+		// without scraping Monaco's rendered DOM. Not used by the page itself.
+		(window as unknown as { __demo: unknown }).__demo = {
+			getCode: () => editor?.getValue() ?? '',
+			setCode: (code: string) => editor?.setValue(code),
+		};
+	}
+
+	function syncEditor() {
+		if (!editor || !monaco) return;
+		const model = editor.getModel();
+		if (!model) return;
+		editor.setValue(snippet());
+		monaco.editor.setModelLanguage(model, MONACO_LANGUAGE[currentLanguage()]);
+	}
+
+	algorithmSelect.addEventListener('change', syncEditor);
+	languageSelect.addEventListener('change', syncEditor);
+
+	/* ----------------------------------------------------------------- output */
+
+	function el(tag: string, className: string, text?: string): HTMLElement {
+		const node = document.createElement(tag);
+		node.className = className;
+		if (text !== undefined) node.textContent = text;
+		return node;
+	}
+
+	function formatRuntime(ns: number): string {
+		if (!Number.isFinite(ns) || ns < 0) return 'unknown';
+		if (ns < 1_000_000) return `${Math.round(ns / 1000)}µs`;
+		if (ns < 1_000_000_000) return `${(ns / 1_000_000).toFixed(1)}ms`;
+		return `${(ns / 1_000_000_000).toFixed(2)}s`;
+	}
+
+	function formatMemory(kb: number): string {
+		if (!Number.isFinite(kb) || kb < 0) return 'unknown';
+		if (kb < 1024) return `${Math.round(kb)}kb`;
+		return `${(kb / 1024).toFixed(1)}mb`;
+	}
+
+	// Output nodes are built in JS, so their styling is utility classes here
+	// rather than in the markup. `data-output` is the stable hook the tests use.
+	const CLS = {
+		idle: 'm-0 text-dim',
+		stdout: 'mb-2.5 whitespace-pre-wrap break-words text-neutral-200',
+		stderr: 'mb-2.5 whitespace-pre-wrap break-words text-red-400/80',
+		note: 'mb-2.5 text-accent',
+		meta: 'mt-3 mb-0 text-[11px] text-dim',
+		link: 'text-neutral-400 no-underline hover:text-neutral-100 hover:underline',
+	};
+
+	function out(tag: string, kind: string, text?: string): HTMLElement {
+		const node = el(tag, CLS[kind as keyof typeof CLS], text);
+		node.dataset.output = kind;
+		return node;
+	}
+
+	function renderIdle(text: string) {
+		output.replaceChildren(out('p', 'idle', text));
+	}
+
+	function renderResult(data: {
+		output?: string;
+		error?: string;
+		cpu_time?: number;
+		memory_used?: number;
+	}) {
+		const stdout = (data.output ?? '').trimEnd();
+		const stderr = (data.error ?? '').trimEnd();
+		// The API appends a suffix to sentinels, so compare the first line.
+		const sentinel = SENTINELS[stderr.split('\n')[0].trim()];
+
+		const nodes: HTMLElement[] = [];
+
+		if (sentinel) {
+			nodes.push(out('p', 'note', sentinel));
+		} else {
+			if (stdout) nodes.push(out('pre', 'stdout', stdout));
+			if (stderr) nodes.push(out('pre', 'stderr', stderr));
+			if (!stdout && !stderr) nodes.push(out('p', 'idle', 'no output'));
+		}
+
+		const meta = out('p', 'meta');
+		meta.textContent = `runtime ${formatRuntime(data.cpu_time ?? NaN)}   memory ${formatMemory(
+			data.memory_used ?? NaN,
+		)}`;
+		nodes.push(meta);
+
+		output.replaceChildren(...nodes);
+	}
+
+	function renderUnreachable() {
+		const note = out('p', 'note', 'the demo is unreachable right now.');
+		const line = out('p', 'idle');
+		const link = document.createElement('a');
+		link.href = 'https://github.com/Anga205/CodeExecutionAPI';
+		link.textContent = 'the repo still works';
+		link.className = CLS.link;
+		line.append(link);
+		output.replaceChildren(note, line);
+	}
+
+	/* -------------------------------------------------------------------- run */
+
+	async function run() {
+		if (running || !editor) return;
+
+		running = true;
+		runBtn.disabled = true;
+		runStatus.textContent = 'running';
+		renderIdle('running...');
+
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+
+		try {
+			const res = await fetch(API_URL, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					language: currentLanguage(),
+					code: editor.getValue(),
+					timeout: TIMEOUT_NS,
+					max_memory: MAX_MEMORY_KB,
+				}),
+				signal: controller.signal,
+			});
+
+			if (!res.ok) throw new Error(`http ${res.status}`);
+
+			renderResult(await res.json());
+			runStatus.textContent = '';
+		} catch {
+			renderUnreachable();
+			runStatus.textContent = '';
+		} finally {
+			clearTimeout(timer);
+			running = false;
+			runBtn.disabled = false;
+		}
+	}
+
+	runBtn.addEventListener('click', run);
+
+	/* ------------------------------------------------------------------- next */
+
+	nextBtn.addEventListener('click', () => {
+		section.classList.add('is-leaving');
+
+		setTimeout(
+			() => {
+				section.hidden = true;
+				placeholder.hidden = false;
+				requestAnimationFrame(() => {
+					requestAnimationFrame(() => placeholder.classList.add('is-visible'));
+				});
+				placeholder.focus();
+			},
+			reduced ? 0 : LEAVE_MS,
+		);
+	});
+
+	/* --------------------------------------------------------------- lazy load */
+
+	// Monaco is only fetched once this section is actually on screen. The
+	// section starts hidden, so this fires on the first frame after the
+	// opening sequence hands off.
+	const observer = new IntersectionObserver(
+		(entries) => {
+			if (!entries.some((entry) => entry.isIntersecting)) return;
+			observer.disconnect();
+			initEditor().catch(() => {
+				// If Monaco fails, the static <pre> stays visible and run stays
+				// disabled rather than pretending to work.
+				runStatus.textContent = 'editor failed to load';
+			});
+		},
+		{ rootMargin: '200px' },
+	);
+
+	observer.observe(section);
+</script>
