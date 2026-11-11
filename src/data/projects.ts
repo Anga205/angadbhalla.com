@@ -1,139 +1,111 @@
-export type Project = {
-	slug: string;
-	name: string;
-	tagline: string;
-	description: string;
-	url?: string;
-	repo?: string;
-	status: "live" | "experimental";
-	tech: string[];
-	highlights: string[];
-	metrics: { label: string; value: string }[];
-	accent: string;
-};
+/**
+ * Project catalogue.
+ *
+ * Every project is a card on /projects and an entry in the sidebar accordion.
+ * Links are optional on purpose: some projects have no public repo, some have
+ * no live demo, and some have neither. The card layout must not depend on how
+ * many links exist.
+ *
+ * status:
+ *   active    maintained, works today
+ *   archived  public archive, code exists but is not maintained
+ *   inactive  not running any more, kept for the record
+ */
+export type ProjectStatus = 'active' | 'archived' | 'inactive';
 
-export const projects: Project[] = [
+export interface Project {
+	id: string;
+	name: string;
+	summary: string;
+	description: string;
+	year: string;
+	stack: string[];
+	status: ProjectStatus;
+	icon: 'drive' | 'tracker' | 'terminal' | 'compiler' | 'web' | 'tool';
+	live?: string;
+	repo?: string;
+	docs?: string;
+	post?: string;
+}
+
+export const PROJECTS: Project[] = [
 	{
-		slug: "angadrive",
-		name: "AngaDrive V3",
-		tagline: "A self-hosted cloud drive that feels instant.",
+		id: 'angadrive',
+		name: 'AngaDriveV3',
+		summary: 'fast, self-hosted remote file storage.',
 		description:
-			"A performance-obsessed, self-hostable cloud drive. The database is aggressively cached in RAM, uploads are chunked and gzip-compressed in the browser, and WebSockets push every change in real time. Collections are a many-to-many graph, not a folder tree.",
-		url: "https://drive.anga.codes/",
-		status: "live",
-		tech: ["Go", "SolidJS", "SQLite", "GORM", "WebSockets", "FFmpeg", "Vite", "Tailwind"],
-		highlights: [
-			"RAM-first metadata layer — SQLite is durable storage, RAM is the operational index",
-			"7 MB chunked uploads, up to 6 chunks per file and 3 files concurrently, gzip-compressed in the browser",
-			"Persistent WebSocket state pushes file, collection, and stats updates instantly",
-			"Cycle-safe collection graph with cached aggregate size propagation",
-			"SHA-256 content-addressed storage with direct filesystem downloads",
-			"Multi-level lazy rendering: bounded file cards, IntersectionObserver previews, browser image lazy-loading",
-		],
-		metrics: [
-			{ label: "Go source", value: "~6.3k LOC" },
-			{ label: "TSX source", value: "~6k LOC" },
-			{ label: "Chunk size", value: "7 MB" },
-			{ label: "Concurrency", value: "18 reqs" },
-		],
-		accent: "#38bdf8",
+			'A performance-focused file hosting service with live websocket updates, a DAG filesystem, resumable uploads, and a SolidJS client. It is open source, self-hostable on a Raspberry Pi, and designed to feel fast without requiring an account.',
+		year: '2025',
+		stack: ['Go', 'SolidJS', 'SQLite'],
+		status: 'active',
+		icon: 'drive',
+		live: 'https://drive.anga.codes',
+		repo: 'https://github.com/Anga205/AngaDriveV3',
+		post: 'https://lnkd.in/p/dknw77Br',
 	},
 	{
-		slug: "compiler",
-		name: "Containerization API",
-		tagline: "An online compiler with a hand-built Linux sandbox.",
+		id: 'leetcode-tracker',
+		name: 'Leetcode Tracker',
+		summary: 'an automated competitive programming progress dashboard.',
 		description:
-			"A code-execution API that skips Docker entirely and implements the sandbox boundary directly with Linux kernel primitives — namespaces, cgroups v2, chroot, bind mounts, and seccomp-BPF. It is a micro-container runtime specialized for short-lived compiler jobs.",
-		url: "https://compiler.anga.codes/",
-		status: "live",
-		tech: ["Go", "Linux", "cgroups v2", "namespaces", "seccomp-BPF", "chroot", "Gin", "Astro"],
-		highlights: [
-			"Manual containerization: PID/mount/network/user namespaces, no Docker daemon",
-			"cgroup v2 enforces memory, swap, CPU quota, and a 64-process cap (fork-bomb safe)",
-			"seccomp-BPF denylist blocks mount, ptrace, reboot, and other dangerous syscalls",
-			"Sandbox root maps to host UID 65534 — root inside is never host root",
-			"Static C/C++ compilation for a minimal chroot; read-only runtime mounts for Python/Java",
-			"Global RAM admission control rejects overload before a sandbox is created",
-		],
-		metrics: [
-			{ label: "Languages", value: "4" },
-			{ label: "Max timeout", value: "60s" },
-			{ label: "Max memory", value: "128 MB" },
-			{ label: "Global RAM", value: "1 GB" },
-		],
-		accent: "#a78bfa",
+			'A scheduled Rust updater records solve-count history through GitHub Actions, while a static React dashboard turns the readings into interactive charts for comparing progress over time.',
+		year: '2025',
+		stack: ['Rust', 'React', 'Chart.js'],
+		status: 'active',
+		icon: 'tracker',
+		live: 'https://leetcode-tracker.anga.codes/',
+		repo: 'https://github.com/Anga205/Leetcode-Tracker',
 	},
 	{
-		slug: "angos",
-		name: "AngaOS",
-		tagline: "A 32-bit x86 operating system from scratch.",
+		id: 'code-execution-api',
+		name: 'Code Execution API',
+		summary: 'a hand-built sandbox for running untrusted code.',
 		description:
-			"A bootable hobby OS that owns the entire path from the BIOS's first instruction into its own kernel — custom bootloader, BIOS disk I/O, GDT, protected-mode transition, linker-controlled kernel placement, and direct VGA text rendering.",
-		status: "experimental",
-		tech: ["NASM", "C", "x86 Assembly", "GNU ld", "Make", "QEMU"],
-		highlights: [
-			"Custom 512-byte BIOS bootloader with INT 13h disk loading — no GRUB",
-			"Manual GDT construction and CR0 protected-mode transition",
-			"Linker places the kernel at 0x10000, matching the bootloader's load address",
-			"Freestanding C compiled with -ffreestanding -nostdlib",
-			"Direct VGA text-mode rendering at 0xB8000 with a working terminal",
-			"Assembly-driven command shell with a custom strcmp",
-		],
-		metrics: [
-			{ label: "Arch", value: "i386" },
-			{ label: "Kernel", value: "15 KiB" },
-			{ label: "Boot", value: "BIOS" },
-			{ label: "Image", value: "1.44 MB" },
-		],
-		accent: "#4ade80",
+			'A lower-overhead code sandbox built from Linux namespaces, cgroups v2, chroot, and seccomp-bpf instead of Docker or firejail. It runs Python, C, C++, and Java with hard time and memory limits, and is designed to power coding contests.',
+		year: '2025',
+		stack: ['Go', 'Linux', 'seccomp'],
+		status: 'active',
+		icon: 'terminal',
+		live: 'https://compiler.anga.codes',
+		repo: 'https://github.com/Anga205/CodeExecutionAPI',
+		docs: 'https://github.com/Anga205/CodeExecutionAPI/blob/main/README.md',
+		post: 'https://lnkd.in/p/duhbNW3q',
 	},
 	{
-		slug: "ppt2pdf",
-		name: "PPT2PDF",
-		tagline: "A converter that rescues ugly presentations.",
+		id: 'portfolio',
+		name: 'Portfolio',
+		summary: 'this site. terminal first, no framework runtime.',
 		description:
-			"A fault-tolerant PowerPoint-to-PDF service. Instead of calling LibreOffice once and giving up, it treats conversion failure as recoverable — repairing PPTX archives, flattening nested roots, normalizing paths, and retrying through a fallback ladder until a valid PDF exists.",
-		url: "https://ppt2pdf.anga.codes/",
-		status: "live",
-		tech: ["FastAPI", "Python", "LibreOffice", "Docker", "Uvicorn"],
-		highlights: [
-			"Speculative repair: generates clean, flattened, and store-only ZIP candidates",
-			"Detects ZIP vs legacy OLE containers from just 8 bytes",
-			"Two-step ODP normalization when direct PDF export fails",
-			"Short-path retry removes filename/path weirdness from the equation",
-			"Validates the output artifact, not just the exit code",
-			"Per-invocation LibreOffice profile isolation for safe concurrency",
-		],
-		metrics: [
-			{ label: "Formats", value: "3" },
-			{ label: "Timeout", value: "240s" },
-			{ label: "Repair modes", value: "3" },
-			{ label: "Fallbacks", value: "5+" },
-		],
-		accent: "#fbbf24",
+			'Astro, Tailwind, and a lot of hand-written CSS. The opening sequence is a small state machine, the selector is a real route, and Monaco only loads when a project needs it.',
+		year: '2025',
+		stack: ['Astro', 'TypeScript', 'Tailwind'],
+		status: 'active',
+		icon: 'web',
+		repo: 'https://github.com/Anga205/angadbhalla.com',
 	},
 	{
-		slug: "leetcode-tracker",
-		name: "LeetCode Tracker",
-		tagline: "GitHub Actions as a scheduled backend.",
+		id: 'angaos',
+		name: 'AngaOS',
+		summary: 'a bare-bones operating system from the bootloader up.',
 		description:
-			"A competitive-progress tracker with no application server. GitHub Actions is the scheduler and worker, Git is the database and audit log, a JSON file is the materialized dataset, and Netlify serves a static React dashboard.",
-		url: "https://battle.anga.codes/",
-		status: "live",
-		tech: ["Java", "GitHub Actions", "React", "Chart.js", "TypeScript", "Netlify"],
-		highlights: [
-			"GitHub Actions polls every 10 minutes and commits only meaningful changes",
-			"Git is the database — 2,055 historical readings in a ~68 KB JSON file",
-			"Incremental append-only updates keep history compact and diff-friendly",
-			"Drag-to-select time windows and pairwise delta lines for real analysis",
-			"Zero third-party runtime dependencies in the Java updater",
-		],
-		metrics: [
-			{ label: "Users", value: "6" },
-			{ label: "Readings", value: "2,055" },
-			{ label: "Data file", value: "68 KB" },
-			{ label: "Cadence", value: "10 min" },
-		],
-		accent: "#f472b6",
+			'An x86 operating system built from a bootloader, kernel, and direct VGA-buffer output. It includes familiar filesystem commands such as ls, mkdir, cd, rm, and touch, and boots through QEMU with a small Makefile-driven toolchain.',
+		year: '2025',
+		stack: ['Assembly', 'C', 'NASM'],
+		status: 'active',
+		icon: 'terminal',
+		repo: 'https://github.com/Anga205/AngaOS',
+		post: 'https://lnkd.in/p/deAt6GRS',
+	},
+	{
+		id: 'angadrive-v2',
+		name: 'AngaDriveV2',
+		summary: 'unsupported predecessor to AngaDriveV3.',
+		description:
+		'An older AngaDrive release kept as a public archive. It is no longer supported, but remains useful as a record of the project before the current version.',
+		year: '2024',
+		stack: ['Go', 'SQLite'],
+		status: 'archived',
+		icon: 'drive',
+		repo: 'https://github.com/Anga205/AngaDriveV2',
 	},
 ];

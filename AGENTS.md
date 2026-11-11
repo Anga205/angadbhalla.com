@@ -21,4 +21,4 @@ Consult these guides before working on related tasks:
 - [Adding styles or using Tailwind](https://docs.astro.build/en/guides/styling/)
 - [Supporting multiple languages](https://docs.astro.build/en/guides/internationalization/)
 
-For all cli commands only use bun, do not use node or npm
+Also, Always use bun in commands instead of node or npm

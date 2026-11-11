@@ -1,0 +1,472 @@
+---
+/**
+ * AchievementCards.astro
+ *
+ * The /achievements index: every achievement as a compact card, grouped by
+ * category, inside a GNOME-style window.
+ *
+ * Each card is itself a miniature window — its own headerbar with traffic
+ * lights — so the grid reads as a stack of small windows rather than generic
+ * content tiles.
+ *
+ * Two card shapes:
+ *   medal cards   hackathons. The category icon becomes a gold or silver
+ *                 medal, and the headerbar carries the achievement's links as
+ *                 small grayscale icon buttons. Clicking the card opens a
+ *                 menu listing those same links, so the card never navigates
+ *                 away on its own.
+ *   plain cards   everything else. The whole card links to its detail page.
+ *
+ * Links are per-achievement data (`links` in src/data/achievements.ts), so
+ * each card's buttons are whatever that achievement actually has.
+ */
+import {
+	Trophy,
+	FlaskConical,
+	Accessibility,
+	Ghost,
+	Code,
+	Users,
+	GraduationCap,
+	Container,
+	Heart,
+	GitPullRequest,
+	Medal,
+	Linkedin,
+	Info,
+	Github,
+	ExternalLink,
+	Youtube,
+	ArrowUpRight,
+	X,
+} from 'lucide-astro';
+import {
+	groupByCategory,
+	hasDetailPage,
+	opensMenu,
+	type AchievementIcon,
+	type LinkIcon,
+} from '../data/achievements';
+import LeetCode from './icons/LeetCode.astro';
+
+const ICONS: Record<AchievementIcon, typeof Trophy> = {
+	trophy: Trophy,
+	flask: FlaskConical,
+	accessibility: Accessibility,
+	ghost: Ghost,
+	code: Code,
+	leetcode: LeetCode as unknown as typeof Trophy,
+	users: Users,
+	graduation: GraduationCap,
+	container: Container,
+	heart: Heart,
+	'git-pull-request': GitPullRequest,
+};
+
+const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
+	linkedin: Linkedin,
+	info: Info,
+	github: Github,
+	external: ExternalLink,
+	code: Code,
+	heart: Heart,
+	youtube: Youtube,
+};
+
+const groups = groupByCategory();
+const total = groups.reduce((sum, group) => sum + group.items.length, 0);
+---
+
+<section class="achievements ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24" id="achievements">
+	<div class="window mx-auto max-w-5xl overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
+		<div class="headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none">
+			<span class="dots flex gap-1.5" aria-hidden="true">
+				<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span class="size-2.5 rounded-full bg-[#e5a50a]"></span><span class="size-2.5 rounded-full bg-[#33d17a]"></span>
+			</span>
+			<span class="title text-center whitespace-nowrap">anga@portfolio — achievements</span>
+			<span aria-hidden="true"></span>
+		</div>
+
+		<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
+			<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ ls ~/achievements</p>
+			<h1 class="mb-2 text-[1.35rem] font-normal">achievements</h1>
+			<p class="lede mb-8 max-w-[62ch] text-[#a5a3a9]">
+				{total} entries. Hackathon results, contest milestones, things I ran, and one merged
+				pull request. Each one opens into the longer version.
+			</p>
+
+			{
+				groups.map((group) => (
+					<section class="group" aria-labelledby={`group-${group.category}`}>
+						<div class="group-head mb-4 grid grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-[0.6rem] max-[639px]:grid-cols-[auto_auto]">
+							<h2 class="m-0 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase" id={`group-${group.category}`}>{group.label}</h2>
+							<span class="group-count text-[0.6875rem] text-[#4a4a4a]" aria-hidden="true">
+								{String(group.items.length).padStart(2, '0')}
+							</span>
+							<p class="group-blurb m-0 text-[0.75rem] text-dim max-[639px]:col-span-full">{group.blurb}</p>
+						</div>
+
+						<ul class="grid m-0 grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] list-none gap-3 p-0">
+							{group.items.map((achievement) => {
+								const Icon = ICONS[achievement.icon];
+								const links = achievement.links ?? [];
+								const isMedal = Boolean(achievement.medal);
+								// A menu card only opens a menu when it actually has links.
+								const menuCard = opensMenu(achievement) && links.length > 0;
+								const menuId = `menu-${achievement.slug}`;
+
+								return (
+									<li class="card relative flex flex-col overflow-hidden rounded-md border border-[#3d3846] bg-[#1c1c1c] hover:border-[#5a5560] focus-within:outline-1 focus-within:outline-[#26a269] focus-within:outline-offset-2" data-medal={achievement.medal}>
+										<div class="card-bar flex items-center justify-between gap-2 border-b border-[#3d3846] bg-[#303030] px-2 py-[0.3rem] select-none">
+											<span class="card-dots flex gap-1" aria-hidden="true">
+												<span class="size-1.5 rounded-full bg-[#e01b24]"></span>
+												<span class="size-1.5 rounded-full bg-[#e5a50a]"></span>
+												<span class="size-1.5 rounded-full bg-[#33d17a]"></span>
+											</span>
+
+											{menuCard ? (
+													<span class="card-actions flex items-center gap-1">
+													{links.map((link) => {
+														const LinkIconComponent = LINK_ICONS[link.icon ?? 'external'];
+														return (
+															<a
+																		class="card-action inline-flex size-4.5 items-center justify-center rounded-[3px] text-[#8a8a8a] no-underline hover:bg-[#3d3846] hover:text-[#deddda] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-1"
+																href={link.href}
+																target="_blank"
+																rel="noreferrer"
+																aria-label={link.label}
+																title={link.label}
+															>
+																<LinkIconComponent size={12} strokeWidth={1.5} aria-hidden="true" />
+															</a>
+														);
+													})}
+												</span>
+											) : (
+												<span class="card-result">{achievement.result}</span>
+											)}
+										</div>
+
+										<div class="card-body flex items-start gap-[0.6rem] p-3">
+											<span class="card-icon flex size-7 shrink-0 items-center justify-center rounded-sm border border-[#3d3846] text-[#26a269]" data-medal={achievement.medal} aria-hidden="true">
+												{isMedal ? (
+													<Medal size={16} strokeWidth={1.5} />
+												) : (
+													<Icon size={16} strokeWidth={1.5} />
+												)}
+											</span>
+
+											<div class="card-text min-w-0">
+												<h3 class="m-0 text-[0.8125rem] font-medium leading-[1.4]">
+													{hasDetailPage(achievement) ? (
+																<a class="card-link text-white no-underline" href={`/achievements/${achievement.slug}`}>
+															{achievement.title}
+														</a>
+													) : menuCard ? (
+														<button
+															type="button"
+																	class="card-open cursor-pointer border-0 bg-transparent p-0 text-left text-[0.8125rem] font-[inherit] font-medium leading-[1.4]"
+															data-menu={menuId}
+															aria-haspopup="dialog"
+														>
+															{achievement.title}
+														</button>
+													) : (
+																<span class="card-static text-white">{achievement.title}</span>
+													)}
+												</h3>
+													<p class="card-summary mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#a5a3a9]">{achievement.summary}</p>
+											</div>
+										</div>
+									</li>
+								);
+							})}
+						</ul>
+					</section>
+				))
+			}
+		</div>
+	</div>
+</section>
+
+{
+	groups
+		.flatMap((group) => group.items)
+		.filter((achievement) => opensMenu(achievement) && (achievement.links?.length ?? 0) > 0)
+		.map((achievement) => {
+			const links = achievement.links ?? [];
+			return (
+				<dialog class="menu" id={`menu-${achievement.slug}`} aria-label={`${achievement.title} links`}>
+					<div class="menu-inner">
+						<div class="menu-bar">
+							<span class="menu-title">{achievement.title}</span>
+							<button type="button" class="menu-close" data-close aria-label="close">
+								<X size={13} strokeWidth={1.5} aria-hidden="true" />
+							</button>
+						</div>
+
+						<ul class="menu-list">
+							{links.map((link) => {
+								const LinkIconComponent = LINK_ICONS[link.icon ?? 'external'];
+								return (
+									<li>
+										<a href={link.href} target="_blank" rel="noreferrer">
+											<LinkIconComponent size={14} strokeWidth={1.5} aria-hidden="true" />
+											<span class="menu-label">{link.label}</span>
+											<ArrowUpRight size={12} strokeWidth={1.5} aria-hidden="true" />
+										</a>
+									</li>
+								);
+							})}
+						</ul>
+					</div>
+				</dialog>
+			);
+		})
+}
+
+<style>
+	.group + .group {
+		margin-top: 2.25rem;
+		padding-top: 2rem;
+		border-top: 1px solid #262626;
+	}
+
+	.card:hover {
+		border-color: #5a5560;
+	}
+
+	.card:focus-within {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	.card-result {
+		overflow: hidden;
+		color: #a5a3a9;
+		font-size: 0.625rem;
+		letter-spacing: 0.04em;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.card:hover .card-result {
+		color: #26a269;
+	}
+
+	.card-action:hover {
+		background: #3d3846;
+		color: #deddda;
+	}
+
+	.card-action:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 1px;
+	}
+
+	/* Medals replace the category icon on hackathon cards. */
+	.card-icon[data-medal='gold'] {
+		border-color: #6b5a2a;
+		background: rgba(229, 165, 10, 0.08);
+		color: #e5a50a;
+	}
+
+	.card-icon[data-medal='silver'] {
+		border-color: #4a4a4a;
+		background: rgba(197, 197, 197, 0.06);
+		color: #c5c5c5;
+	}
+
+	/* Stretch the title link over the whole card. */
+	.card-link::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 6px;
+	}
+
+	.card-link:focus-visible {
+		outline: none;
+	}
+
+	.card-open::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: 6px;
+	}
+
+	.card-open:focus-visible {
+		outline: none;
+	}
+
+	.card:hover .card-open {
+		color: #26a269;
+	}
+
+	/* Link menu, opened by a medal card. */
+	.menu {
+		width: min(22rem, calc(100vw - 2rem));
+		max-width: none;
+		margin: auto;
+		overflow: hidden;
+		padding: 0;
+		border: 1px solid #3d3846;
+		border-radius: 6px;
+		background: #000000;
+		color: #ffffff;
+	}
+
+	.menu::backdrop {
+		background: rgba(0, 0, 0, 0.82);
+	}
+
+	.menu-inner {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.menu-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.4rem 0.5rem;
+		border-bottom: 1px solid #3d3846;
+		background: #303030;
+		color: #deddda;
+		font-size: 0.6875rem;
+		user-select: none;
+	}
+
+	.menu-title {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.menu-close {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.15rem;
+		border: 0;
+		border-radius: 3px;
+		background: none;
+		color: #a5a3a9;
+		cursor: pointer;
+	}
+
+	.menu-close:hover {
+		background: #3d3846;
+		color: #ffffff;
+	}
+
+	.menu-close:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 1px;
+	}
+
+	.menu-list {
+		margin: 0;
+		padding: 0.35rem;
+		list-style: none;
+	}
+
+	.menu-list a {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.45rem 0.5rem;
+		border-radius: 4px;
+		color: #deddda;
+		font-size: 0.75rem;
+		text-decoration: none;
+	}
+
+	.menu-list a:hover {
+		background: #1c1c1c;
+		color: #ffffff;
+	}
+
+	.menu-list a:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: -1px;
+	}
+
+	.menu-list a > :global(svg:first-child) {
+		flex-shrink: 0;
+		color: #8a8a8a;
+	}
+
+	.menu-list a:hover > :global(svg:first-child) {
+		color: #26a269;
+	}
+
+	.menu-label {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.menu-list a > :global(svg:last-child) {
+		flex-shrink: 0;
+		color: #4a4a4a;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.menu[open] {
+			animation: menu-in 120ms ease-out;
+		}
+
+		@keyframes menu-in {
+			from {
+				opacity: 0;
+			}
+			to {
+				opacity: 1;
+			}
+		}
+	}
+
+</style>
+
+<script>
+	// Medal cards open a link menu rather than navigating. The dialog is native,
+	// so focus trapping, Esc, and the backdrop come from the platform.
+	const openers = document.querySelectorAll<HTMLButtonElement>('[data-menu]');
+
+	for (const opener of openers) {
+		const id = opener.dataset.menu;
+		if (!id) continue;
+
+		const dialog = document.getElementById(id) as HTMLDialogElement | null;
+		if (!dialog) continue;
+
+		opener.addEventListener('click', () => dialog.showModal());
+
+		dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+
+		// Escape closes. The platform already does this for a modal dialog, but
+		// handling it explicitly keeps the behaviour independent of how the
+		// dialog was opened and stops the key from reaching the page.
+		dialog.addEventListener('keydown', (event) => {
+			if (event.key !== 'Escape') return;
+			event.preventDefault();
+			dialog.close();
+		});
+
+		// Clicking the backdrop closes. A backdrop click is dispatched to the
+		// dialog element itself, so compare the pointer against the dialog's own
+		// box: anything outside it is the backdrop.
+		dialog.addEventListener('click', (event) => {
+			if (event.target !== dialog) return;
+			const box = dialog.getBoundingClientRect();
+			const outside =
+				event.clientX < box.left ||
+				event.clientX > box.right ||
+				event.clientY < box.top ||
+				event.clientY > box.bottom;
+			if (outside) dialog.close();
+		});
+	}
+</script>

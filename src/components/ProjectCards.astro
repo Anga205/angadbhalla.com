@@ -1,0 +1,193 @@
+---
+/**
+ * ProjectCards.astro
+ *
+ * The /projects index: every project as a card inside a GNOME-style window.
+ *
+ * Cards are deliberately not button-count dependent. A project may have a
+ * demo, a repo, both, or neither; the footer renders only the links that
+ * exist, and the card body keeps the same height either way.
+ *
+ * Status is part of the data model, so an old project can be marked archived
+ * or inactive without changing the layout.
+ */
+import {
+	HardDrive,
+	ListChecks,
+	Terminal,
+	Braces,
+	Globe,
+	Wrench,
+	Play,
+	BookOpen,
+	Github,
+	Linkedin,
+	ExternalLink,
+	ArrowUpRight,
+	X,
+} from 'lucide-astro';
+import { PROJECTS, type Project } from '../data/projects';
+
+const ICONS = {
+	drive: HardDrive,
+	tracker: ListChecks,
+	terminal: Terminal,
+	compiler: Braces,
+	web: Globe,
+	tool: Wrench,
+} as const;
+
+const STATUS_LABEL: Record<Project['status'], string> = {
+	active: 'active',
+	archived: 'public archive',
+	inactive: 'inactive',
+};
+
+---
+
+<section
+	class="projects ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+	id="projects"
+>
+	<div
+		class="window mx-auto max-w-5xl overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
+	>
+		<div
+			class="headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none"
+		>
+			<span class="dots flex gap-1.5" aria-hidden="true">
+				<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span class="size-2.5 rounded-full bg-[#e5a50a]"></span><span class="size-2.5 rounded-full bg-[#33d17a]"></span>
+			</span>
+			<span class="title text-center whitespace-nowrap">anga@portfolio — projects</span>
+			<span aria-hidden="true"></span>
+		</div>
+
+		<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
+			<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ ls ~/portfolio/projects</p>
+			<h1 class="mb-2 text-[1.35rem] font-normal">projects</h1>
+			<p class="lede mb-8 max-w-[62ch] text-[#a5a3a9]">
+				Things I have built. Some are maintained, some are archives, and some are here because
+				the code still explains the idea.
+			</p>
+
+			<ul class="grid m-0 grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] list-none gap-3 p-0">
+				{PROJECTS.map((project) => {
+					const Icon = ICONS[project.icon];
+					const menuId = `menu-${project.id}`;
+					const links = [
+						project.live && { label: 'live deployment', href: project.live, icon: ExternalLink, external: true },
+						project.repo && { label: 'repository', href: project.repo, icon: Github, external: true },
+						project.docs && { label: 'docs', href: project.docs, icon: BookOpen, external: true },
+						project.post && { label: 'linkedin post', href: project.post, icon: Linkedin, external: true },
+					].filter(Boolean) as Array<{ label: string; href: string; icon: typeof Play; external: boolean }>;
+					return (
+						<li
+							class="card relative flex flex-col overflow-hidden rounded-md border border-[#3d3846] bg-[#1c1c1c]"
+							data-status={project.status}
+						>
+							<div class="card-bar flex items-center justify-between gap-2 border-b border-[#3d3846] bg-[#303030] px-2 py-[0.3rem] select-none">
+								<span class="card-dots flex gap-1" aria-hidden="true">
+									<span class="size-1.5 rounded-full bg-[#e01b24]"></span>
+									<span class="size-1.5 rounded-full bg-[#e5a50a]"></span>
+									<span class="size-1.5 rounded-full bg-[#33d17a]"></span>
+								</span>
+								<div class="card-actions flex items-center gap-1">
+									{project.status !== 'active' && <span class="card-status">{STATUS_LABEL[project.status]}</span>}
+									{links.map((link) => {
+										const LinkIcon = link.icon;
+										return (
+											<a class="card-action inline-flex size-4.5 items-center justify-center rounded-[3px] text-[#8a8a8a] no-underline hover:bg-[#3d3846] hover:text-[#deddda] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-1" href={link.href} {...(link.external ? { target: '_blank', rel: 'noreferrer' } : {})} aria-label={`${project.name} ${link.label}`} title={link.label}>
+												<LinkIcon size={12} strokeWidth={1.5} aria-hidden="true" />
+											</a>
+										);
+									})}
+								</div>
+							</div>
+
+							<div class="card-body flex items-start gap-[0.6rem] p-3">
+								<span class="card-icon flex size-7 shrink-0 items-center justify-center rounded-sm border border-[#3d3846] text-[#26a269]" aria-hidden="true"><Icon size={16} strokeWidth={1.5} /></span>
+								<div class="card-text min-w-0">
+									<h2 class="m-0 text-[0.8125rem] font-medium leading-[1.4]"><button type="button" class="card-open cursor-pointer border-0 bg-transparent p-0 text-left text-[0.8125rem] font-[inherit] font-medium leading-[1.4] text-white" data-menu={menuId} aria-haspopup="dialog">{project.name}</button></h2>
+									<p class="card-summary mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#a5a3a9]">{project.summary}</p>
+								</div>
+							</div>
+						</li>
+					);
+				})}
+			</ul>
+		</div>
+	</div>
+</section>
+
+{PROJECTS.map((project) => {
+	const links = [
+		project.live && { label: 'live deployment', href: project.live, icon: ExternalLink },
+		project.repo && { label: 'repository', href: project.repo, icon: Github },
+		project.docs && { label: 'docs', href: project.docs, icon: BookOpen },
+		project.post && { label: 'linkedin post', href: project.post, icon: Linkedin },
+	].filter(Boolean) as Array<{ label: string; href: string; icon: typeof Play }>;
+	return (
+		<dialog class="menu" id={`menu-${project.id}`} aria-label={`${project.name} links`}>
+			<div class="menu-inner">
+				<div class="menu-bar"><span class="menu-title">{project.name}</span><button type="button" class="menu-close" data-close aria-label="close"><X size={13} strokeWidth={1.5} aria-hidden="true" /></button></div>
+				<ul class="menu-list">
+					{links.map((link) => { const LinkIcon = link.icon; return <li><a href={link.href} {...(link.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}><LinkIcon size={14} strokeWidth={1.5} aria-hidden="true" /><span class="menu-label">{link.label}</span><ArrowUpRight size={12} strokeWidth={1.5} aria-hidden="true" /></a></li>; })}
+				</ul>
+			</div>
+		</dialog>
+	);
+})}
+
+<style>
+	.card-status {
+		margin-right: 0.25rem;
+		color: #a5a3a9;
+		font-size: 0.625rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.card:hover { border-color: #5a5560; }
+	.card:focus-within { outline: 1px solid #26a269; outline-offset: 2px; }
+	.card-open::after { content: ''; position: absolute; inset: 0; border-radius: 6px; }
+	.card-open:focus-visible { outline: none; }
+	.card:hover .card-open { color: #26a269; }
+	.card-action:hover { background: #3d3846; color: #deddda; }
+	.card-action:focus-visible { outline: 1px solid #26a269; outline-offset: 1px; }
+
+	.menu { width: min(22rem, calc(100vw - 2rem)); max-width: none; margin: auto; overflow: hidden; padding: 0; border: 1px solid #3d3846; border-radius: 6px; background: #000000; color: #ffffff; }
+	.menu::backdrop { background: rgba(0, 0, 0, 0.82); }
+	.menu-inner { display: flex; flex-direction: column; }
+	.menu-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.4rem 0.5rem; border-bottom: 1px solid #3d3846; background: #303030; color: #deddda; font-size: 0.6875rem; user-select: none; }
+	.menu-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.menu-close { display: inline-flex; align-items: center; justify-content: center; padding: 0.15rem; border: 0; border-radius: 3px; background: none; color: #a5a3a9; cursor: pointer; }
+	.menu-close:hover { background: #3d3846; color: #ffffff; }
+	.menu-close:focus-visible { outline: 1px solid #26a269; outline-offset: 1px; }
+	.menu-list { margin: 0; padding: 0.35rem; list-style: none; }
+	.menu-list a { display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.5rem; border-radius: 4px; color: #deddda; font-size: 0.75rem; text-decoration: none; }
+	.menu-list a:hover { background: #1c1c1c; color: #ffffff; }
+	.menu-list a:focus-visible { outline: 1px solid #26a269; outline-offset: -1px; }
+	.menu-list a > :global(svg:first-child) { flex-shrink: 0; color: #8a8a8a; }
+	.menu-list a > :global(svg:last-child) { flex-shrink: 0; color: #4a4a4a; }
+	.menu-label { flex: 1; min-width: 0; }
+	@media (prefers-reduced-motion: no-preference) { .menu[open] { animation: menu-in 120ms ease-out; } @keyframes menu-in { from { opacity: 0; } to { opacity: 1; } } }
+
+</style>
+
+<script>
+	for (const opener of document.querySelectorAll<HTMLButtonElement>('[data-menu]')) {
+		const id = opener.dataset.menu;
+		const dialog = id ? document.getElementById(id) as HTMLDialogElement | null : null;
+		if (!dialog) continue;
+		opener.addEventListener('click', () => dialog.showModal());
+		dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+		dialog.addEventListener('keydown', (event) => {
+			if (event.key === 'Escape') { event.preventDefault(); dialog.close(); }
+		});
+		dialog.addEventListener('click', (event) => {
+			if (event.target !== dialog) return;
+			const box = dialog.getBoundingClientRect();
+			if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close();
+		});
+	}
+</script>
