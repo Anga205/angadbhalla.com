@@ -17,6 +17,10 @@
  *                 away on its own.
  *   plain cards   everything else. The whole card links to its detail page.
  *
+ * A third shape sits between them: entries with `pageMenu` keep their detail
+ * page but open a menu instead of navigating. That menu lists the page as an
+ * "Activity Description" entry, followed by the achievement's links.
+ *
  * Links are per-achievement data (`links` in src/data/achievements.ts), so
  * each card's buttons are whatever that achievement actually has.
  */
@@ -37,6 +41,7 @@ import {
 	Github,
 	ExternalLink,
 	Youtube,
+	FileText,
 	ArrowUpRight,
 	X,
 } from 'lucide-astro';
@@ -44,10 +49,41 @@ import {
 	groupByCategory,
 	hasDetailPage,
 	opensMenu,
+	type AchievementGroup,
 	type AchievementIcon,
 	type LinkIcon,
 } from '../data/achievements';
 import LeetCode from './icons/LeetCode.astro';
+
+interface Props {
+	/** Groups to render. Defaults to the achievements index (no university). */
+	groups?: AchievementGroup[];
+	/** Window titlebar text. */
+	windowTitle?: string;
+	/** Shell prompt line. */
+	prompt?: string;
+	/** Page heading. */
+	heading?: string;
+	/** Intro paragraph. */
+	lede?: string;
+	/** Section id, used for the scroll container. */
+	sectionId?: string;
+	/** Base path for detail pages, e.g. /achievements or /university. */
+	detailBase?: string;
+	/** Render entries as LinkedIn-style role rows (position, org, team). */
+	roleMode?: boolean;
+}
+
+const {
+	groups = groupByCategory(),
+	windowTitle = 'anga@portfolio — achievements',
+	prompt = '$ ls ~/achievements',
+	heading = 'achievements',
+	lede,
+	sectionId = 'achievements',
+	detailBase = '/achievements',
+	roleMode = false,
+} = Astro.props;
 
 const ICONS: Record<AchievementIcon, typeof Trophy> = {
 	trophy: Trophy,
@@ -71,29 +107,29 @@ const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
 	code: Code,
 	heart: Heart,
 	youtube: Youtube,
+	leetcode: LeetCode as unknown as typeof Linkedin,
 };
 
-const groups = groupByCategory();
 const total = groups.reduce((sum, group) => sum + group.items.length, 0);
+const intro =
+	lede ??
+	`${total} entries. Hackathon results, contest milestones, things I ran, and one merged pull request. Each one opens into the longer version.`;
 ---
 
-<section class="achievements ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24" id="achievements">
+<section class="achievements ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24" id={sectionId}>
 	<div class="window mx-auto max-w-5xl overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
 		<div class="headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none">
 			<span class="dots flex gap-1.5" aria-hidden="true">
 				<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span class="size-2.5 rounded-full bg-[#e5a50a]"></span><span class="size-2.5 rounded-full bg-[#33d17a]"></span>
 			</span>
-			<span class="title text-center whitespace-nowrap">anga@portfolio — achievements</span>
+			<span class="title text-center whitespace-nowrap">{windowTitle}</span>
 			<span aria-hidden="true"></span>
 		</div>
 
 		<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
-			<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ ls ~/achievements</p>
-			<h1 class="mb-2 text-[1.35rem] font-normal">achievements</h1>
-			<p class="lede mb-8 max-w-[62ch] text-[#a5a3a9]">
-				{total} entries. Hackathon results, contest milestones, things I ran, and one merged
-				pull request. Each one opens into the longer version.
-			</p>
+			<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">{prompt}</p>
+			<h1 class="mb-2 text-[1.35rem] font-normal">{heading}</h1>
+			<p class="lede mb-8 max-w-[62ch] text-[#a5a3a9]">{intro}</p>
 
 			{
 				groups.map((group) => (
@@ -106,17 +142,37 @@ const total = groups.reduce((sum, group) => sum + group.items.length, 0);
 							<p class="group-blurb m-0 text-[0.75rem] text-dim max-[639px]:col-span-full">{group.blurb}</p>
 						</div>
 
-						<ul class="grid m-0 grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] list-none gap-3 p-0">
+						<ul
+							class:list={[
+								'grid m-0 list-none grid-cols-1 gap-3 p-0',
+							]}
+						>
 							{group.items.map((achievement) => {
 								const Icon = ICONS[achievement.icon];
 								const links = achievement.links ?? [];
 								const isMedal = Boolean(achievement.medal);
-								// A menu card only opens a menu when it actually has links.
-								const menuCard = opensMenu(achievement) && links.length > 0;
+								// A menu card only opens a menu when it has something to list:
+								// links, or a detail page offered as "Activity Description".
+								const menuCard =
+									opensMenu(achievement) && (links.length > 0 || Boolean(achievement.pageMenu));
 								const menuId = `menu-${achievement.slug}`;
+								// Role cards read like a LinkedIn entry: the role is the
+								// heading, then the organisation, then the team. Only the
+								// university page renders this shape.
+								const isRole = roleMode;
+								const heading = isRole ? (achievement.position ?? achievement.title) : achievement.title;
+								const headingLabel = isRole
+									? `${achievement.position}, ${achievement.organization}`
+									: undefined;
 
 								return (
-									<li class="card relative flex flex-col overflow-hidden rounded-md border border-[#3d3846] bg-[#1c1c1c] hover:border-[#5a5560] focus-within:outline-1 focus-within:outline-[#26a269] focus-within:outline-offset-2" data-medal={achievement.medal}>
+									<li
+										class:list={[
+											'card relative flex flex-col overflow-hidden rounded-md border border-[#3d3846] bg-[#1c1c1c] hover:border-[#5a5560] focus-within:outline-1 focus-within:outline-[#26a269] focus-within:outline-offset-2',
+											isRole && 'card--role',
+										]}
+										data-medal={achievement.medal}
+									>
 										<div class="card-bar flex items-center justify-between gap-2 border-b border-[#3d3846] bg-[#303030] px-2 py-[0.3rem] select-none">
 											<span class="card-dots flex gap-1" aria-hidden="true">
 												<span class="size-1.5 rounded-full bg-[#e01b24]"></span>
@@ -124,8 +180,18 @@ const total = groups.reduce((sum, group) => sum + group.items.length, 0);
 												<span class="size-1.5 rounded-full bg-[#33d17a]"></span>
 											</span>
 
-											{menuCard ? (
+											{menuCard && (links.length > 0 || achievement.pageMenu) ? (
 													<span class="card-actions flex items-center gap-1">
+													{achievement.pageMenu && (
+														<a
+															class="card-action inline-flex size-4.5 items-center justify-center rounded-[3px] text-[#8a8a8a] no-underline hover:bg-[#3d3846] hover:text-[#deddda] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-1"
+															href={achievement.href ?? `${detailBase}/${achievement.slug}`}
+															aria-label="Activity Description"
+															title="Activity Description"
+														>
+															<FileText size={12} strokeWidth={1.5} aria-hidden="true" />
+														</a>
+													)}
 													{links.map((link) => {
 														const LinkIconComponent = LINK_ICONS[link.icon ?? 'external'];
 														return (
@@ -156,26 +222,42 @@ const total = groups.reduce((sum, group) => sum + group.items.length, 0);
 												)}
 											</span>
 
-											<div class="card-text min-w-0">
-												<h3 class="m-0 text-[0.8125rem] font-medium leading-[1.4]">
-													{hasDetailPage(achievement) ? (
-																<a class="card-link text-white no-underline" href={`/achievements/${achievement.slug}`}>
-															{achievement.title}
-														</a>
-													) : menuCard ? (
-														<button
-															type="button"
-																	class="card-open cursor-pointer border-0 bg-transparent p-0 text-left text-[0.8125rem] font-[inherit] font-medium leading-[1.4]"
-															data-menu={menuId}
-															aria-haspopup="dialog"
-														>
-															{achievement.title}
-														</button>
-													) : (
-																<span class="card-static text-white">{achievement.title}</span>
-													)}
-												</h3>
+											<div class="card-text min-w-0 flex-1">
+												<div class="card-heading flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+													<h3 class="m-0 text-[0.8125rem] font-medium leading-[1.4]">
+														{!menuCard && hasDetailPage(achievement) ? (
+															<a
+																class="card-link text-white no-underline"
+																href={achievement.href ?? `${detailBase}/${achievement.slug}`}
+																aria-label={headingLabel}
+															>
+																{heading}
+															</a>
+														) : menuCard ? (
+															<button
+																type="button"
+																class="card-open cursor-pointer border-0 bg-transparent p-0 text-left text-[0.8125rem] font-[inherit] font-medium leading-[1.4]"
+																data-menu={menuId}
+																aria-haspopup="dialog"
+																aria-label={headingLabel}
+															>
+																{heading}
+															</button>
+														) : (
+															<span class="card-static text-white">{heading}</span>
+														)}
+													</h3>
+													<span class="card-dates shrink-0 text-[0.6875rem] leading-normal text-[#8a8a8a]">{achievement.date}</span>
+												</div>
+
+												{isRole ? (
+													<div class="card-role mt-[0.3rem] text-[0.6875rem] leading-normal text-[#a5a3a9]">
+														<p class="card-org m-0 text-[#deddda]">{achievement.organization}</p>
+														{achievement.department && <p class="card-dept m-0">{achievement.department}</p>}
+													</div>
+												) : (
 													<p class="card-summary mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#a5a3a9]">{achievement.summary}</p>
+												)}
 											</div>
 										</div>
 									</li>
@@ -192,9 +274,18 @@ const total = groups.reduce((sum, group) => sum + group.items.length, 0);
 {
 	groups
 		.flatMap((group) => group.items)
-		.filter((achievement) => opensMenu(achievement) && (achievement.links?.length ?? 0) > 0)
+		.filter(
+			(achievement) =>
+				opensMenu(achievement) &&
+				((achievement.links?.length ?? 0) > 0 || Boolean(achievement.pageMenu)),
+		)
 		.map((achievement) => {
 			const links = achievement.links ?? [];
+			// `pageMenu` entries keep their detail page, so the menu offers it
+			// first as "Activity Description" before the external links.
+			const pageHref = achievement.pageMenu
+				? (achievement.href ?? `${detailBase}/${achievement.slug}`)
+				: undefined;
 			return (
 				<dialog class="menu" id={`menu-${achievement.slug}`} aria-label={`${achievement.title} links`}>
 					<div class="menu-inner">
@@ -206,6 +297,15 @@ const total = groups.reduce((sum, group) => sum + group.items.length, 0);
 						</div>
 
 						<ul class="menu-list">
+							{pageHref && (
+								<li>
+									<a href={pageHref}>
+										<FileText size={14} strokeWidth={1.5} aria-hidden="true" />
+										<span class="menu-label">Activity Description</span>
+										<ArrowUpRight size={12} strokeWidth={1.5} aria-hidden="true" />
+									</a>
+								</li>
+							)}
 							{links.map((link) => {
 								const LinkIconComponent = LINK_ICONS[link.icon ?? 'external'];
 								return (
@@ -248,6 +348,40 @@ const total = groups.reduce((sum, group) => sum + group.items.length, 0);
 		letter-spacing: 0.04em;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	/* Cards are full-width rows, so they get more room to breathe. */
+	.card-body {
+		gap: 0.75rem;
+		padding: 0.85rem 1rem;
+	}
+
+	.card-icon {
+		width: 2rem;
+		height: 2rem;
+	}
+
+	.card--role .card-org {
+		color: #deddda;
+	}
+
+	.card--role .card-dept {
+		color: #8a8a8a;
+	}
+
+	.card-dates {
+		font-variant-numeric: tabular-nums;
+	}
+
+	.card:hover .card-dates {
+		color: #a5a3a9;
+	}
+
+	@media (max-width: 639px) {
+		.card-heading {
+			flex-direction: column;
+			align-items: flex-start;
+		}
 	}
 
 	.card:hover .card-result {

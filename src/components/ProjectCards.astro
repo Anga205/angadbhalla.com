@@ -24,6 +24,7 @@ import {
 	Linkedin,
 	ExternalLink,
 	ArrowUpRight,
+	TriangleAlert,
 	X,
 } from 'lucide-astro';
 import { PROJECTS, type Project } from '../data/projects';
@@ -50,10 +51,10 @@ const STATUS_LABEL: Record<Project['status'], string> = {
 	id="projects"
 >
 	<div
-		class="window mx-auto max-w-5xl overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
+		class="window mx-auto max-w-5xl rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]"
 	>
 		<div
-			class="headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none"
+			class="headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-t-[5px] border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none"
 		>
 			<span class="dots flex gap-1.5" aria-hidden="true">
 				<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span class="size-2.5 rounded-full bg-[#e5a50a]"></span><span class="size-2.5 rounded-full bg-[#33d17a]"></span>
@@ -62,7 +63,7 @@ const STATUS_LABEL: Record<Project['status'], string> = {
 			<span aria-hidden="true"></span>
 		</div>
 
-		<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
+		<div class="body rounded-b-[5px] p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
 			<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ ls ~/portfolio/projects</p>
 			<h1 class="mb-2 text-[1.35rem] font-normal">projects</h1>
 			<p class="lede mb-8 max-w-[62ch] text-[#a5a3a9]">
@@ -82,17 +83,22 @@ const STATUS_LABEL: Record<Project['status'], string> = {
 					].filter(Boolean) as Array<{ label: string; href: string; icon: typeof Play; external: boolean }>;
 					return (
 						<li
-							class="card relative flex flex-col overflow-hidden rounded-md border border-[#3d3846] bg-[#1c1c1c]"
+							class="card relative flex flex-col rounded-md border border-[#3d3846] bg-[#1c1c1c]"
 							data-status={project.status}
 						>
-							<div class="card-bar flex items-center justify-between gap-2 border-b border-[#3d3846] bg-[#303030] px-2 py-[0.3rem] select-none">
+							<div class="card-bar flex items-center justify-between gap-2 rounded-t-[5px] border-b border-[#3d3846] bg-[#303030] px-2 py-[0.3rem] select-none">
 								<span class="card-dots flex gap-1" aria-hidden="true">
 									<span class="size-1.5 rounded-full bg-[#e01b24]"></span>
 									<span class="size-1.5 rounded-full bg-[#e5a50a]"></span>
 									<span class="size-1.5 rounded-full bg-[#33d17a]"></span>
 								</span>
 								<div class="card-actions flex items-center gap-1">
-									{project.status !== 'active' && <span class="card-status">{STATUS_LABEL[project.status]}</span>}
+									{project.status === 'archived' ? (
+										<span class="card-status card-status--archived" title="This is a legacy project that is no longer supported and is only a public archive" aria-describedby={`tip-${project.id}`}>
+											<TriangleAlert size={13} strokeWidth={2} aria-hidden="true" />
+											<span class="card-status-label">{STATUS_LABEL[project.status]}</span>
+										</span>
+									) : project.status !== 'active' && <span class="card-status">{STATUS_LABEL[project.status]}</span>}
 									{links.map((link) => {
 										const LinkIcon = link.icon;
 										return (
@@ -104,7 +110,13 @@ const STATUS_LABEL: Record<Project['status'], string> = {
 								</div>
 							</div>
 
-							<div class="card-body flex items-start gap-[0.6rem] p-3">
+							{project.status === 'archived' && (
+								<span class="card-tooltip" role="tooltip" id={`tip-${project.id}`}>
+									This is a legacy project that is no longer supported and only exists as a public archive.
+								</span>
+							)}
+
+							<div class="card-body flex items-start gap-[0.6rem] rounded-b-[5px] p-3">
 								<span class="card-icon flex size-7 shrink-0 items-center justify-center rounded-sm border border-[#3d3846] text-[#26a269]" aria-hidden="true"><Icon size={16} strokeWidth={1.5} /></span>
 								<div class="card-text min-w-0">
 									<h2 class="m-0 text-[0.8125rem] font-medium leading-[1.4]"><button type="button" class="card-open cursor-pointer border-0 bg-transparent p-0 text-left text-[0.8125rem] font-[inherit] font-medium leading-[1.4] text-white" data-menu={menuId} aria-haspopup="dialog">{project.name}</button></h2>
@@ -140,11 +152,66 @@ const STATUS_LABEL: Record<Project['status'], string> = {
 
 <style>
 	.card-status {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 		margin-right: 0.25rem;
 		color: #a5a3a9;
 		font-size: 0.625rem;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
+	}
+
+	.card-status--archived {
+		gap: 0.2rem;
+		color: #f9c23c;
+	}
+
+	.card-status-label {
+		font-size: 0.5625rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	/*
+	 * Archived cards explain themselves on hover/focus. The bubble hangs below
+	 * the tile, right-aligned, and floats above the grid so it never reflows the
+	 * layout or covers the card's own title and summary.
+	 */
+	.card-tooltip {
+		position: absolute;
+		top: calc(100% + 0.4rem);
+		right: 0;
+		z-index: 20;
+		width: max-content;
+		max-width: min(19rem, calc(100vw - 3rem));
+		padding: 0.4rem 0.5rem;
+		border: 1px solid #6b5a2a;
+		border-radius: 4px;
+		background: #2a2416;
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55);
+		color: #f9c23c;
+		font-size: 0.6875rem;
+		line-height: 1.45;
+		text-align: left;
+		pointer-events: none;
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(-2px);
+		transition: opacity 120ms ease-out, transform 120ms ease-out, visibility 120ms;
+	}
+
+	.card[data-status='archived']:hover .card-tooltip,
+	.card[data-status='archived']:focus-within .card-tooltip {
+		opacity: 1;
+		visibility: visible;
+		transform: translateY(0);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.card-tooltip {
+			transition: none;
+		}
 	}
 
 	.card:hover { border-color: #5a5560; }

@@ -5,13 +5,9 @@
  * /achievements/<slug>. The listing groups cards by category; the detail page
  * renders the long form plus a gallery.
  *
- * Galleries are discovered from disk, not declared here. Drop a file into
- * src/assets/achievements/<slug>/ and it appears, sorted by filename. Captions
- * are optional: add an entry to `captions` keyed by the filename stem (e.g.
- * "01") and it is used in the lightbox; otherwise a fallback is generated.
+ * Galleries are declared per entry with `images`. Entries without images
+ * simply render no gallery.
  */
-import type { ImageMetadata } from 'astro';
-
 export const CATEGORIES = [
 	'hackathons',
 	'competitive',
@@ -26,7 +22,7 @@ export type Category = (typeof CATEGORIES)[number];
 export const CATEGORY_LABELS: Record<Category, string> = {
 	hackathons: 'hackathons',
 	competitive: 'competitive programming',
-	leadership: 'leadership & teaching',
+	leadership: 'university & extracurriculars',
 	community: 'community',
 	'open-source': 'open source',
 	research: 'research',
@@ -35,7 +31,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
 export const CATEGORY_BLURBS: Record<Category, string> = {
 	hackathons: 'time-boxed builds, judged.',
 	competitive: 'practice, measured over years.',
-	leadership: 'running things other people show up to.',
+	leadership: 'roles, organisations, and the work around them.',
 	community: 'work that is not about the code.',
 	'open-source': 'changes that survived review.',
 	research: 'papers turned into working systems.',
@@ -65,7 +61,8 @@ export type LinkIcon =
 	| 'external'
 	| 'code'
 	| 'heart'
-	| 'youtube';
+	| 'youtube'
+	| 'leetcode';
 
 export interface AchievementLink {
 	label: string;
@@ -74,10 +71,13 @@ export interface AchievementLink {
 }
 
 export interface AchievementDetail {
-	/** Long-form paragraphs, rendered in order. */
+	/**
+	 * Long-form paragraphs, rendered in order. Authored HTML is allowed, so
+	 * paragraphs can carry inline links.
+	 */
 	overview: string[];
-	/** Short, scannable bullets. */
-	highlights: string[];
+	/** Short, scannable bullets. Omit when the overview already covers them. */
+	highlights?: string[];
 	/** Optional technical stack, rendered as pills. */
 	stack?: string[];
 }
@@ -98,46 +98,57 @@ export interface Achievement {
 	 * changing the icon. Use this when an achievement has no long-form page.
 	 */
 	menu?: boolean;
+	/**
+	 * Turns the card into a link menu that also offers its detail page as an
+	 * "Activity Description" entry. Use this when an achievement has a
+	 * long-form page but the card should surface its links first.
+	 */
+	pageMenu?: boolean;
 	/** Human-readable date, e.g. "March 2026". */
 	date: string;
 	/** Sort key and card meta. */
 	year: string;
 	summary: string;
+	/** Organisation the role was held at. Leadership cards only. */
+	organization?: string;
+	/** The role itself. Rendered as the leadership card heading. */
+	position?: string;
+	/** Team or department within the organisation. Leadership cards only. */
+	department?: string;
+	/**
+	 * Overrides the detail-page link. Needed when a card is shown on a page
+	 * whose detail route does not own it (e.g. a research entry surfaced on
+	 * /university but documented under /achievements).
+	 */
+	href?: string;
+	/** Also list this entry on the /university page. */
+	alsoUniversity?: boolean;
+	/**
+	 * Render `tags` (and `detail.stack`) as <meta> keywords and hidden markup
+	 * instead of visible sections. Use when the pills add nothing to the page.
+	 */
+	metaOnly?: boolean;
 	description: string;
 	tags: string[];
 	icon: AchievementIcon;
 	links?: AchievementLink[];
-	/** Lightbox captions, keyed by filename stem. */
-	captions?: Record<string, string>;
+	/** Gallery images. Entries without any simply have no gallery. */
+	images?: GalleryImage[];
 	detail: AchievementDetail;
 }
 
 export interface GalleryImage {
-	src: ImageMetadata;
+	src: string;
 	alt: string;
 	caption: string;
 }
 
-const IMAGE_MODULES = import.meta.glob<{ default: ImageMetadata }>(
-	'/src/assets/achievements/*/*.{svg,png,jpg,jpeg,webp}',
-	{ eager: true },
-);
-
 /**
- * Images for one achievement, sorted by path so numeric filenames control
- * order. Returns an empty array when the folder does not exist yet.
+ * Images for one achievement. Galleries are declared explicitly in the data,
+ * so an entry with no `images` simply renders no gallery.
  */
-export function galleryFor(slug: string, captions: Record<string, string> = {}): GalleryImage[] {
-	const prefix = `/src/assets/achievements/${slug}/`;
-
-	return Object.entries(IMAGE_MODULES)
-		.filter(([path]) => path.startsWith(prefix))
-		.sort(([a], [b]) => a.localeCompare(b))
-		.map(([path, module]) => {
-			const stem = path.slice(prefix.length).replace(/\.[^.]+$/, '');
-			const caption = captions[stem] ?? `image ${stem}`;
-			return { src: module.default, alt: caption, caption };
-		});
+export function galleryFor(images?: GalleryImage[]): GalleryImage[] {
+	return images ?? [];
 }
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -167,11 +178,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/dCpnrydT', icon: 'linkedin' },
 			{ label: 'event listing', href: 'https://events.pes.edu/11437/', icon: 'info' },
 		],
-		captions: {
-			'01': 'the offline round at MRD Auditorium, RR Campus.',
-			'02': 'final leaderboard, top eight teams.',
-			'03': 'the winning team after the last cycle.',
-		},
 		detail: {
 			overview: [
 				'Algomania 3.0 is an inter-collegiate competitive programming contest hosted by EncodeAI at PES University. Drawing inspiration from the ICPC-style team contest format, it brought together teams from multiple universities to compete in a series of algorithmic problem-solving rounds. The contest tested participants\' ability to devise efficient algorithms, write correct implementations, and solve challenging problems under tight time constraints.',
@@ -215,11 +221,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 				icon: 'linkedin',
 			},
 		],
-		captions: {
-			'01': 'the paper shortlist we worked from.',
-			'02': 'log graph, entities as nodes and relationships as edges.',
-			'03': 'a query answered from the selected subgraph.',
-		},
 		detail: {
 			overview: [
 				'Tensor replaced problem statements with a stack of research papers. Teams read, chose, and had to turn the ideas into something that ran before the clock stopped. We took three: GraphRAG, semantic caching, and difficulty-aware tool dispatching.',
@@ -236,31 +237,44 @@ export const ACHIEVEMENTS: Achievement[] = [
 	},
 	{
 		slug: 'ieee-cs-iampro-2025',
-		title: 'IEEE Computer Society IAMPro 2025',
+		title: 'Research Intern',
 		category: 'research',
 		result: 'research intern',
 		date: 'April 1 - September 30, 2025',
 		year: '2025',
-		summary: 'a six-month research internship and mentorship programme.',
-		description:
-			'Conducted a research project on implementing software on a blockchain-based architecture through IEEE Computer Society Bangalore chapter.',
+		summary: 'IEEE Computer Society IAMPro 2025 Batch',
+		description: 'IEEE Computer Society IAMPro 2025 Batch',
+		organization: 'IEEE Computer Society Bangalore Chapter',
+		position: 'Research Intern',
+		department: 'IAMPro 2025 Batch',
+		alsoUniversity: true,
+		href: '/achievements/ieee-cs-iampro-2025',
+		pageMenu: true,
+		metaOnly: true,
 		tags: ['ieee', 'iampro', 'research', 'blockchain', 'internship', 'mentorship'],
 		icon: 'flask',
-		captions: {
-			'01': 'IAMPro 2025 programme documentation.',
-			'02': 'research notes and blockchain architecture work.',
-			'03': 'the six-month internship and mentorship programme.',
-		},
+		images: [
+			{
+				src: '/achievements/ieee-cs-iampro-2025/certificate.png',
+				alt: 'IAMPro 2025 internship certificate issued by the IEEE Computer Society Bangalore chapter.',
+				caption:
+					'Certificate issued by the IEEE Computer Society Bangalore chapter confirming the internship under the IAMPro 2025 batch.',
+			},
+			{
+				src: '/achievements/ieee-cs-iampro-2025/pic1.jpg',
+				alt: 'Angad Bhalla on the left and Dr. Venugopal N. on the right.',
+				caption: 'Me (left) and Dr. Venugopal N. (right).',
+			},
+			{
+				src: '/achievements/ieee-cs-iampro-2025/pic2.jpg',
+				alt: 'Ankith Khaitan on the left, Dr. Venugopal N. in the middle, and Angad Bhalla on the right.',
+				caption: 'Ankith Khaitan (left), Dr. Venugopal N. (middle), and me (right).',
+			},
+		],
 		detail: {
 			overview: [
 				'IEEE Computer Society IAMPro 2025 was a six-month internship and mentorship programme run by the IEEE Computer Society Bangalore chapter. I joined as an intern from 1 April 2025 to 30 September 2025 through my membership in the IEEE Computer Society student chapter at PES University.',
-				'I worked under the mentorship of Dr. Venu Gopal N. alongside Ankit Khaitan. The internship centred on a research project investigating how software could be implemented on a blockchain-based architecture, giving me the chance to explore the trade-offs between distributed systems, trust, and practical software design.',
-			],
-			highlights: [
-				'Six-month internship from 1 April 2025 to 30 September 2025.',
-				'Conducted under the mentorship of Dr. Venu Gopal N.',
-				'Collaborated with Ankit Khaitan on the research work.',
-				'Researched software implementation on a blockchain-based architecture.',
+				'I worked under the mentorship of Dr. Venugopal N. alongside <a href="https://www.linkedin.com/in/ankithkhaitan/" target="_blank" rel="noreferrer">Ankith Khaitan</a>. The internship centred on a research project investigating how software could be implemented on a blockchain-based architecture, giving me the chance to explore the trade-offs between distributed systems, trust, and practical software design.',
 			],
 			stack: ['Blockchain', 'Distributed systems', 'Software architecture'],
 		},
@@ -291,11 +305,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/dU9XYBv8', icon: 'linkedin' },
 			{ label: 'event report', href: 'https://news.pes.edu/11747/', icon: 'info' },
 		],
-		captions: {
-			'01': 'the rig: Pi, camera, and a very short cable run.',
-			'02': 'live recognition during judging.',
-			'03': 'first place, Hack for Humanity.',
-		},
 		detail: {
 			overview: [
 				'Kalpana ran under the theme "Hack for Humanity", which changes what judges reward. Novelty alone was not enough; the project had to plausibly help someone. We built an American Sign Language interpreter that runs entirely on a Raspberry Pi.',
@@ -326,11 +335,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/ddgcuhat', icon: 'linkedin' },
 			{ label: 'event listing', href: 'https://events.pes.edu/11310/', icon: 'info' },
 		],
-		captions: {
-			'01': 'hour four, still arguing about scope.',
-			'02': 'the build, running.',
-			'03': 'second place.',
-		},
 		detail: {
 			overview: [
 				'Hack-o-ween is a 24-hour hackathon run by ARCH, the technical club of the CSE (AI & ML) department at PESU. The format is unforgiving: scope has to be decided early, because anything left to the last six hours does not ship.',
@@ -368,13 +372,8 @@ export const ACHIEVEMENTS: Achievement[] = [
 		menu: true,
 		links: [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/d9qKKzf9', icon: 'linkedin' },
-			{ label: 'my leetcode profile', href: 'https://leetcode.com/u/Anga205', icon: 'external' },
+			{ label: 'my leetcode profile', href: 'https://leetcode.com/u/Anga205', icon: 'leetcode' },
 		],
-		captions: {
-			'01': 'the counter, at 1,337.',
-			'02': 'topic coverage across the solve history.',
-			'03': 'contest rating over time.',
-		},
 		detail: {
 			overview: [
 				'1,337 problems solved on LeetCode, reached on 29 October 2026, with a contest rating of 2,112. The number is a joke about "leet"; the practice behind it is not.',
@@ -390,12 +389,15 @@ export const ACHIEVEMENTS: Achievement[] = [
 	},
 	{
 		slug: 'alcoding-club-head',
-		title: 'Head, The Alcoding Club',
+		title: 'The Alcoding Club',
 		category: 'leadership',
+		organization: 'The Alcoding Club',
+		position: 'Club Head',
+		department: 'Core Team',
 		result: 'club head',
 		date: 'September 2024 \u2014 April 2025',
 		year: '2025',
-		summary: 'ran PESU\u2019s competitive programming club.',
+		summary: 'The Competitive Programming Club of PES University',
 		description:
 			'Weekly HackerRank contests, monthly problem sets, workshops, and Terrathon 4.0 \u2014 the club\u2019s flagship 24-hour hackathon.',
 		tags: [
@@ -409,6 +411,8 @@ export const ACHIEVEMENTS: Achievement[] = [
 			'pesu',
 		],
 		icon: 'users',
+		pageMenu: true,
+		metaOnly: true,
 		links: [
 			{
 				label: 'club page',
@@ -416,36 +420,53 @@ export const ACHIEVEMENTS: Achievement[] = [
 				icon: 'info',
 			},
 			{
-				label: 'containerization 101',
-				href: 'https://lnkd.in/p/d5xg7iKw',
+				label: 'Docker Workshop',
+				href: 'https://www.linkedin.com/posts/alcoding_docker-containerization-alcodingclub-activity-7355439380456501248-air3',
 				icon: 'linkedin',
 			},
+			{
+				label: 'Terrathon 4.0',
+				href: 'https://www.linkedin.com/posts/alcoding_terrathon4-hackathon-sustainability-activity-7312160071730221056--2IU',
+				icon: 'linkedin',
+			},
+			{
+				label: 'club instagram',
+				href: 'https://www.instagram.com/p/C_mwH_PykE7/?img_index=2',
+				icon: 'external',
+			},
 		],
-		captions: {
-			'01': 'Terrathon 4.0, opening hours.',
-			'02': 'a monthly contest problem set.',
-			'03': 'handover, April 2025.',
-		},
+		images: [
+			{
+				src: '/achievements/alcoding-club-head/alcoding1.jpg',
+				alt: 'Members of The Alcoding Club together at a club gathering.',
+				caption: 'All the members of The Alcoding Club.',
+			},
+			{
+				src: '/achievements/alcoding-club-head/alcoding2.jpg',
+				alt: 'The team that hosted the Containerization with Docker workshop.',
+				caption: 'The team responsible for hosting the Containerization with Docker workshop.',
+			},
+		],
 		detail: {
 			overview: [
-				'The Alcoding Club is PESU\u2019s algorithms and competitive programming club. I joined in January 2024, took over as head in September 2024, and handed over in April 2025.',
-				'The job is mostly operations. Weekly contests need problems written, tested, and calibrated so the difficulty curve is not a cliff. Terrathon needs tracks, judges, and someone awake at 4am when the deployment breaks. None of it is glamorous, and all of it is the actual work.',
-				'One of the events I ran as head was Containerization 101, a hands-on Docker workshop with the club. I led the organising team; Dr. Chaitra N. and Pranavjeet Naidu spoke. Everyone left with a container they had built and run themselves.',
-			],
-			highlights: [
-				'Ran the club for a full academic year.',
-				'Authored problems for monthly HackerRank contests.',
-				'Organised and executed Terrathon 4.0, the flagship 24-hour hackathon.',
-				'Led the organising team for Containerization 101, a hands-on Docker workshop.',
-				'Mentored participants through contests and hackathons.',
+				'The Alcoding Club is the Competitive Programming Club of PES University. I joined in January 2024 as a member of the technical team, where my work was mostly problem-setting and writing test cases for the monthly coding contests we hosted. That taught me a lot about the optimisation and contest-thinking side of competitive programming, well beyond just DSA \u2014 it was my first real exposure to that experience.',
+				'During my time on the Problem Setting Team, I also helped organise the club\u2019s flagship 24-hour hackathon, Terrathon 3.0, the university\u2019s largest sustainability-themed hackathon, run in collaboration with the Changemakers\u2019 Society.',
+				'When I became Head of the club in September 2024, I was one of very few second years to have become a club head that quickly, so I had a lot of figuring out to do. Luckily my <a href="https://www.instagram.com/p/C_mwH_PykE7" target="_blank" rel="noreferrer">core team</a> had some very talented people.',
+				'The first event I hosted was the <a href="https://www.instagram.com/p/DA3IL5wzAKc" target="_blank" rel="noreferrer">October coding contest</a>. It was very early in my time as club head, and since a lot of the club had graduated or left and fresh recruitments were not done yet, I remember pulling all-nighters almost every night before the contests \u2014 setting up the contest, creating questions, making test cases. Huge thanks to <a href="https://www.linkedin.com/in/hashir-shaikh-9603a629a/" target="_blank" rel="noreferrer">Hashir Shaikh</a> and <a href="https://www.linkedin.com/in/munis-shafiq/" target="_blank" rel="noreferrer">Munis Shafiq</a> for pitching in and helping me set questions. We were understaffed, but we pulled it off.',
+				'Usually around November every year, the Google Developer Student Club (GDSC) at PES University hosts a Docker workshop. During my year, 2024, that club was inactive because of some minor handover issues, so Hackerspace ECC hosted the workshop at EC Campus and my club pitched in to host it on the main campus (<a href="https://www.instagram.com/p/DCMXNCGNU0M" target="_blank" rel="noreferrer">Docker workshop post</a>). It was an interesting experience in event organisation and my first exposure to the operations side of event management: booking the venue, organising food, getting event permissions, managing the budget, and getting the speaker, <a href="https://www.linkedin.com/in/pranavjeet-naidu/" target="_blank" rel="noreferrer">Pranavjeet Naidu</a>, a member of the open source community at PES.',
+				'The final event I hosted as club head was <a href="https://www.instagram.com/p/DHDHBApSLRI/" target="_blank" rel="noreferrer">Terrathon 4.0</a>, the club\u2019s flagship 24-hour hackathon. It was its own kind of fun: as club head there was a surprising amount of technical work in running a hackathon, mostly data science to manage spreadsheets of budgets, registrations, and volunteers. It was one of the few times I got to put my Python data-management skills to work.',
+				"All in all, during my time as club head, We conducted 6 coding contests, 2 workshops and 1 hackathon (in collaboration with the Changemakers\u2019 Society).",
 			],
 			stack: ['HackerRank', 'C++', 'Python', 'Docker'],
 		},
 	},
 	{
 		slug: 'pesu-io-course',
-		title: 'PESU I/O \u2014 Competitive Programming',
+		title: 'SME @ PESU I/O',
 		category: 'leadership',
+		organization: 'PESU I/O',
+		position: 'Subject Matter Expert (SME)',
+		department: 'Competitive Programming',
 		result: 'instructor',
 		date: 'August \u2014 November 2025',
 		year: '2025',
@@ -471,11 +492,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 				icon: 'youtube',
 			},
 		],
-		captions: {
-			'01': 'slot 20, first session.',
-			'02': 'a worked problem, on the board.',
-			'03': 'end-of-course contest.',
-		},
 		detail: {
 			overview: [
 				'PESU I/O is the university\u2019s peer-to-peer teaching programme: students teaching students, for credit and for the practice of explaining things. I taught the competitive programming slot to a class of 55.',
@@ -487,6 +503,60 @@ export const ACHIEVEMENTS: Achievement[] = [
 				'Focused on intuition, pattern recognition, and performance-oriented implementation.',
 			],
 			stack: ['C++', 'Python'],
+		},
+	},
+	{
+		slug: 'crais-robotics-intern',
+		title: 'Robotics Intern @ cRAIS',
+		category: 'leadership',
+		organization: 'cRAIS (Center for Robotics Automation and Intelligent Systems)',
+		position: 'Robotics Intern',
+		department: 'Remote Robotics (ReRo) team',
+		result: 'intern',
+		date: 'June \u2014 July 2025',
+		year: '2025',
+		summary: 'worked on the Remote Robotics (ReRo) team.',
+		description: 'A robotics internship with the Remote Robotics (ReRo) team at cRAIS.',
+		tags: ['crais', 'robotics', 'rero', 'internship'],
+		icon: 'container',
+		menu: true,
+		links: [
+			{
+				label: 'my linkedin post',
+				href: 'https://lnkd.in/p/d3vHPJZd',
+				icon: 'linkedin',
+			},
+		],
+		detail: {
+			overview: [
+				'I worked as a robotics intern at cRAIS (Center for Robotics Automation and Intelligent Systems) on the Remote Robotics (ReRo) team.',
+			],
+			highlights: ['Worked with the Remote Robotics (ReRo) team.'],
+		},
+	},
+	{
+		slug: 'ieee-ras-speaker',
+		title: 'IEEE RAS Speaker',
+		category: 'leadership',
+		organization: 'TAMS (The Amateur Manager and Scientist)',
+		position: 'IEEE RAS Speaker',
+		result: 'speaker',
+		date: 'August 2025',
+		year: '2025',
+		summary: 'spoke on robotics at a TAMS session.',
+		description:
+			'A talk for the IEEE Robotics and Automation Society chapter, hosted by TAMS.',
+		tags: ['ieee', 'ras', 'robotics', 'speaker', 'tams'],
+		icon: 'users',
+		menu: true,
+		links: [
+			{ label: 'my linkedin post', href: 'https://lnkd.in/p/deWbmV4m', icon: 'linkedin' },
+		],
+		detail: {
+			overview: [
+				'I spoke at an IEEE Robotics and Automation Society (RAS) session hosted by TAMS (The Amateur Manager and Scientist).',
+			],
+			highlights: ['Talk delivered to the IEEE RAS chapter at TAMS.'],
 		},
 	},
 	{
@@ -514,11 +584,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 			{ label: 'my linkedin post', href: 'https://lnkd.in/p/dHbNECk9', icon: 'linkedin' },
 			{ label: 'voice of stray dogs', href: 'https://www.vosd.in/', icon: 'heart' },
 		],
-		captions: {
-			'01': 'the first collection round.',
-			'02': 'stacked and weighed.',
-			'03': 'handed over.',
-		},
 		detail: {
 			overview: [
 				'A solo newspaper collection drive for Voice of Stray Dogs, one of India\u2019s larger stray rescue operations. Newspapers get sold by weight; the proceeds fund rescue and medical care. The mechanism is simple, which means the difficulty is entirely in the asking.',
@@ -529,6 +594,31 @@ export const ACHIEVEMENTS: Achievement[] = [
 				'Collected and handed over to VOSD for resale by weight.',
 				'44,000+ views on the write-up.',
 			],
+		},
+	},
+	{
+		slug: 'tedx-speaker',
+		title: 'TEDx Speaker',
+		category: 'community',
+		organization: 'TEDxSNSCE',
+		result: 'speaker',
+		date: 'August 25, 2017',
+		year: '2017',
+		summary: 'a TEDx talk.',
+		description: 'A TEDx talk delivered at TEDxSNSCE.',
+		tags: ['tedx', 'speaker', 'talk', 'community'],
+		icon: 'heart',
+		menu: true,
+		links: [
+			{
+				label: 'youtube video',
+				href: 'https://www.youtube.com/watch?v=GSN9b3AIITw',
+				icon: 'youtube',
+			},
+		],
+		detail: {
+			overview: ['A TEDx talk delivered at TEDxSNSCE.'],
+			highlights: ['Spoke at TEDxSNSCE.'],
 		},
 	},
 	{
@@ -559,11 +649,6 @@ export const ACHIEVEMENTS: Achievement[] = [
 				icon: 'github',
 			},
 		],
-		captions: {
-			'01': 'the diff.',
-			'02': 'maintainer review and approval.',
-			'03': 'merged into the 29.2.0 milestone.',
-		},
 		detail: {
 			overview: [
 				'names-generator.go is the file behind every unnamed container. Docker names containers after scientists and hackers, and the list has been carried forward since the 0.7.x era. One entry described C\u00e9dric Villani as a "Poincar\u00e9 Price" laureate.',
@@ -585,17 +670,37 @@ export function getAchievement(slug: string): Achievement | undefined {
 
 /**
  * Cards that open a link menu rather than navigating to a detail page.
- * Medal cards always do; others opt in with `menu: true`.
+ * Medal cards always do; others opt in with `menu: true` or `pageMenu: true`.
  */
 export function opensMenu(achievement: Achievement): boolean {
-	return Boolean(achievement.medal) || Boolean(achievement.menu);
+	return Boolean(achievement.medal) || Boolean(achievement.menu) || Boolean(achievement.pageMenu);
 }
 
+/**
+ * Entries with a long-form page. `pageMenu` cards keep their page; it is only
+ * reachable through the menu's "Activity Description" entry.
+ */
 export function hasDetailPage(achievement: Achievement): boolean {
-	return !opensMenu(achievement);
+	return !achievement.medal && !achievement.menu;
 }
 
-export const DETAIL_ACHIEVEMENTS = ACHIEVEMENTS.filter(hasDetailPage);
+/**
+ * University & extracurriculars live on their own page (/university), so the
+ * achievements index excludes them.
+ */
+export const UNIVERSITY_ACHIEVEMENTS = ACHIEVEMENTS.filter(
+	(achievement) => achievement.category === 'leadership' || achievement.alsoUniversity,
+);
+
+export const ACHIEVEMENT_INDEX = ACHIEVEMENTS.filter(
+	(achievement) => achievement.category !== 'leadership',
+);
+
+export const DETAIL_ACHIEVEMENTS = ACHIEVEMENT_INDEX.filter(hasDetailPage);
+
+export const UNIVERSITY_DETAIL_ACHIEVEMENTS = UNIVERSITY_ACHIEVEMENTS.filter(
+	(achievement) => hasDetailPage(achievement) && !achievement.href,
+);
 
 export interface AchievementGroup {
 	category: Category;
@@ -610,6 +715,6 @@ export function groupByCategory(): AchievementGroup[] {
 		category,
 		label: CATEGORY_LABELS[category],
 		blurb: CATEGORY_BLURBS[category],
-		items: ACHIEVEMENTS.filter((achievement) => achievement.category === category),
+		items: ACHIEVEMENT_INDEX.filter((achievement) => achievement.category === category),
 	})).filter((group) => group.items.length > 0);
 }

@@ -1,44 +1,26 @@
 ---
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
-import { Mail, Github, Linkedin, Instagram, MessageCircle, Send, ArrowUpRight } from 'lucide-astro';
+import { Mail, Github, Linkedin, Instagram, MessageCircle, Languages, Send, ArrowUpRight } from 'lucide-astro';
+import { CONTACTS, type ContactIcon } from '../data/contacts';
 
-const contacts = [
-	{
-		label: 'email',
-		value: 'angadbhalla2005@gmail.com',
-		href: 'mailto:angadbhalla2005@gmail.com',
-		icon: Mail,
-	},
-	{
-		label: 'github',
-		value: 'github.com/Anga205',
-		href: 'https://github.com/Anga205/',
-		icon: Github,
-	},
-	{
-		label: 'linkedin',
-		value: 'linkedin.com/in/anga',
-		href: 'https://www.linkedin.com/in/anga',
-		icon: Linkedin,
-	},
-	{
-		label: 'discord',
-		value: '@anga205',
-		href: 'https://discord.com/users/477680545271250944',
-		icon: MessageCircle,
-	},
-	{
-		label: 'instagram',
-		value: '@_anga205',
-		href: 'https://www.instagram.com/_anga205/',
-		icon: Instagram,
-	},
-] as const;
+const ICONS: Record<ContactIcon, typeof Mail> = {
+	mail: Mail,
+	github: Github,
+	linkedin: Linkedin,
+	discord: MessageCircle,
+	instagram: Instagram,
+	duolingo: Languages,
+};
+
+const contacts = CONTACTS.map((contact) => ({
+	...contact,
+	icon: ICONS[contact.icon],
+}));
 ---
 
 <Base title="anga / contact" description="GitHub, LinkedIn, email, and other ways to contact Angad Bhalla.">
-	<PortfolioMenu initiallyVisible minimized />
+	<PortfolioMenu minimized />
 
 	<main class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24">
 		<div class="window mx-auto max-w-184 overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">

@@ -3,8 +3,8 @@ import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
 ---
 
-<Base title="anga / about" description="About Angad Bhalla.">
-	<PortfolioMenu initiallyVisible minimized />
+<Base title="anga / philosophy" description="How Angad Bhalla thinks about building software: craft, mistakes, and the goofy projects.">
+	<PortfolioMenu minimized />
 
 	<main class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24">
 		<div class="window mx-auto max-w-240 overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
@@ -12,88 +12,67 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 				<span class="dots flex gap-1.5" aria-hidden="true">
 					<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span class="size-2.5 rounded-full bg-[#e5a50a]"></span><span class="size-2.5 rounded-full bg-[#33d17a]"></span>
 				</span>
-				<span class="title text-center whitespace-nowrap">anga@portfolio — about</span>
+				<span class="title text-center whitespace-nowrap">anga@portfolio — philosophy</span>
 				<span aria-hidden="true"></span>
 			</div>
 
 			<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
-				<p class="prompt mb-5 text-[0.75rem] text-[#26a269]">$ cat about-me.txt</p>
-
-				<div class="intro mb-8 grid grid-cols-[minmax(0,1fr)_16rem] items-start gap-6 border-b border-line pb-8 max-[899px]:grid-cols-[minmax(0,1fr)]">
-					<div class="intro-text">
-						<h1 class="mb-2 text-[1.35rem] font-normal">Angad Bhalla</h1>
-						<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
-							I'm an undergraduate pursuing a degree in Computer Science &amp; Engineering at PES
-							University, Bangalore (2023-2027), with experience across systems engineering,
-							infrastructure, and cybersecurity.
-						</p>
-						<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
-							I've completed internships at Goldman Sachs, Frigga Cloud, and Araciv Technologies,
-							working across infrastructure, security, and software development.
-						</p>
-						<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
-							At PES University, I led Team Alcoding, the competitive programming club,
-							organizing hackathons and coding contests. I also conducted the competitive
-							programming course at PESU I/O (Slot 20).
-						</p>
-						<p class="mb-0 max-w-[52ch] text-[#a5a3a9]">
-							Outside of work, I spend time learning the craft of coffee, exploring brewing
-							techniques and refining my understanding of the process. I also volunteer in
-							community initiatives, including fundraising for stray dogs.
-						</p>
-					</div>
-
-					{/* Reserved for the full-body GLB. The viewer mounts here. */}
-					<div class="portrait" id="portrait" data-model="/anga.glb">
-						<div class="portrait-canvas" id="portrait-canvas"></div>
-						<p class="portrait-fallback" id="portrait-fallback">loading model…</p>
-					</div>
-				</div>
-
 				<section class="philosophy">
-					<h3 class="text-[1.05rem] font-normal">My Philosophy</h3>
-					<h2 class="mb-3 text-[0.75rem] font-normal tracking-[0.04em] text-[#26a269] uppercase">On building things</h2>
+					<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ cat philosophy.txt</p>
 
-					<p class="mb-[1.1rem] text-[#a5a3a9]">
-						I think the best engineers treat software the same way a craftsman treats his work.
-						Every project is another chance to create something beautiful, the only way to learn
-						is to make mistakes. And every problem has a dozen different ways to be approached,
-						and sometimes, to get something wrong feels just as good as getting something right,
-						in fact, sometimes I try to get it as wrong as humanly possible, theres fun in seeing
-						a chaos.
-					</p>
+					<div class="philosophy-grid">
+						<div class="philosophy-text">
+							<h1 class="mb-1 text-[1.35rem] font-normal">My Philosophy</h1>
+							<h2 class="mb-3 text-[0.75rem] font-normal tracking-[0.04em] text-[#26a269] uppercase">On building things</h2>
 
-					<p class="mb-[1.1rem] text-[#a5a3a9]">
-						One of the best things that can happen to you in this field is to find someone who
-						loves and respects the craft as much as you do. Talent and skill is obviously a great
-						thing, but to admire the field, even in its goofyness, is a rare and wonderful
-						feeling. The most fun projects tend to start off with a "I know this sounds weird but
-						what if-" and the best projects are ones where you dont know what final product you're
-						aiming for, after all, the journey is just as fun as the destination.
-					</p>
+							<p class="mb-[1.1rem] text-[#a5a3a9]">
+								I think the best engineers treat software the same way a craftsman treats his work.
+								Every project is another chance to create something beautiful, the only way to learn
+								is to make mistakes. And every problem has a dozen different ways to be approached,
+								and sometimes, to get something wrong feels just as good as getting something right,
+								in fact, sometimes I try to get it as wrong as humanly possible, theres fun in seeing
+								a chaos.
+							</p>
 
-					<p class="mb-[1.1rem] text-[#a5a3a9]">The goofier the project, the better.</p>
+							<p class="mb-[1.1rem] text-[#a5a3a9]">
+								One of the best things that can happen to you in this field is to find someone who
+								loves and respects the craft as much as you do. Talent and skill is obviously a great
+								thing, but to admire the field, even in its goofyness, is a rare and wonderful
+								feeling. The most fun projects tend to start off with a "I know this sounds weird but
+								what if-" and the best projects are ones where you dont know what final product you're
+								aiming for, after all, the journey is just as fun as the destination.
+							</p>
 
-					<p class="mb-[1.1rem] text-[#a5a3a9]">
-						This field puts you into predicaments that perhaps nobody in the history of mankind
-						has ever dealt with before, there are no right answers, but there are fun approaches,
-						and who knows? maybe someday I myself will get to set the standard for what is right
-						and what is wrong, but until then, I will continue to make mistakes, and learn from
-						them.
-					</p>
+							<p class="mb-[1.1rem] text-[#a5a3a9]">The goofier the project, the better.</p>
 
-					<p class="mb-[1.1rem] text-[#a5a3a9]">
-						That's why I'm incredibly proud of every major project I've built. I could probably
-						spend hours or days talking about why AngaDrive is efficient down to the last CPU
-						clock cycle, or why I designed my Online Compiler the way I did. After all, every
-						optimization, every redesign, and every mistake has a story behind it.
-					</p>
+							<p class="mb-[1.1rem] text-[#a5a3a9]">
+								This field puts you into predicaments that perhaps nobody in the history of mankind
+								has ever dealt with before, there are no right answers, but there are fun approaches,
+								and who knows? maybe someday I myself will get to set the standard for what is right
+								and what is wrong, but until then, I will continue to make mistakes, and learn from
+								them.
+							</p>
 
-					<p class="pull italic font-sans">
-						A project to an engineer is what jewelry is to a goldsmith. Anyone can appriciate the
-						beauty of the craft, but only the maker can truly admire the process by which it was
-						forged.
-					</p>
+							<p class="mb-[1.1rem] text-[#a5a3a9]">
+								That's why I'm incredibly proud of every major project I've built. I could probably
+								spend hours or days talking about why AngaDrive is efficient down to the last CPU
+								clock cycle, or why I designed my Online Compiler the way I did. After all, every
+								optimization, every redesign, and every mistake has a story behind it.
+							</p>
+
+							<p class="pull italic font-sans">
+								A project to an engineer is what jewelry is to a goldsmith. Anyone can appriciate the
+								beauty of the craft, but only the maker can truly admire the process by which it was
+								forged.
+							</p>
+						</div>
+
+						{/* Reserved for the full-body GLB. The viewer mounts here. */}
+						<div class="portrait" id="portrait" data-model="/anga.glb">
+							<div class="portrait-canvas" id="portrait-canvas"></div>
+							<p class="portrait-fallback" id="portrait-fallback">loading model…</p>
+						</div>
+					</div>
 				</section>
 			</div>
 		</div>
@@ -101,11 +80,24 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 </Base>
 
 <style>
+	.philosophy-grid {
+		/* Tune the text/model split here. These are a ratio of the total
+		   width, so 1.5fr / 1fr gives the text ~60% and the model ~40%. */
+		--philosophy-text-ratio: 1.5fr;
+		--philosophy-model-ratio: 1fr;
+
+		display: grid;
+		grid-template-columns:
+			minmax(0, var(--philosophy-text-ratio))
+			minmax(0, var(--philosophy-model-ratio));
+		align-items: stretch;
+		gap: 1.5rem;
+	}
+
 	.portrait {
 		position: relative;
-		height: 30rem;
+		min-height: 30rem;
 		overflow: hidden;
-        translate: -5rem 0
 	}
 
 	.portrait-canvas {
@@ -150,16 +142,20 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 	}
 
 	@media (max-width: 899px) {
+		.philosophy-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
 		.portrait {
 			height: 18rem;
+			min-height: 18rem;
 		}
 	}
-
 </style>
 
 <script>
 	// The model is loaded only when the portrait scrolls into view, so the
-	// about page stays cheap until someone actually looks at it.
+	// page stays cheap until someone actually looks at it.
 	const portrait = document.getElementById('portrait');
 	const host = document.getElementById('portrait-canvas');
 
@@ -227,16 +223,46 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 
 			scene.add(model);
 
-			// Fixed camera: diagonally towards the model's centre from its
-			// positive-X, negative-Z side.
+			// Fixed viewing direction: diagonally towards the model's centre
+			// from its positive-X, negative-Z side. The distance is recomputed
+			// on every resize so the model fills the available height instead
+			// of sitting in a fixed-size box.
 			const target = new THREE.Vector3(0, size.y / 2, 0);
-			camera.position.set(1.1, 0.95, -0.60);
 			controls.target.copy(target);
 
-			const offset = camera.position.clone().sub(target);
-			const initialAzimuth = Math.atan2(offset.x, offset.z);
-			const initialPolar = Math.acos(offset.y / offset.length());
-			const initialPosition = camera.position.clone();
+			const viewDirection = new THREE.Vector3(1.1, 0.05, -0.6).normalize();
+			const initialAzimuth = Math.atan2(viewDirection.x, viewDirection.z);
+			const initialPolar = Math.acos(viewDirection.y);
+			let initialPosition = new THREE.Vector3();
+
+			// Seed the camera along the intended direction so the first
+			// framing pass has a valid direction to preserve.
+			camera.position.copy(target).addScaledVector(viewDirection, 1);
+
+			const fitDistance = () => {
+				const heightPx = hostElement.clientHeight;
+				if (!heightPx) return 1;
+
+				// Frame by height, then back off so the figure occupies about
+				// two thirds of the column height and sits centred in it.
+				const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+				const padding = 1.56;
+				return ((size.y / 2) * padding) / Math.tan(verticalFov / 2);
+			};
+
+			// Pull the camera back along its current direction so the model
+			// always fills the box, without resetting the user's rotation.
+			const applyFraming = () => {
+				const distance = fitDistance();
+				const direction = camera.position.clone().sub(target);
+				if (direction.lengthSq() < 1e-6) direction.copy(viewDirection);
+				direction.normalize();
+				camera.position.copy(target).addScaledVector(direction, distance);
+				initialPosition = camera.position.clone();
+				controls.update();
+				controls.saveState();
+			};
+
 			controls.minPolarAngle = initialPolar;
 			controls.maxPolarAngle = initialPolar;
 			const horizontalLimit = THREE.MathUtils.degToRad(82);
@@ -258,9 +284,6 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 			renderer.domElement.addEventListener('pointermove', applyResistance, { capture: true });
 			renderer.domElement.addEventListener('pointerup', resetResistance, { capture: true });
 			renderer.domElement.addEventListener('pointercancel', resetResistance, { capture: true });
-
-			controls.update();
-			controls.saveState();
 
 			let snapFrame = 0;
 			let snapTimeout = 0;
@@ -324,6 +347,7 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 				renderer.setSize(width, heightPx);
 				camera.aspect = width / heightPx;
 				camera.updateProjectionMatrix();
+				applyFraming();
 				renderer.render(scene, camera);
 			}
 

@@ -1,0 +1,40 @@
+---
+import Base from '../layouts/Base.astro';
+import PortfolioMenu from '../components/PortfolioMenu.astro';
+import AchievementCards from '../components/AchievementCards.astro';
+import { UNIVERSITY_ACHIEVEMENTS, CATEGORY_LABELS, CATEGORY_BLURBS } from '../data/achievements';
+
+// Roles first, then anything else surfaced here (e.g. the IAMPro research
+// internship), so the page reads as a career timeline.
+const items = [...UNIVERSITY_ACHIEVEMENTS].sort((a, b) => {
+	const aRole = a.category === 'leadership' ? 0 : 1;
+	const bRole = b.category === 'leadership' ? 0 : 1;
+	return aRole - bRole;
+});
+
+const groups = [
+	{
+		category: 'leadership' as const,
+		label: CATEGORY_LABELS.leadership,
+		blurb: CATEGORY_BLURBS.leadership,
+		items,
+	},
+];
+---
+
+<Base
+	title="anga / university"
+	description="Roles, organisations, and extracurricular work by Angad Bhalla at PES University."
+>
+	<PortfolioMenu minimized />
+	<AchievementCards
+		groups={groups}
+		windowTitle="anga@portfolio — university"
+		prompt="$ ls ~/university"
+		heading="university"
+		lede={`${UNIVERSITY_ACHIEVEMENTS.length} roles. Clubs, teaching, internships, and talks — the work around the coursework.`}
+		sectionId="university"
+		detailBase="/university"
+		roleMode
+	/>
+</Base>

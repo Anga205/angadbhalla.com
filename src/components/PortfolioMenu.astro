@@ -1,40 +1,36 @@
 ---
-import { FolderGit2, User, Trophy, Link2 } from 'lucide-astro';
+import { FolderGit2, User, Trophy, Link2, GraduationCap, BookOpen } from 'lucide-astro';
 import { DESTINATIONS } from '../data/destinations';
 
 interface Props {
-	initiallyVisible?: boolean;
 	minimized?: boolean;
 }
 
-const { initiallyVisible = false, minimized = false } = Astro.props;
+const { minimized = false } = Astro.props;
 
 const ICONS = {
+	home: User,
 	projects: FolderGit2,
-	about: User,
+	university: GraduationCap,
 	achievements: Trophy,
+	philosophy: BookOpen,
 	contact: Link2,
 } as const;
 
-// The active destination comes from the URL, not from list position. On
-// /selector no destination matches, so the first one is the default highlight.
+// The active destination comes from the URL, not from list position.
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const activeId =
-	DESTINATIONS.find((d) => path === d.href || path.startsWith(`${d.href}/`))?.id ??
-	DESTINATIONS[0].id;
+	DESTINATIONS.find((d) => {
+		const href = d.href.replace(/\/$/, '') || '/';
+		return path === href || (href !== '/' && path.startsWith(`${href}/`));
+	})?.id ?? DESTINATIONS[0].id;
 
 ---
 
 <section
-	class:list={[
-		'wayfinder',
-		!initiallyVisible && 'wayfinder--hidden',
-		minimized && 'is-minimized',
-	]}
+	class:list={['wayfinder', minimized && 'is-minimized']}
 	id="wayfinder"
 	tabindex="-1"
-	data-initial-visible={initiallyVisible ? 'true' : undefined}
-	hidden={!initiallyVisible}
 >
 	<div class="window">
 		<div class="headerbar">
@@ -74,7 +70,8 @@ const activeId =
 										<Icon size={16} strokeWidth={1.5} />
 									</span>
 									<span class="waypoint-text">
-										<span class="waypoint-label">{destination.label.toLowerCase()}/</span>
+										<span class="waypoint-label">{destination.label.toLowerCase()}<span class="waypoint-slash">/</span></span>
+										<span class="waypoint-label-short">{destination.shortLabel}</span>
 										<span class="waypoint-description">{destination.description}</span>
 									</span>
 								</a>
@@ -108,16 +105,6 @@ const activeId =
 		padding: 1.5rem;
 		overflow-y: auto;
 		background: #171717;
-		opacity: 1;
-		transition: opacity 350ms;
-	}
-
-	.wayfinder--hidden {
-		opacity: 0;
-	}
-
-	.wayfinder.is-visible {
-		opacity: 1;
 	}
 
 	.window {
@@ -248,6 +235,15 @@ const activeId =
 		line-height: 1.75;
 	}
 
+	/* The six-item mobile rail has no room for the full label, so it shows a
+	   short one instead. Everywhere else the short label is hidden. */
+	.waypoint-label-short {
+		display: none;
+		color: #ffffff;
+		font-size: 0.875rem;
+		line-height: 1.75;
+	}
+
 	.waypoint-description {
 		display: block;
 		color: #a5a3a9;
@@ -354,7 +350,7 @@ const activeId =
 
 		.wayfinder.is-minimized .listing {
 			display: grid;
-			grid-template-columns: repeat(4, minmax(0, 1fr));
+			grid-template-columns: repeat(6, minmax(0, 1fr));
 			gap: 0.25rem;
 		}
 
@@ -364,7 +360,7 @@ const activeId =
 			align-items: center;
 			gap: 0.2rem;
 			margin: 0;
-			padding: 0.25rem;
+			padding: 0.25rem 0.1rem;
 			text-align: center;
 		}
 
@@ -381,14 +377,28 @@ const activeId =
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
-			font-size: 0.6875rem;
+			font-size: 0.625rem;
 		}
-	}
 
-	@media (prefers-reduced-motion: reduce) {
-		.wayfinder {
-			transition: none;
+		/* Six columns at phone widths cannot fit the full names, so the rail
+		   swaps in the short labels and drops the directory slash. */
+		.wayfinder.is-minimized .waypoint-label {
+			display: none;
 		}
+
+		.wayfinder.is-minimized .waypoint-label-short {
+			display: block;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			font-size: 0.625rem;
+		}
+
+	/* The mobile rail has no `ls ~/portfolio` prompt, so the trailing slash
+	   that mimics a directory listing is dropped there. */
+	.wayfinder.is-minimized .waypoint-slash {
+		display: none;
+	}
 	}
 </style>
 
@@ -427,17 +437,6 @@ const activeId =
 		links[activeIndex].focus();
 	}
 
-	function showMenu() {
-		menuElement.hidden = false;
-		highlight(currentIndex);
-		requestAnimationFrame(() => {
-			requestAnimationFrame(() => {
-				menuElement.classList.add('is-visible');
-				links[currentIndex].focus();
-			});
-		});
-	}
-
 	links.forEach((link, index) => {
 		link.addEventListener('focus', () => {
 			activeIndex = index;
@@ -470,7 +469,4 @@ const activeId =
 			links[activeIndex].click();
 		}
 	});
-
-	window.addEventListener('portfolio:show-menu', showMenu);
-	if (menuElement.dataset.initialVisible === 'true') showMenu();
 </script>

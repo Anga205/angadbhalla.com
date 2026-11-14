@@ -1,0 +1,2 @@
+# Keep test code out of GitHub's language statistics.
+tests/** linguist-vendored

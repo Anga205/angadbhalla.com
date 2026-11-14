@@ -1,26 +1,214 @@
 ---
-import { Font } from 'astro:assets';
-import OpeningSequence from '../components/OpeningSequence.astro';
-import '../styles/global.css';
+import Base from '../layouts/Base.astro';
+import PortfolioMenu from '../components/PortfolioMenu.astro';
+import { Mail, Github, Linkedin, MessageCircle, Instagram, Languages } from 'lucide-astro';
+import { CONTACTS, type ContactIcon } from '../data/contacts';
+
+const ICONS: Record<ContactIcon, typeof Mail> = {
+	mail: Mail,
+	github: Github,
+	linkedin: Linkedin,
+	discord: MessageCircle,
+	instagram: Instagram,
+	duolingo: Languages,
+};
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="generator" content={Astro.generator} />
-		<meta name="color-scheme" content="dark" />
-		<meta name="theme-color" content="#000000" />
-		<meta
-			name="description"
-			content="Angad Bhalla. Computer science student in Bengaluru. Systems software, small binaries, boring infrastructure."
-		/>
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" sizes="32x32" />
-		<title>anga</title>
-		<Font cssVariable="--font-mono" preload />
-	</head>
-	<body class="bg-neutral-900 font-mono text-neutral-200 antialiased">
-		<OpeningSequence />
-	</body>
-</html>
+<Base title="anga / home" description="Angad Bhalla. Computer science student in Bengaluru.">
+	<PortfolioMenu minimized />
+
+	<main class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24">
+		<div class="window mx-auto max-w-240 overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
+			<div class="headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none">
+				<span class="dots flex gap-1.5" aria-hidden="true">
+					<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span class="size-2.5 rounded-full bg-[#e5a50a]"></span><span class="size-2.5 rounded-full bg-[#33d17a]"></span>
+				</span>
+				<span class="title text-center whitespace-nowrap">anga@portfolio — home</span>
+				<span aria-hidden="true"></span>
+			</div>
+
+			<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
+				<div class="intro mb-8 border-b border-line pb-8">
+					<p class="intro-prompt text-[0.75rem] text-[#26a269]">$ cat home.txt</p>
+					<h1 class="intro-heading mb-2 text-[1.35rem] font-normal">Angad Bhalla</h1>
+					<div class="intro-text">
+						<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
+							I'm a <span id="age">21</span> year old software engineer currently pursuing a degree in
+							Computer Science &amp; Engineering at PES University, Bangalore (2023-2027).
+						</p>
+						<p class="mb-0 max-w-[52ch] text-[#a5a3a9]">
+							I like playing Minecraft with my friends, watching Marvel &amp; DC, and I'm also a
+							huge coffee aficionado. In my off hours, I volunteer in community NGOs for animal
+							welfare.
+						</p>
+					</div>
+
+					{/* Portrait photo, fully rounded. */}
+					<div class="portrait-photo">
+						<img
+							src="/angad.png"
+							alt="Angad Bhalla"
+							width="512"
+							height="512"
+							loading="eager"
+							decoding="async"
+						/>
+					</div>
+				</div>
+
+				<section class="links" aria-labelledby="links-heading">
+					<p class="links-prompt text-[0.75rem] text-[#26a269]">$ ls ~/links</p>
+					<h2 class="mb-3 text-[1.05rem] font-normal" id="links-heading">find me</h2>
+
+					<ul class="contact-cards">
+						{CONTACTS.map((contact) => {
+							const Icon = ICONS[contact.icon];
+							const external = contact.href.startsWith('http');
+							return (
+								<li>
+									<a
+										class="contact-card"
+										href={contact.href}
+										target={external ? '_blank' : undefined}
+										rel={external ? 'noreferrer' : undefined}
+										aria-label={`${contact.label}: ${contact.value}`}
+										title={contact.label}
+									>
+										<Icon size={15} strokeWidth={1.5} aria-hidden="true" />
+									</a>
+								</li>
+							);
+						})}
+					</ul>
+				</section>
+			</div>
+		</div>
+	</main>
+</Base>
+
+<style>
+	.intro {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 16rem;
+		grid-template-areas:
+			'prompt prompt'
+			'heading photo'
+			'text photo';
+		grid-template-rows: auto auto 1fr;
+		column-gap: 1.5rem;
+		align-items: start;
+	}
+
+	.intro-prompt {
+		grid-area: prompt;
+		margin-bottom: 1.25rem;
+	}
+
+	.intro-heading {
+		grid-area: heading;
+	}
+
+	.intro-text {
+		grid-area: text;
+	}
+
+	.portrait-photo {
+		grid-area: photo;
+		display: grid;
+		align-items: start;
+		justify-items: center;
+	}
+
+	.portrait-photo img {
+		display: block;
+		width: 100%;
+		max-width: 16rem;
+		aspect-ratio: 1;
+		border-radius: 9999px;
+		border: 1px solid #3d3846;
+		object-fit: cover;
+	}
+
+	.links-prompt {
+		margin-bottom: 0.25rem;
+	}
+
+	.contact-cards {
+		display: flex;
+		gap: 0.4rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.contact-cards > li {
+		flex: 1 1 0;
+		min-width: 0;
+	}
+
+	.contact-card {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		padding: 0.4rem 0;
+		border: 1px solid #3d3846;
+		border-radius: 4px;
+		background: #000000;
+		color: #737373;
+		text-decoration: none;
+		transition:
+			background-color 120ms ease,
+			border-color 120ms ease,
+			color 120ms ease;
+	}
+
+	.contact-card:hover {
+		background: #1c1c1c;
+		border-color: #5a5560;
+		color: #26a269;
+	}
+
+	.contact-card:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+		color: #26a269;
+	}
+
+	@media (max-width: 899px) {
+		.intro {
+			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-areas:
+				'prompt photo'
+				'heading photo'
+				'text text';
+			grid-template-rows: auto auto auto;
+			column-gap: 1rem;
+			align-items: start;
+		}
+
+		.intro-prompt {
+			margin-bottom: 0.5rem;
+		}
+
+		.portrait-photo img {
+			width: 6rem;
+			max-width: 6rem;
+		}
+	}
+</style>
+
+<script>
+	// Age is computed on the client so it stays correct without a rebuild.
+	const ageElement = document.getElementById('age');
+	if (ageElement) {
+		const birthday = new Date(1117650600 * 1000);
+		const now = new Date();
+		let age = now.getUTCFullYear() - birthday.getUTCFullYear();
+		const monthDelta = now.getUTCMonth() - birthday.getUTCMonth();
+		if (monthDelta < 0 || (monthDelta === 0 && now.getUTCDate() < birthday.getUTCDate())) {
+			age -= 1;
+		}
+		ageElement.textContent = String(age);
+	}
+</script>

@@ -7,9 +7,8 @@ const SLUGS = [
 	'kalpana-2025',
 	'hack-o-ween-2025',
 	'leetcode-1337',
-	'alcoding-club-head',
-	'pesu-io-course',
 	'vosd-drive',
+	'tedx-speaker',
 	'docker-pr-51670',
 ] as const;
 
@@ -20,8 +19,8 @@ const MENU_SLUGS = [
 	'kalpana-2025',
 	'hack-o-ween-2025',
 	'leetcode-1337',
-	'pesu-io-course',
 	'vosd-drive',
+	'tedx-speaker',
 	'docker-pr-51670',
 ] as const;
 
@@ -36,20 +35,23 @@ test('achievements index groups every achievement into sections', async ({ page 
 	const cards = page.locator('.card');
 	await expect(cards).toHaveCount(SLUGS.length);
 
-	// Six categories, each with a heading.
+	// Five categories, each with a heading. University has its own page.
 	const groups = page.locator('.group');
-	await expect(groups).toHaveCount(6);
+	await expect(groups).toHaveCount(5);
 
 	for (const label of [
 		'hackathons',
 		'competitive programming',
-		'leadership & teaching',
 		'community',
 		'open source',
 		'research',
 	]) {
 		await expect(page.getByRole('heading', { name: label, level: 2 })).toBeVisible();
 	}
+
+	await expect(
+		page.getByRole('heading', { name: 'university & extracurriculars', level: 2 }),
+	).toHaveCount(0);
 });
 
 test('achievement cards stay compact: icon, name, one-line summary', async ({ page }) => {
@@ -66,22 +68,137 @@ test('achievement cards stay compact: icon, name, one-line summary', async ({ pa
 	await expect(card.locator('.card-more')).toHaveCount(0);
 });
 
-test('clicking a plain card opens its detail page', async ({ page }) => {
+test('achievement cards show the date and span the full width', async ({ page }) => {
 	await page.goto('/achievements');
 
-	await page.getByRole('link', { name: 'Head, The Alcoding Club' }).click();
+	const cards = page.locator('.card');
+	await expect(cards.first().locator('.card-dates')).toBeVisible();
+	await expect(
+		cards.filter({ hasText: 'Algomania 3.0' }).locator('.card-dates'),
+	).toHaveText('March 2026');
 
-	await expect(page).toHaveURL(/\/achievements\/alcoding-club-head$/);
-	await expect(page.getByRole('heading', { name: 'Head, The Alcoding Club', level: 1 })).toBeVisible();
-	await expect(page.locator('.highlights li').first()).toBeVisible();
+	// One card per row, like the university directory.
+	const columns = await page
+		.locator('.group ul')
+		.first()
+		.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
+	expect(columns.split(' ')).toHaveLength(1);
+
+	const listWidth = await page
+		.locator('.group ul')
+		.first()
+		.evaluate((el) => el.getBoundingClientRect().width);
+	const cardWidth = await cards.first().evaluate((el) => el.getBoundingClientRect().width);
+	expect(Math.abs(listWidth - cardWidth)).toBeLessThanOrEqual(1);
+});
+
+test('clicking a page-menu card opens a dialog with its activity description', async ({ page }) => {
+	await page.goto('/achievements');
+
+	await page.getByRole('button', { name: 'Research Intern' }).click();
+
+	// Still on the index; the page is reached through the dialog.
+	await expect(page).toHaveURL(/\/achievements$/);
+
+	const menu = page.locator('dialog.menu[open]');
+	await expect(menu).toBeVisible();
+
+	// The page is offered first, before the external links.
+	const first = menu.locator('.menu-list a').first();
+	await expect(first).toHaveText(/Activity Description/);
+	await expect(first).toHaveAttribute('href', '/achievements/ieee-cs-iampro-2025');
+
+	await first.click();
+
+	await expect(page).toHaveURL(/\/achievements\/ieee-cs-iampro-2025$/);
+	await expect(page.getByRole('heading', { name: 'Research Intern', level: 1 })).toBeVisible();
+	await expect(page.getByText('IEEE Computer Society IAMPro 2025 Batch')).toBeVisible();
+	await expect(page.locator('.prose p').first()).toBeVisible();
+});
+
+test('university page lists every role as a linkedin-style entry', async ({ page }) => {
+	await page.goto('/university');
+
+	await expect(page.getByRole('heading', { name: 'university', level: 1 })).toBeVisible();
+
+	const cards = page.locator('.card');
+	await expect(cards).toHaveCount(5);
+
+	const club = cards.filter({ hasText: 'The Alcoding Club' });
+	await expect(club.getByRole('heading', { level: 3 })).toHaveText('Club Head');
+	await expect(club.locator('.card-org')).toHaveText('The Alcoding Club');
+	await expect(club.locator('.card-dept')).toHaveText('Core Team');
+	await expect(club.locator('.card-dates')).toHaveText('September 2024 — April 2025');
+
+	const course = cards.filter({ hasText: 'PESU I/O' });
+	await expect(course.getByRole('heading', { level: 3 })).toHaveText('Subject Matter Expert (SME)');
+	await expect(course.locator('.card-dept')).toHaveText('Competitive Programming');
+	await expect(course.locator('.card-dates')).toHaveText('August — November 2025');
+
+	const intern = cards.filter({ hasText: 'cRAIS' });
+	await expect(intern.getByRole('heading', { level: 3 })).toHaveText('Robotics Intern');
+	await expect(intern.locator('.card-dept')).toHaveText('Remote Robotics (ReRo) team');
+	await expect(intern.locator('.card-dates')).toHaveText('June — July 2025');
+
+	const ras = cards.filter({ hasText: 'TAMS' });
+	await expect(ras.getByRole('heading', { level: 3 })).toHaveText('IEEE RAS Speaker');
+	await expect(ras.locator('.card-org')).toHaveText('TAMS (The Amateur Manager and Scientist)');
+
+	// The old label column is gone.
+	await expect(page.locator('.card-role-label')).toHaveCount(0);
+});
+
+test('robotics internship opens a menu with its linkedin post', async ({ page }) => {
+	await page.goto('/university');
+
+	await page.getByRole('button', { name: 'Robotics Intern, cRAIS (Center for Robotics Automation and Intelligent Systems)' }).click();
+
+	const menu = page.locator('dialog.menu[open]');
+	await expect(menu).toBeVisible();
+
+	const hrefs = await menu
+		.locator('.menu-list a')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+	expect(hrefs).toContain('https://lnkd.in/p/d3vHPJZd');
+});
+
+test('robotics internship no longer has a detail page', async ({ page }) => {
+	const response = await page.goto('/university/crais-robotics-intern');
+	expect(response?.status()).toBe(404);
+});
+
+test('university cards open a dialog that links to their detail pages', async ({ page }) => {
+	await page.goto('/university');
+
+	await page.getByRole('button', { name: 'Club Head, The Alcoding Club' }).click();
+
+	const menu = page.locator('dialog.menu[open]');
+	await expect(menu).toBeVisible();
+
+	const description = menu.getByRole('link', { name: /Activity Description/ });
+	await expect(description).toHaveAttribute('href', '/university/alcoding-club-head');
+
+	await description.click();
+
+	await expect(page).toHaveURL(/\/university\/alcoding-club-head$/);
+	await expect(page.getByRole('heading', { name: 'The Alcoding Club', level: 1 })).toBeVisible();
+	await expect(page.locator('.prose p').first()).toBeVisible();
 });
 
 test('IAMPro has a research detail page with three gallery slots', async ({ page }, testInfo) => {
 	await page.goto('/achievements/ieee-cs-iampro-2025');
-	await expect(
-		page.getByRole('heading', { name: 'IEEE Computer Society IAMPro 2025', level: 1 }),
-	).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Research Intern', level: 1 })).toBeVisible();
 	await expect(page.locator('.thumb')).toHaveCount(3);
+
+	// Real photographs, not the generated placeholders.
+	const sources = await page
+		.locator('.thumb img')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('src')));
+	expect(sources).toEqual([
+		'/achievements/ieee-cs-iampro-2025/certificate.png',
+		'/achievements/ieee-cs-iampro-2025/pic1.jpg',
+		'/achievements/ieee-cs-iampro-2025/pic2.jpg',
+	]);
 
 	testInfo.project.name === 'mobile' && testInfo.skip();
 
@@ -90,8 +207,30 @@ test('IAMPro has a research detail page with three gallery slots', async ({ page
 		.poll(() => page.locator('dialog.lightbox').evaluate((dialog) => (dialog as HTMLDialogElement).open))
 		.toBe(true);
 	await expect(page.locator('[data-caption-text]')).toHaveText(
-		'IAMPro 2025 programme documentation.',
+		'Certificate issued by the IEEE Computer Society Bangalore chapter confirming the internship under the IAMPro 2025 batch.',
 	);
+});
+
+test('IAMPro folds tags and stack into metadata instead of visible pills', async ({ page }) => {
+	await page.goto('/achievements/ieee-cs-iampro-2025');
+
+	await expect(page.locator('#tags')).toHaveCount(0);
+	await expect(page.locator('#stack')).toHaveCount(0);
+	await expect(page.locator('#highlights')).toHaveCount(0);
+
+	const keywords = await page
+		.locator('meta[name="keywords"]')
+		.getAttribute('content');
+	expect(keywords).toContain('iampro');
+	expect(keywords).toContain('Blockchain');
+});
+
+test('IAMPro links Ankith Khaitan to his LinkedIn profile', async ({ page }) => {
+	await page.goto('/achievements/ieee-cs-iampro-2025');
+
+	const link = page.getByRole('link', { name: 'Ankith Khaitan' });
+	await expect(link).toHaveAttribute('href', 'https://www.linkedin.com/in/ankithkhaitan/');
+	await expect(page.getByText('Dr. Venugopal N.')).toBeVisible();
 });
 
 test('hackathon cards show a gold or silver medal instead of the result text', async ({ page }) => {
@@ -197,8 +336,8 @@ test('every menu card opens a menu with its links', async ({ page }) => {
 		'IEEE Kalpana 2025',
 		'Hack-o-ween 2025',
 		'LeetCode — 1,337 solved',
-		'PESU I/O — Competitive Programming',
 		'VOSD Newspaper Drive',
+		'TEDx Speaker',
 		'docker/docker #51670',
 	]) {
 		await page.getByRole('button', { name: title }).click();
@@ -228,6 +367,57 @@ test('leetcode card uses the leetcode mark and links to the post and profile', a
 	expect(hrefs).toContain('https://leetcode.com/u/Anga205');
 });
 
+test('the leetcode profile link uses the leetcode mark, not the external icon', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const card = page.locator('.card').filter({ hasText: 'LeetCode' }).first();
+	const profile = card.getByRole('link', { name: 'my leetcode profile' });
+
+	// The LeetCode mark is a filled path; lucide's ExternalLink is stroked.
+	await expect(profile.locator('svg[fill="currentColor"]')).toHaveCount(1);
+	await expect(profile.locator('svg[stroke="currentColor"]')).toHaveCount(0);
+});
+
+test('page-menu cards list their activity description and every related link', async ({ page }) => {
+	await page.goto('/university');
+
+	await page.getByRole('button', { name: 'Club Head, The Alcoding Club' }).click();
+	const menu = page.locator('dialog.menu[open]');
+	await expect(menu).toBeVisible();
+
+	const hrefs = await menu
+		.locator('.menu-list a')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+
+	expect(hrefs[0]).toBe('/university/alcoding-club-head');
+	expect(hrefs).toContain('https://clubs.pes.edu/the-alcoding-club/about/');
+	expect(hrefs).toContain(
+		'https://www.linkedin.com/posts/alcoding_docker-containerization-alcodingclub-activity-7355439380456501248-air3',
+	);
+	expect(hrefs).toContain(
+		'https://www.linkedin.com/posts/alcoding_terrathon4-hackathon-sustainability-activity-7312160071730221056--2IU',
+	);
+	expect(hrefs).toContain('https://www.instagram.com/p/C_mwH_PykE7/?img_index=2');
+});
+
+test('page-menu cards carry an activity description icon in the headerbar', async ({ page }) => {
+	await page.goto('/university');
+
+	const club = page.locator('.card').filter({ hasText: 'The Alcoding Club' }).first();
+	const description = club.getByRole('link', { name: 'Activity Description' });
+	await expect(description).toHaveAttribute('href', '/university/alcoding-club-head');
+	await expect(description).toHaveAttribute('title', 'Activity Description');
+
+	// The research intern card has no external links, so the icon replaces the
+	// result text in its headerbar.
+	const intern = page.locator('.card').filter({ hasText: 'IAMPro 2025 Batch' }).first();
+	await expect(intern.locator('.card-result')).toHaveCount(0);
+	await expect(intern.getByRole('link', { name: 'Activity Description' })).toHaveAttribute(
+		'href',
+		'/achievements/ieee-cs-iampro-2025',
+	);
+});
+
 test('algomania sits under competitive programming, not hackathons', async ({ page }) => {
 	await page.goto('/achievements');
 
@@ -245,7 +435,7 @@ test('Tensor and IAMPro sit under research', async ({ page }) => {
 	const research = page.getByRole('region', { name: 'research' });
 	await expect(research.getByRole('button', { name: 'Tensor 2026' })).toBeVisible();
 	await expect(
-		research.getByRole('link', { name: 'IEEE Computer Society IAMPro 2025' }),
+		research.getByRole('button', { name: 'Research Intern' }),
 	).toBeVisible();
 });
 
@@ -292,35 +482,57 @@ test('every remaining achievement has a reachable detail page', async ({ page })
 });
 
 test('detail page gallery opens a lightbox with the image caption', async ({ page }) => {
-	await page.goto('/achievements/alcoding-club-head');
+	await page.goto('/university/alcoding-club-head');
 
 	const thumbs = page.locator('.thumb');
-	await expect(thumbs).toHaveCount(3);
+	await expect(thumbs).toHaveCount(2);
+	const sources = await page
+		.locator('.thumb img')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('src')));
+	expect(sources).toEqual([
+		'/achievements/alcoding-club-head/alcoding1.jpg',
+		'/achievements/alcoding-club-head/alcoding2.jpg',
+	]);
 
 	await thumbs.first().click();
 
 	const dialog = page.locator('dialog.lightbox');
 	await expect(dialog).toBeVisible();
-	await expect(dialog.locator('[data-caption-text]')).toHaveText('Terrathon 4.0, opening hours.');
-	await expect(dialog.locator('[data-count]')).toHaveText('01 / 03');
+	await expect(dialog.locator('[data-caption-text]')).toHaveText(
+		'All the members of The Alcoding Club.',
+	);
+	await expect(dialog.locator('[data-count]')).toHaveText('01 / 02');
 
 	// Arrow keys advance and wrap.
 	await page.keyboard.press('ArrowRight');
-	await expect(dialog.locator('[data-count]')).toHaveText('02 / 03');
+	await expect(dialog.locator('[data-count]')).toHaveText('02 / 02');
 
-	await page.keyboard.press('ArrowLeft');
-	await page.keyboard.press('ArrowLeft');
-	await expect(dialog.locator('[data-count]')).toHaveText('03 / 03');
+	await page.keyboard.press('ArrowRight');
+	await expect(dialog.locator('[data-count]')).toHaveText('01 / 02');
 
 	// Escape closes the native dialog.
 	await page.keyboard.press('Escape');
 	await expect(dialog).toBeHidden();
 });
 
-test('pesu io links to the linkedin post and the youtube video', async ({ page }) => {
-	await page.goto('/achievements');
+test('detail page gallery sits above the description', async ({ page }) => {
+	await page.goto('/university/alcoding-club-head');
 
-	await page.getByRole('button', { name: 'PESU I/O — Competitive Programming' }).click();
+	const gallery = page.locator('#gallery');
+	const prose = page.locator('.prose');
+
+	await expect(gallery).toBeVisible();
+	await expect(prose).toBeVisible();
+
+	const galleryTop = await gallery.evaluate((el) => el.getBoundingClientRect().top);
+	const proseTop = await prose.evaluate((el) => el.getBoundingClientRect().top);
+	expect(galleryTop).toBeLessThan(proseTop);
+});
+
+test('pesu io links to the linkedin post and the youtube video', async ({ page }) => {
+	await page.goto('/university');
+
+	await page.getByRole('button', { name: 'Subject Matter Expert (SME), PESU I/O' }).click();
 
 	const hrefs = await page
 		.locator('dialog.menu[open] .menu-list a')
@@ -330,15 +542,63 @@ test('pesu io links to the linkedin post and the youtube video', async ({ page }
 	expect(hrefs).toContain('https://www.youtube.com/watch?v=FTFoN2CjIGQ');
 });
 
-test('alcoding club links to the club page and the containerization post', async ({ page }) => {
-	await page.goto('/achievements/alcoding-club-head');
+test('ieee ras speaker links to its linkedin post', async ({ page }) => {
+	await page.goto('/university');
+
+	await page.getByRole('button', { name: 'IEEE RAS Speaker, TAMS (The Amateur Manager and Scientist)' }).click();
+
+	const hrefs = await page
+		.locator('dialog.menu[open] .menu-list a')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+
+	expect(hrefs).toContain('https://lnkd.in/p/deWbmV4m');
+});
+
+test('tedx speaker links to the youtube talk', async ({ page }) => {
+	await page.goto('/achievements');
+
+	await page.getByRole('button', { name: 'TEDx Speaker' }).click();
+
+	const hrefs = await page
+		.locator('dialog.menu[open] .menu-list a')
+		.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+
+	expect(hrefs).toContain('https://www.youtube.com/watch?v=GSN9b3AIITw');
+});
+
+test('alcoding club links to the club page and the two event posts', async ({ page }) => {
+	await page.goto('/university/alcoding-club-head');
 
 	const hrefs = await page
 		.locator('.actions a')
 		.evaluateAll((els) => els.map((el) => el.getAttribute('href')));
 
 	expect(hrefs).toContain('https://clubs.pes.edu/the-alcoding-club/about/');
-	expect(hrefs).toContain('https://lnkd.in/p/d5xg7iKw');
+	expect(hrefs).toContain(
+		'https://www.linkedin.com/posts/alcoding_docker-containerization-alcodingclub-activity-7355439380456501248-air3',
+	);
+	expect(hrefs).toContain(
+		'https://www.linkedin.com/posts/alcoding_terrathon4-hackathon-sustainability-activity-7312160071730221056--2IU',
+	);
+	expect(hrefs).toContain('https://www.instagram.com/p/C_mwH_PykE7/?img_index=2');
+
+	// The old containerization 101 short link is gone.
+	expect(hrefs).not.toContain('https://lnkd.in/p/d5xg7iKw');
+
+	const actions = page.locator('.actions');
+	await expect(actions.getByRole('link', { name: 'Docker Workshop', exact: true })).toBeVisible();
+	await expect(actions.getByRole('link', { name: 'Terrathon 4.0', exact: true })).toBeVisible();
+});
+
+test('alcoding club folds tags and stack into metadata instead of visible pills', async ({ page }) => {
+	await page.goto('/university/alcoding-club-head');
+
+	await expect(page.locator('#tags')).toHaveCount(0);
+	await expect(page.locator('#stack')).toHaveCount(0);
+
+	const keywords = await page.locator('meta[name="keywords"]').getAttribute('content');
+	expect(keywords).toContain('terrathon');
+	expect(keywords).toContain('Docker');
 });
 
 test('containerization workshop is folded into the alcoding club achievement', async ({ page }) => {
@@ -348,9 +608,34 @@ test('containerization workshop is folded into the alcoding club achievement', a
 	await expect(page.getByRole('button', { name: 'Containerization 101' })).toHaveCount(0);
 	await expect(page.getByRole('link', { name: 'Containerization 101' })).toHaveCount(0);
 
-	// The workshop is mentioned on the club detail page.
-	await page.goto('/achievements/alcoding-club-head');
-	await expect(page.getByText(/Containerization 101/).first()).toBeVisible();
+	// The Docker workshop is described on the club detail page.
+	await page.goto('/university/alcoding-club-head');
+	await expect(page.getByText(/Docker workshop/).first()).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Pranavjeet Naidu' })).toBeVisible();
+});
+
+test('alcoding club page links the people and events it mentions', async ({ page }) => {
+	await page.goto('/university/alcoding-club-head');
+
+	const expected: Array<[string, string]> = [
+		['core team', 'https://www.instagram.com/p/C_mwH_PykE7'],
+		['October coding contest', 'https://www.instagram.com/p/DA3IL5wzAKc'],
+		['Hashir Shaikh', 'https://www.linkedin.com/in/hashir-shaikh-9603a629a/'],
+		['Munis Shafiq', 'https://www.linkedin.com/in/munis-shafiq/'],
+		['Pranavjeet Naidu', 'https://www.linkedin.com/in/pranavjeet-naidu/'],
+		['Terrathon 4.0', 'https://www.instagram.com/p/DHDHBApSLRI/'],
+	];
+
+	for (const [name, href] of expected) {
+		await expect(page.locator('.prose').getByRole('link', { name }), name).toHaveAttribute(
+			'href',
+			href,
+		);
+	}
+
+	// The overview covers the whole tenure, so there is no highlights list.
+	await expect(page.locator('#highlights')).toHaveCount(0);
+	await expect(page.getByText(/Terrathon 3\.0/)).toBeVisible();
 });
 
 test('vosd links to the linkedin post and the vosd site', async ({ page }) => {
@@ -379,28 +664,28 @@ test('docker pull request card links to the docker/docker PR', async ({ page }) 
 });
 
 test('lightbox close button dismisses the dialog', async ({ page }) => {
-	await page.goto('/achievements/alcoding-club-head');
+	await page.goto('/university/alcoding-club-head');
 
 	await page.locator('.thumb').nth(1).click();
 	const dialog = page.locator('dialog.lightbox');
 	await expect(dialog).toBeVisible();
-	await expect(dialog.locator('[data-count]')).toHaveText('02 / 03');
+	await expect(dialog.locator('[data-count]')).toHaveText('02 / 02');
 
 	await dialog.locator('[data-close]').click();
 	await expect(dialog).toBeHidden();
 });
 
 test('detail page links back to the index', async ({ page }) => {
-	await page.goto('/achievements/alcoding-club-head');
+	await page.goto('/university/alcoding-club-head');
 
-	await page.getByRole('link', { name: /all achievements/ }).click();
-	await expect(page).toHaveURL(/\/achievements$/);
+	await page.getByRole('link', { name: /all university/ }).click();
+	await expect(page).toHaveURL(/\/university$/);
 });
 
 test('achievements pages do not overflow on mobile', async ({ page }) => {
 	await page.setViewportSize({ width: 375, height: 667 });
 
-	for (const route of ['/achievements', '/achievements/alcoding-club-head']) {
+	for (const route of ['/achievements', '/university', '/university/alcoding-club-head']) {
 		await page.goto(route);
 		const overflow = await page.evaluate(
 			() => document.documentElement.scrollWidth - window.innerWidth,

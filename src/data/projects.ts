@@ -76,7 +76,7 @@ export const PROJECTS: Project[] = [
 		name: 'Portfolio',
 		summary: 'this site. terminal first, no framework runtime.',
 		description:
-			'Astro, Tailwind, and a lot of hand-written CSS. The opening sequence is a small state machine, the selector is a real route, and Monaco only loads when a project needs it.',
+			'Astro, Tailwind, and a lot of hand-written CSS. The sidebar is a real route, and Monaco only loads when a project needs it.',
 		year: '2025',
 		stack: ['Astro', 'TypeScript', 'Tailwind'],
 		status: 'active',
