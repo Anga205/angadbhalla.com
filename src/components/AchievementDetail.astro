@@ -14,7 +14,12 @@ import PortfolioMenu from './PortfolioMenu.astro';
 import AchievementGallery from './AchievementGallery.astro';
 import Window from './Window.astro';
 import { CATEGORY_LABELS, galleryFor, type Achievement } from '../data/achievements';
-import { breadcrumbSchema, creativeWorkSchema, type JsonLd } from '../lib/seo';
+import {
+	breadcrumbSchema,
+	creativeWorkSchema,
+	imageObjectSchema,
+	type JsonLd,
+} from '../lib/seo';
 import { absoluteUrl } from '../lib/site';
 import { ArrowLeft, ArrowUpRight } from 'lucide-astro';
 
@@ -60,17 +65,29 @@ const schema: JsonLd[] = [
 		{ name: section, path: basePath },
 		{ name: achievement.slug, path },
 	]),
+	// Each gallery photograph as its own node, so the images are indexable
+	// even though they only render inside a lightbox.
+	...images.map((image) =>
+		imageObjectSchema({
+			url: image.src.src,
+			caption: image.caption,
+			width: image.src.width,
+			height: image.src.height,
+		}),
+	),
 ];
 ---
 
 <Base
-	title={`anga / ${section} / ${achievement.slug}`}
+	title={`Angad Bhalla — ${achievement.title}`}
 	{description}
 	{path}
 	type="article"
 	{schema}
 	keywords={metaOnly ? keywords : undefined}
 	image={images.length > 0 ? absoluteUrl(images[0].src.src) : undefined}
+	imageAlt={images.length > 0 ? images[0].alt : undefined}
+	publishedTime={`${achievement.year}-01-01`}
 >
 	<PortfolioMenu minimized />
 

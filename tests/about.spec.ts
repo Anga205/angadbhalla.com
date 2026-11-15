@@ -21,7 +21,12 @@ test('home page shows a rounded portrait photo in the intro', async ({ page }) =
 	const src = decodeURIComponent((await photo.getAttribute('src')) ?? '');
 	expect(src).toMatch(/angad/);
 	expect(src).toMatch(/\.(avif|webp|jpe?g|png)/);
-	await expect(photo).toHaveAttribute('alt', 'Angad Bhalla');
+
+	// The alt text is descriptive rather than just the name, which is what
+	// image search and screen readers need.
+	const alt = (await photo.getAttribute('alt')) ?? '';
+	expect(alt).toContain('Angad Bhalla');
+	expect(alt.length).toBeGreaterThan(20);
 
 	const radius = await photo.evaluate((el) => getComputedStyle(el).borderRadius);
 	expect(radius).toBe('9999px');
@@ -50,17 +55,21 @@ test('home page links out to every social profile', async ({ page }) => {
 		'https://discord.com/users/477680545271250944',
 	);
 	await expect(cards.nth(4)).toHaveAttribute('href', 'https://www.instagram.com/_anga205/');
-	await expect(cards.nth(5)).toHaveAttribute(
-		'href',
-		'https://www.duolingo.com/profile/AngadBhalla',
-	);
+	await expect(cards.nth(5)).toHaveAttribute('href', 'https://reddit.com/u/Anga205');
 
 	// The cards carry the icon plus the handle, so the accessible name and the
 	// visible text agree.
 	const labels = await cards.evaluateAll((els) =>
 		els.map((el) => el.getAttribute('aria-label')?.split(':')[0]),
 	);
-	expect(labels).toEqual(['email', 'github', 'linkedin', 'discord', 'instagram', 'duolingo']);
+	expect(labels).toEqual([
+		'email',
+		'github',
+		'linkedin',
+		'discord',
+		'instagram',
+		'reddit',
+	]);
 
 	for (const card of await cards.all()) {
 		await expect(card.locator('svg')).toHaveCount(1);
@@ -97,9 +106,7 @@ test('home page social cards show the handle on the button', async ({ page }, te
 	await expect(cards.nth(0).locator('.contact-value')).toHaveText('angadbhalla2005@gmail.com');
 	await expect(cards.nth(1).locator('.contact-value')).toHaveText('github.com/Anga205');
 	await expect(cards.nth(3).locator('.contact-value')).toHaveText('@anga205');
-	await expect(cards.nth(5).locator('.contact-value')).toHaveText(
-		'duolingo.com/profile/AngadBhalla',
-	);
+	await expect(cards.nth(5).locator('.contact-value')).toHaveText('reddit.com/u/Anga205');
 
 	// The label sits above the handle.
 	await expect(cards.nth(0).locator('.contact-label')).toHaveText('email');

@@ -22,6 +22,10 @@ interface Props {
 	noindex?: boolean;
 	/** Social preview image, root-relative or absolute. */
 	image?: string;
+	/** Alt text for the social card. */
+	imageAlt?: string;
+	/** ISO date for `article:published_time`. */
+	publishedTime?: string;
 }
 
 const {
@@ -33,6 +37,8 @@ const {
 	keywords,
 	noindex,
 	image,
+	imageAlt,
+	publishedTime,
 } = Astro.props;
 ---
 
@@ -56,6 +62,8 @@ const {
 			{keywords}
 			{noindex}
 			{image}
+			{imageAlt}
+			{publishedTime}
 		/>
 		<Font cssVariable="--font-mono" preload />
 	</head>

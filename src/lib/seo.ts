@@ -155,6 +155,35 @@ export function creativeWorkSchema(options: {
 	return node;
 }
 
+/**
+ * A gallery photograph.
+ *
+ * Emitted alongside the page's `CreativeWork` so search engines and LLM
+ * crawlers can associate each image with the achievement it documents, even
+ * though the images only appear inside a lightbox.
+ */
+export function imageObjectSchema(options: {
+	url: string;
+	caption: string;
+	width?: number;
+	height?: number;
+}): JsonLd {
+	const node: JsonLd = {
+		'@type': 'ImageObject',
+		contentUrl: absoluteUrl(options.url),
+		url: absoluteUrl(options.url),
+		name: options.caption,
+		description: options.caption,
+		creator: { '@id': PERSON_ID },
+		creditText: PROFILE.name,
+	};
+
+	if (options.width) node.width = options.width;
+	if (options.height) node.height = options.height;
+
+	return node;
+}
+
 /** A software project, with its repository and language list. */
 export function softwareSourceCodeSchema(options: {
 	path: string;

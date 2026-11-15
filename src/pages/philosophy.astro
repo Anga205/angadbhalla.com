@@ -18,7 +18,13 @@ const schema: JsonLd[] = [
 ];
 ---
 
-<Base title="anga / philosophy" {description} path="/philosophy" type="article" {schema}>
+<Base
+	title="Angad Bhalla — On Building Software"
+	{description}
+	path="/philosophy"
+	type="article"
+	{schema}
+>
 	<PortfolioMenu minimized />
 
 	<main
@@ -77,7 +83,13 @@ const schema: JsonLd[] = [
 						</div>
 
 						{/* Reserved for the full-body GLB. The viewer mounts here. */}
-						<div class="portrait" id="portrait" data-model="/anga.glb">
+						<div
+							class="portrait"
+							id="portrait"
+							data-model="/anga.glb"
+							role="img"
+							aria-label="Interactive 3D model of Angad Bhalla, which can be dragged to rotate."
+						>
 							<div class="portrait-canvas" id="portrait-canvas"></div>
 							<p class="portrait-fallback" id="portrait-fallback">loading model…</p>
 						</div>

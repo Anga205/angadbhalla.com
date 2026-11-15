@@ -3,19 +3,21 @@ import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
 import Window from '../components/Window.astro';
-import { Mail, Github, Linkedin, MessageCircle, Instagram, Send } from 'lucide-astro';
-import Duolingo from '../components/icons/Duolingo.astro';
+import { Mail, Github, Linkedin, Instagram, Send } from 'lucide-astro';
+import Discord from '../components/icons/Discord.astro';
+import Reddit from '../components/icons/Reddit.astro';
 import { CONTACTS, type ContactIcon } from '../data/contacts';
 import { profilePageSchema, type JsonLd } from '../lib/seo';
+import { PORTRAIT_LQIP, PORTRAIT_QUALITY } from '../lib/images';
 import portrait from '../assets/angad.jpg';
 
 const ICONS: Record<ContactIcon, typeof Mail> = {
 	mail: Mail,
 	github: Github,
 	linkedin: Linkedin,
-	discord: MessageCircle,
+	discord: Discord as unknown as typeof Mail,
 	instagram: Instagram,
-	duolingo: Duolingo as unknown as typeof Mail,
+	reddit: Reddit as unknown as typeof Mail,
 };
 
 const description =
@@ -26,7 +28,13 @@ const schema: JsonLd[] = [
 ];
 ---
 
-<Base title="anga / home" {description} path="/" type="profile" {schema}>
+<Base
+	title="Angad Bhalla — Software Engineer & CS Student at PES University"
+	{description}
+	path="/"
+	type="profile"
+	{schema}
+>
 	<PortfolioMenu minimized />
 
 	<main
@@ -49,17 +57,26 @@ const schema: JsonLd[] = [
 					</p>
 				</div>
 
-				{/* Portrait photo, fully rounded. */}
-				<div class="portrait-photo">
+				{/*
+				 * Portrait photo, fully rounded.
+				 *
+				 * The LQIP is painted as the background so the circle is filled
+				 * the moment the box exists; the real AVIF fades in over it once
+				 * decoded. `quality` is raised from Astro's default of 50, which
+				 * visibly smeared the face.
+				 */}
+				<div class="portrait-photo" style={`--lqip: url(${PORTRAIT_LQIP})`}>
 					<Image
 						src={portrait}
-						alt="Angad Bhalla"
+						alt="Angad Bhalla, a software engineer in Bengaluru, smiling in a black beanie and glasses."
 						widths={[128, 256, 512]}
 						sizes="(max-width: 899px) 6rem, 16rem"
 						format="avif"
+						quality={PORTRAIT_QUALITY}
 						loading="eager"
 						fetchpriority="high"
 						decoding="async"
+						class="portrait-img"
 					/>
 				</div>
 			</div>
@@ -151,6 +168,54 @@ const schema: JsonLd[] = [
 		border-radius: 9999px;
 		border: 1px solid #3d3846;
 		object-fit: cover;
+	}
+
+	/*
+	 * Blur-up: the 24x24 LQIP is painted as the background of the circle, so
+	 * the portrait is never an empty box. The real image fades in over it once
+	 * it has decoded, which keeps the sharp version from popping in abruptly.
+	 */
+	.portrait-photo {
+		position: relative;
+	}
+
+	.portrait-photo::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		max-width: 16rem;
+		aspect-ratio: 1;
+		border-radius: 9999px;
+		background-image: var(--lqip);
+		background-size: cover;
+		background-position: center;
+		/* Hide the blur once the real image has painted over it. */
+		transition: opacity 300ms ease-out;
+	}
+
+	:global(html.js) .portrait-photo:has(.portrait-img.is-loaded)::before {
+		opacity: 0;
+	}
+
+	/*
+	 * The fade-in is opt-in via a class the script adds to <html>. If the
+	 * script never runs, the image is simply visible from the start.
+	 */
+	:global(html.js) .portrait-img {
+		opacity: 0;
+		transition: opacity 300ms ease-out;
+	}
+
+	:global(html.js) .portrait-img.is-loaded {
+		opacity: 1;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.portrait-photo::before,
+		.portrait-img {
+			transition: none;
+		}
 	}
 
 	/*
@@ -469,6 +534,26 @@ const schema: JsonLd[] = [
 		}
 	}
 </style>
+
+<script>
+	/*
+	 * Blur-up for the portrait.
+	 *
+	 * `html.js` is set first so the fade-in styles only apply when this script
+	 * is actually running; without it the image is visible immediately. The
+	 * class is added on load, or straight away if the image was already cached.
+	 */
+	document.documentElement.classList.add('js');
+
+	const portraitImage = document.querySelector<HTMLImageElement>('.portrait-img');
+	if (portraitImage) {
+		const reveal = () => portraitImage.classList.add('is-loaded');
+		if (portraitImage.complete && portraitImage.naturalWidth > 0) reveal();
+		else portraitImage.addEventListener('load', reveal, { once: true });
+		// Never leave the image hidden if decoding fails.
+		portraitImage.addEventListener('error', reveal, { once: true });
+	}
+</script>
 
 <script>
 	// Age is computed on the client so it stays correct without a rebuild.

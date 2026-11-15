@@ -201,10 +201,9 @@ const detailHref = achievement.href ?? `${detailBase}/${achievement.slug}`;
 
 			{
 				isRole ? (
-					<div class="card-role mt-[0.3rem] text-[0.6875rem] leading-normal text-[#a5a3a9]">
-						<p class="card-org m-0 text-[#deddda]">{achievement.organization}</p>
-						{achievement.department && <p class="card-dept m-0">{achievement.department}</p>}
-					</div>
+					<p class="card-org mt-[0.3rem] mb-0 text-[0.6875rem] leading-normal text-[#deddda]">
+						{achievement.organization}
+					</p>
 				) : (
 					<p
 						class="card-summary mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#a5a3a9]"
@@ -261,10 +260,6 @@ const detailHref = achievement.href ?? `${detailBase}/${achievement.slug}`;
 
 	.card--role .card-org {
 		color: #deddda;
-	}
-
-	.card--role .card-dept {
-		color: #8a8a8a;
 	}
 
 	.card-dates {

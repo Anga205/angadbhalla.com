@@ -37,10 +37,7 @@ test('home page lists every contact with the right link', async ({ page }) => {
 		'https://discord.com/users/477680545271250944',
 	);
 	await expect(cards.nth(4)).toHaveAttribute('href', 'https://www.instagram.com/_anga205/');
-	await expect(cards.nth(5)).toHaveAttribute(
-		'href',
-		'https://www.duolingo.com/profile/AngadBhalla',
-	);
+	await expect(cards.nth(5)).toHaveAttribute('href', 'https://reddit.com/u/Anga205');
 	await expect(page.locator('[data-copy]')).toHaveCount(0);
 });
 

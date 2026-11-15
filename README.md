@@ -22,7 +22,7 @@ client-side framework runtime.
 │   │   ├── ProjectCards.astro      the /projects index
 │   │   ├── Seo.astro               canonical, OG, Twitter, JSON-LD
 │   │   ├── Window.astro            shared GNOME window chrome
-│   │   └── icons/                  LeetCode and Duolingo marks
+│   │   └── icons/                  LeetCode, Discord, and Reddit marks
 │   ├── data/
 │   │   ├── achievements.ts         achievement catalogue
 │   │   ├── contacts.ts             social links

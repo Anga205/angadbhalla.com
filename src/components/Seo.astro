@@ -29,6 +29,10 @@ interface Props {
 	noindex?: boolean;
 	/** Absolute or root-relative social image. Defaults to the site card. */
 	image?: string;
+	/** Alt text for the social card. Falls back to a descriptive default. */
+	imageAlt?: string;
+	/** ISO date for `article:published_time`. */
+	publishedTime?: string;
 }
 
 const {
@@ -40,11 +44,23 @@ const {
 	keywords,
 	noindex = false,
 	image = OG_IMAGE_PATH,
+	imageAlt = `${SITE_NAME} — ${title}`,
+	publishedTime = '2025-01-01',
 } = Astro.props;
 
 const canonical = absoluteUrl(path);
 const socialImage = absoluteUrl(image);
+// Pages author their own full title (name first), so only append the site name
+// when the page did not already include it.
 const fullTitle = title.includes(SITE_NAME) ? title : `${title} — ${SITE_NAME}`;
+
+// Social platforms need the MIME type to render the card without a HEAD
+// request, and the alt text is what screen readers announce on the card.
+const socialImageType = socialImage.endsWith('.png')
+	? 'image/png'
+	: socialImage.endsWith('.webp')
+		? 'image/webp'
+		: 'image/jpeg';
 
 // Every page carries the person and the site; pages append their own nodes.
 const jsonLd = graph([personSchema(), websiteSchema(), ...schema]);
@@ -67,17 +83,29 @@ const jsonLd = graph([personSchema(), websiteSchema(), ...schema]);
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonical} />
 <meta property="og:image" content={socialImage} />
+<meta property="og:image:type" content={socialImageType} />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content={`${SITE_NAME} — ${title}`} />
+<meta property="og:image:alt" content={imageAlt} />
 <meta property="og:locale" content={SITE_LOCALE} />
+{
+	/* Article metadata helps LinkedIn and Slack render a richer card. */
+	type === 'article' && (
+		<>
+			<meta property="article:author" content={SITE_NAME} />
+			<meta property="article:published_time" content={publishedTime} />
+		</>
+	)
+}
 
 <!-- Twitter / X -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content={fullTitle} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={socialImage} />
-<meta name="twitter:image:alt" content={`${SITE_NAME} — ${title}`} />
+<meta name="twitter:image:alt" content={imageAlt} />
+<meta name="twitter:site" content="@_anga205" />
+<meta name="twitter:creator" content="@_anga205" />
 
 <!-- Discovery -->
 <link rel="sitemap" href={`${SITE_URL}/sitemap-index.xml`} />
