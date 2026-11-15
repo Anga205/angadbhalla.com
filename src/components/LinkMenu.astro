@@ -1,0 +1,235 @@
+---
+/**
+ * LinkMenu.astro
+ *
+ * A native `<dialog>` listing the links for one card, plus the script that
+ * opens and closes it.
+ *
+ * The dialog is the platform's own modal, so focus trapping, Esc, and the
+ * backdrop come from the browser. The script only wires the opener button to
+ * `showModal()` and adds backdrop-click dismissal.
+ *
+ * This used to be duplicated verbatim in AchievementCards.astro and
+ * ProjectCards.astro; both now render this component and share one script.
+ */
+import { ArrowUpRight, X } from 'lucide-astro';
+
+export interface MenuLink {
+	label: string;
+	href: string;
+	/** Icon component to render before the label. */
+	icon: typeof ArrowUpRight;
+	/** Open in a new tab. */
+	external?: boolean;
+}
+
+interface Props {
+	/** Dialog id. The opener button references this via `data-menu`. */
+	id: string;
+	/** Titlebar text. */
+	title: string;
+	/** Links to list, in order. */
+	links: MenuLink[];
+}
+
+const { id, title, links } = Astro.props;
+---
+
+<dialog class="menu" id={id} aria-label={`${title} links`}>
+	<div class="menu-inner">
+		<div class="menu-bar">
+			<span class="menu-title">{title}</span>
+			<button type="button" class="menu-close" data-close aria-label="close">
+				<X size={13} strokeWidth={1.5} aria-hidden="true" />
+			</button>
+		</div>
+
+		<ul class="menu-list">
+			{
+				links.map((link) => {
+					const Icon = link.icon;
+					return (
+						<li>
+							<a
+								href={link.href}
+								{...(link.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+							>
+								<Icon size={14} strokeWidth={1.5} aria-hidden="true" />
+								<span class="menu-label">{link.label}</span>
+								<ArrowUpRight size={12} strokeWidth={1.5} aria-hidden="true" />
+							</a>
+						</li>
+					);
+				})
+			}
+		</ul>
+	</div>
+</dialog>
+
+<style>
+	.menu {
+		width: min(22rem, calc(100vw - 2rem));
+		max-width: none;
+		margin: auto;
+		overflow: hidden;
+		padding: 0;
+		border: 1px solid #3d3846;
+		border-radius: 6px;
+		background: #000000;
+		color: #ffffff;
+	}
+
+	.menu::backdrop {
+		background: rgba(0, 0, 0, 0.82);
+	}
+
+	.menu-inner {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.menu-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.4rem 0.5rem;
+		border-bottom: 1px solid #3d3846;
+		background: #303030;
+		color: #deddda;
+		font-size: 0.6875rem;
+		user-select: none;
+	}
+
+	.menu-title {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.menu-close {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.15rem;
+		border: 0;
+		border-radius: 3px;
+		background: none;
+		color: #a5a3a9;
+		cursor: pointer;
+	}
+
+	.menu-close:hover {
+		background: #3d3846;
+		color: #ffffff;
+	}
+
+	.menu-close:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 1px;
+	}
+
+	.menu-list {
+		margin: 0;
+		padding: 0.35rem;
+		list-style: none;
+	}
+
+	.menu-list a {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.45rem 0.5rem;
+		border-radius: 4px;
+		color: #deddda;
+		font-size: 0.75rem;
+		text-decoration: none;
+	}
+
+	.menu-list a:hover {
+		background: #1c1c1c;
+		color: #ffffff;
+	}
+
+	.menu-list a:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: -1px;
+	}
+
+	.menu-list a > :global(svg:first-child) {
+		flex-shrink: 0;
+		color: #8a8a8a;
+	}
+
+	.menu-list a:hover > :global(svg:first-child) {
+		color: #26a269;
+	}
+
+	.menu-label {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.menu-list a > :global(svg:last-child) {
+		flex-shrink: 0;
+		color: #4a4a4a;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.menu[open] {
+			animation: menu-in 120ms ease-out;
+		}
+
+		@keyframes menu-in {
+			from {
+				opacity: 0;
+			}
+			to {
+				opacity: 1;
+			}
+		}
+	}
+</style>
+
+<script>
+	/**
+	 * Wire every `[data-menu]` opener on the page to its dialog.
+	 *
+	 * Astro deduplicates this module, so a page with both achievement and
+	 * project cards still ships one copy.
+	 */
+	for (const opener of document.querySelectorAll<HTMLButtonElement>('[data-menu]')) {
+		const id = opener.dataset.menu;
+		if (!id) continue;
+
+		const dialog = document.getElementById(id) as HTMLDialogElement | null;
+		if (!dialog) continue;
+
+		opener.addEventListener('click', () => dialog.showModal());
+
+		dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
+
+		// Escape closes. The platform already does this for a modal dialog, but
+		// handling it explicitly keeps the behaviour independent of how the
+		// dialog was opened and stops the key from reaching the page.
+		dialog.addEventListener('keydown', (event) => {
+			if (event.key !== 'Escape') return;
+			event.preventDefault();
+			dialog.close();
+		});
+
+		// Clicking the backdrop closes. A backdrop click is dispatched to the
+		// dialog element itself, so compare the pointer against the dialog's own
+		// box: anything outside it is the backdrop.
+		dialog.addEventListener('click', (event) => {
+			if (event.target !== dialog) return;
+			const box = dialog.getBoundingClientRect();
+			const outside =
+				event.clientX < box.left ||
+				event.clientX > box.right ||
+				event.clientY < box.top ||
+				event.clientY > box.bottom;
+			if (outside) dialog.close();
+		});
+	}
+</script>

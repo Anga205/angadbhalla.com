@@ -17,8 +17,15 @@ export interface Project {
 	id: string;
 	name: string;
 	summary: string;
+	/**
+	 * Long-form description. Rendered as `sr-only` markup on the card and as
+	 * `SoftwareSourceCode.description` in JSON-LD, so it is crawlable without
+	 * changing the visible layout.
+	 */
 	description: string;
 	year: string;
+	/** ISO date the project was started, for schema.org `dateCreated`. */
+	dateCreated?: string;
 	stack: string[];
 	status: ProjectStatus;
 	icon: 'drive' | 'tracker' | 'terminal' | 'compiler' | 'web' | 'tool';
@@ -34,8 +41,9 @@ export const PROJECTS: Project[] = [
 		name: 'AngaDriveV3',
 		summary: 'fast, self-hosted remote file storage.',
 		description:
-			'A performance-focused file hosting service with live websocket updates, a DAG filesystem, resumable uploads, and a SolidJS client. It is open source, self-hostable on a Raspberry Pi, and designed to feel fast without requiring an account.',
+			'A performance-focused file hosting service with live websocket updates, a DAG filesystem, resumable uploads, and a SolidJS client. It is open source, self-hostable on a Raspberry Pi, and designed to feel fast without requiring an account. In production it serves 172 users and hosts over 4,000 files, averaging roughly 1,000 activity pulses a day on a single Raspberry Pi. Measured latency is 200 ms at P95 and 750 ms at P99.',
 		year: '2025',
+		dateCreated: '2025-01-01',
 		stack: ['Go', 'SolidJS', 'SQLite'],
 		status: 'active',
 		icon: 'drive',
@@ -50,6 +58,7 @@ export const PROJECTS: Project[] = [
 		description:
 			'A scheduled Rust updater records solve-count history through GitHub Actions, while a static React dashboard turns the readings into interactive charts for comparing progress over time.',
 		year: '2025',
+		dateCreated: '2025-01-01',
 		stack: ['Rust', 'React', 'Chart.js'],
 		status: 'active',
 		icon: 'tracker',
@@ -61,8 +70,9 @@ export const PROJECTS: Project[] = [
 		name: 'Code Execution API',
 		summary: 'a hand-built sandbox for running untrusted code.',
 		description:
-			'A lower-overhead code sandbox built from Linux namespaces, cgroups v2, chroot, and seccomp-bpf instead of Docker or firejail. It runs Python, C, C++, and Java with hard time and memory limits, and is designed to power coding contests.',
+			'A lower-overhead code sandbox built from Linux namespaces, cgroups v2, chroot, and seccomp-bpf instead of Docker or firejail. It runs Python, C, C++, and Java with hard time and memory limits, and is designed to power coding contests. The sandbox boots in roughly 60 microseconds, and the service is publicly accessible as an API at compiler.anga.codes.',
 		year: '2025',
+		dateCreated: '2025-01-01',
 		stack: ['Go', 'Linux', 'seccomp'],
 		status: 'active',
 		icon: 'terminal',
@@ -78,6 +88,7 @@ export const PROJECTS: Project[] = [
 		description:
 			'Astro, Tailwind, and a lot of hand-written CSS. The sidebar is a real route, and Monaco only loads when a project needs it.',
 		year: '2025',
+		dateCreated: '2025-01-01',
 		stack: ['Astro', 'TypeScript', 'Tailwind'],
 		status: 'active',
 		icon: 'web',
@@ -90,6 +101,7 @@ export const PROJECTS: Project[] = [
 		description:
 			'An x86 operating system built from a bootloader, kernel, and direct VGA-buffer output. It includes familiar filesystem commands such as ls, mkdir, cd, rm, and touch, and boots through QEMU with a small Makefile-driven toolchain.',
 		year: '2025',
+		dateCreated: '2025-01-01',
 		stack: ['Assembly', 'C', 'NASM'],
 		status: 'active',
 		icon: 'terminal',
@@ -99,11 +111,10 @@ export const PROJECTS: Project[] = [
 	{
 		id: 'angadrive-v2',
 		name: 'AngaDriveV2',
-		summary: 'unsupported predecessor to AngaDriveV3.',
+		summary: 'Older version of AngaDriveV3, kept as a public archive. Written in Python3 with a NextJS frontend and FastAPI backend.',
 		description:
 		'An older AngaDrive release kept as a public archive. It is no longer supported, but remains useful as a record of the project before the current version.',
-		year: '2024',
-		stack: ['Go', 'SQLite'],
+		year: '2024',		dateCreated: '2024-01-01',		stack: ['Go', 'SQLite'],
 		status: 'archived',
 		icon: 'drive',
 		repo: 'https://github.com/Anga205/AngaDriveV2',

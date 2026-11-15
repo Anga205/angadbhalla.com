@@ -1,8 +1,13 @@
 ---
+import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
-import { Mail, Github, Linkedin, MessageCircle, Instagram, Languages } from 'lucide-astro';
+import Window from '../components/Window.astro';
+import { Mail, Github, Linkedin, MessageCircle, Instagram, Send } from 'lucide-astro';
+import Duolingo from '../components/icons/Duolingo.astro';
 import { CONTACTS, type ContactIcon } from '../data/contacts';
+import { profilePageSchema, type JsonLd } from '../lib/seo';
+import portrait from '../assets/angad.jpg';
 
 const ICONS: Record<ContactIcon, typeof Mail> = {
 	mail: Mail,
@@ -10,54 +15,57 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 	linkedin: Linkedin,
 	discord: MessageCircle,
 	instagram: Instagram,
-	duolingo: Languages,
+	duolingo: Duolingo as unknown as typeof Mail,
 };
+
+const description =
+	'Angad Bhalla — computer science student at PES University, Bengaluru. Systems software, small binaries, and boring infrastructure.';
+
+const schema: JsonLd[] = [
+	profilePageSchema({ path: '/', name: 'Angad Bhalla', description }),
+];
 ---
 
-<Base title="anga / home" description="Angad Bhalla. Computer science student in Bengaluru.">
+<Base title="anga / home" {description} path="/" type="profile" {schema}>
 	<PortfolioMenu minimized />
 
-	<main class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24">
-		<div class="window mx-auto max-w-240 overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
-			<div class="headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none">
-				<span class="dots flex gap-1.5" aria-hidden="true">
-					<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span class="size-2.5 rounded-full bg-[#e5a50a]"></span><span class="size-2.5 rounded-full bg-[#33d17a]"></span>
-				</span>
-				<span class="title text-center whitespace-nowrap">anga@portfolio — home</span>
-				<span aria-hidden="true"></span>
-			</div>
-
-			<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
-				<div class="intro mb-8 border-b border-line pb-8">
-					<p class="intro-prompt text-[0.75rem] text-[#26a269]">$ cat home.txt</p>
-					<h1 class="intro-heading mb-2 text-[1.35rem] font-normal">Angad Bhalla</h1>
-					<div class="intro-text">
-						<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
-							I'm a <span id="age">21</span> year old software engineer currently pursuing a degree in
-							Computer Science &amp; Engineering at PES University, Bangalore (2023-2027).
-						</p>
-						<p class="mb-0 max-w-[52ch] text-[#a5a3a9]">
-							I like playing Minecraft with my friends, watching Marvel &amp; DC, and I'm also a
-							huge coffee aficionado. In my off hours, I volunteer in community NGOs for animal
-							welfare.
-						</p>
-					</div>
-
-					{/* Portrait photo, fully rounded. */}
-					<div class="portrait-photo">
-						<img
-							src="/angad.png"
-							alt="Angad Bhalla"
-							width="512"
-							height="512"
-							loading="eager"
-							decoding="async"
-						/>
-					</div>
+	<main
+		id="main"
+		class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+	>
+		<Window title="anga@portfolio — home">
+			<div class="intro mb-8 border-b border-line pb-8">
+				<p class="intro-prompt text-[0.75rem] text-[#26a269]">$ cat home.txt</p>
+				<h1 class="intro-heading mb-2 text-[1.35rem] font-normal">Angad Bhalla</h1>
+				<div class="intro-text">
+					<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
+						I'm a <span id="age">21</span> year old software engineer currently pursuing a degree in
+						Computer Science &amp; Engineering at PES University, Bangalore (2023-2027).
+					</p>
+					<p class="mb-0 max-w-[52ch] text-[#a5a3a9]">
+						I like playing Minecraft with my friends, watching Marvel &amp; DC, and I'm also a
+						huge coffee aficionado. In my off hours, I volunteer in community NGOs for animal
+						welfare.
+					</p>
 				</div>
 
+				{/* Portrait photo, fully rounded. */}
+				<div class="portrait-photo">
+					<Image
+						src={portrait}
+						alt="Angad Bhalla"
+						widths={[128, 256, 512]}
+						sizes="(max-width: 899px) 6rem, 16rem"
+						format="avif"
+						loading="eager"
+						fetchpriority="high"
+						decoding="async"
+					/>
+				</div>
+			</div>
+
+			<div class="contact-grid">
 				<section class="links" aria-labelledby="links-heading">
-					<p class="links-prompt text-[0.75rem] text-[#26a269]">$ ls ~/links</p>
 					<h2 class="mb-3 text-[1.05rem] font-normal" id="links-heading">find me</h2>
 
 					<ul class="contact-cards">
@@ -70,19 +78,35 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 										class="contact-card"
 										href={contact.href}
 										target={external ? '_blank' : undefined}
-										rel={external ? 'noreferrer' : undefined}
+										rel={external ? 'noreferrer me' : undefined}
 										aria-label={`${contact.label}: ${contact.value}`}
-										title={contact.label}
 									>
-										<Icon size={15} strokeWidth={1.5} aria-hidden="true" />
+										<span class="contact-icon" aria-hidden="true">
+											<Icon size={18} strokeWidth={1.5} />
+										</span>
+										<span class="contact-text">
+											<span class="contact-label">{contact.label}</span>
+											<span class="contact-value">{contact.value}</span>
+										</span>
 									</a>
 								</li>
 							);
 						})}
 					</ul>
 				</section>
+
+				<section class="form-section" id="contact" aria-labelledby="form-heading">
+					<h2 class="mb-3 text-[1.05rem] font-normal" id="form-heading">Send me a message</h2>
+					<form id="contact-form" novalidate>
+						<label class="field field--email"><input type="email" name="email" id="email" autocomplete="email" required placeholder="your@email-id.com" aria-label="your email" /></label>
+						<label class="field field--message"><textarea name="message" id="message" required placeholder="type any message here....." aria-label="message"></textarea></label>
+						<div class="form-actions"><button type="submit" id="send"><Send size={13} strokeWidth={1.5} aria-hidden="true" />send</button></div>
+					</form>
+				</section>
 			</div>
-		</div>
+
+			<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
+		</Window>
 	</main>
 </Base>
 
@@ -129,12 +153,26 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 		object-fit: cover;
 	}
 
-	.links-prompt {
-		margin-bottom: 0.25rem;
+	/*
+	 * Buttons and form sit side by side on desktop: the contact cards stack one
+	 * per row on the left, the message form takes the right column. Below 900px
+	 * the grid collapses to one column, the form drops underneath, and the cards
+	 * shrink back to a compact 3 x 2 icon grid.
+	 *
+	 * Both columns stretch to the same height. The form is a flex column and the
+	 * textarea takes the leftover space, so the two sections always line up no
+	 * matter how many contacts there are.
+	 */
+	.contact-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 1.5rem;
+		align-items: stretch;
 	}
 
 	.contact-cards {
-		display: flex;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 0.4rem;
 		margin: 0;
 		padding: 0;
@@ -142,18 +180,17 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 	}
 
 	.contact-cards > li {
-		flex: 1 1 0;
 		min-width: 0;
 	}
 
 	.contact-card {
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		gap: 0.6rem;
 		width: 100%;
-		padding: 0.4rem 0;
+		padding: 0.5rem 0.7rem;
 		border: 1px solid #3d3846;
-		border-radius: 4px;
+		border-radius: 6px;
 		background: #000000;
 		color: #737373;
 		text-decoration: none;
@@ -163,16 +200,251 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 			color 120ms ease;
 	}
 
+	.contact-icon {
+		display: flex;
+		shrink: 0;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.contact-text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		line-height: 1.35;
+	}
+
+	.contact-label {
+		color: #a5a3a9;
+		font-size: 0.6875rem;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.contact-value {
+		overflow: hidden;
+		color: #deddda;
+		font-size: 0.75rem;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
 	.contact-card:hover {
 		background: #1c1c1c;
 		border-color: #5a5560;
 		color: #26a269;
 	}
 
+	.contact-card:hover .contact-value {
+		color: #ffffff;
+	}
+
 	.contact-card:focus-visible {
 		outline: 1px solid #26a269;
 		outline-offset: 2px;
 		color: #26a269;
+	}
+
+	.form-section {
+		display: flex;
+		flex-direction: column;
+		padding-left: 1.5rem;
+		border-left: 1px solid var(--color-line);
+	}
+
+	#contact-form {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+	}
+
+	.field {
+		display: block;
+		margin-bottom: 1rem;
+	}
+
+	/* The message field owns the leftover height so the form matches the
+	   contact list beside it. */
+	.field--message {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+	}
+
+	.field--message textarea {
+		flex: 1;
+		min-height: 7rem;
+	}
+
+	.field input,
+	.field textarea {
+		display: block;
+		width: 100%;
+		padding: 0.5rem 0.6rem;
+		border: 1px solid #3d3846;
+		border-radius: 3px;
+		background: #1c1c1c;
+		color: #ffffff;
+		font: inherit;
+		font-size: 0.8125rem;
+		/* The message box is sized by the layout, not by dragging. */
+		resize: none;
+	}
+
+	.field input::placeholder,
+	.field textarea::placeholder {
+		color: #6b6b6b;
+	}
+
+	.field input:focus,
+	.field textarea:focus {
+		outline: 1px solid #26a269;
+		outline-offset: 1px;
+		border-color: #26a269;
+	}
+
+	.form-actions {
+		display: block;
+	}
+
+	#send {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		gap: 0.4rem;
+		padding: 0.45rem 0.75rem;
+		border: 1px solid #3d3846;
+		border-radius: 3px;
+		background: #303030;
+		color: #deddda;
+		font: inherit;
+		font-size: 0.8125rem;
+		cursor: pointer;
+	}
+
+	#send:hover:not(:disabled) {
+		background: #3d3846;
+		color: #ffffff;
+	}
+
+	#send:disabled {
+		color: #6b6b6b;
+		cursor: default;
+	}
+
+	#send:focus-visible {
+		outline: 1px solid #26a269;
+		outline-offset: 2px;
+	}
+
+	/*
+	 * Toasts stack in the bottom-right corner. On phones the fixed navigation
+	 * rail owns the bottom of the screen, so the stack is lifted above it.
+	 */
+	.toasts {
+		position: fixed;
+		right: 1rem;
+		bottom: 1rem;
+		z-index: 30;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.4rem;
+		pointer-events: none;
+	}
+
+	.toast {
+		max-width: min(22rem, calc(100vw - 2rem));
+		padding: 0.5rem 0.7rem;
+		border: 1px solid #3d3846;
+		border-radius: 4px;
+		background: #1c1c1c;
+		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
+		color: #deddda;
+		font-size: 0.75rem;
+		line-height: 1.5;
+		pointer-events: auto;
+		cursor: pointer;
+		animation: toast-in 140ms ease-out;
+	}
+
+	.toast[data-kind='ok'] {
+		border-color: #2f5c3f;
+		color: #26a269;
+	}
+
+	.toast[data-kind='error'] {
+		border-color: #6b2b2b;
+		color: #ff7b72;
+	}
+
+	.toast.is-leaving {
+		opacity: 0;
+		transition: opacity 160ms ease-in;
+	}
+
+	@keyframes toast-in {
+		from {
+			opacity: 0;
+			transform: translateY(0.35rem);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.toast {
+			animation: none;
+		}
+
+		.toast.is-leaving {
+			transition: none;
+		}
+	}
+
+	@media (max-width: 899px) {
+		.contact-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		/* Compact icon grid: the handle is already in the accessible name, so
+		   the visible text is dropped to keep six buttons on two rows. */
+		.contact-cards {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+
+		.contact-card {
+			justify-content: center;
+			padding: 0.7rem 0;
+		}
+
+		.contact-text {
+			display: none;
+		}
+
+		.form-section {
+			margin-top: 0.5rem;
+			padding-top: 1.5rem;
+			padding-left: 0;
+			border-top: 1px solid var(--color-line);
+			border-left: 0;
+		}
+	}
+
+	@media (max-width: 639px) {
+		.toasts {
+			right: 0.75rem;
+			bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+			left: 0.75rem;
+			align-items: stretch;
+		}
+
+		.toast {
+			max-width: none;
+		}
 	}
 
 	@media (max-width: 899px) {
@@ -210,5 +482,97 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 			age -= 1;
 		}
 		ageElement.textContent = String(age);
+	}
+
+	// `/contact` redirects to `/#contact`. The page scrolls inside `main`, not
+	// the document, so the browser's own anchor jump never moves anything and
+	// the form has to be brought into view by hand.
+	if (window.location.hash === '#contact') {
+		document.getElementById('contact')?.scrollIntoView({ block: 'start' });
+	}
+</script>
+
+<script>
+	import emailjs from '@emailjs/browser';
+	import {
+		EMAILJS_APP,
+		EMAILJS_PUBLIC_KEY,
+		EMAILJS_SERVICE_ID,
+		EMAILJS_TEMPLATE_ID,
+	} from '../data/emailjs';
+
+	const form = document.getElementById('contact-form') as HTMLFormElement | null;
+	const send = document.getElementById('send') as HTMLButtonElement | null;
+	const toasts = document.getElementById('toasts');
+
+	/** How long a toast stays on screen before it fades out. */
+	const TOAST_LIFETIME = 4000;
+	/** Keep the stack short so it never covers the form it is reporting on. */
+	const TOAST_LIMIT = 3;
+
+	type ToastKind = 'ok' | 'error' | 'info';
+
+	function dismiss(toast: HTMLElement) {
+		toast.classList.add('is-leaving');
+		toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+		// Reduced motion skips the transition, so remove on a timer as well.
+		window.setTimeout(() => toast.remove(), 400);
+	}
+
+	function showToast(kind: ToastKind, text: string) {
+		if (!toasts) return;
+
+		const toast = document.createElement('p');
+		toast.className = 'toast';
+		toast.dataset.kind = kind;
+		toast.textContent = text;
+		toast.addEventListener('click', () => dismiss(toast));
+
+		toasts.append(toast);
+
+		// Drop the oldest toasts once the stack is full.
+		while (toasts.children.length > TOAST_LIMIT) {
+			toasts.firstElementChild?.remove();
+		}
+
+		window.setTimeout(() => dismiss(toast), TOAST_LIFETIME);
+	}
+
+	if (form && send) {
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+
+			const data = new FormData(form);
+			const email = String(data.get('email') ?? '').trim();
+			const message = String(data.get('message') ?? '').trim();
+
+			if (!email || !message) {
+				showToast('error', 'email and message are required.');
+				return;
+			}
+
+			send.disabled = true;
+			showToast('info', 'sending...');
+
+			try {
+				await emailjs.send(
+					EMAILJS_SERVICE_ID,
+					EMAILJS_TEMPLATE_ID,
+					{
+						time: new Date().toLocaleString(),
+						app: EMAILJS_APP,
+						message,
+						contact: email,
+					},
+					{ publicKey: EMAILJS_PUBLIC_KEY },
+				);
+				form.reset();
+				showToast('ok', 'sent. thanks.');
+			} catch {
+				showToast('error', 'could not send. email me directly instead.');
+			} finally {
+				send.disabled = false;
+			}
+		});
 	}
 </script>

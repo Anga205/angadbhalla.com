@@ -2,57 +2,23 @@
 /**
  * AchievementCards.astro
  *
- * The /achievements index: every achievement as a compact card, grouped by
- * category, inside a GNOME-style window.
+ * The /achievements and /university index: every achievement as a compact
+ * card, grouped by category, inside a GNOME-style window.
  *
- * Each card is itself a miniature window — its own headerbar with traffic
- * lights — so the grid reads as a stack of small windows rather than generic
- * content tiles.
- *
- * Two card shapes:
- *   medal cards   hackathons. The category icon becomes a gold or silver
- *                 medal, and the headerbar carries the achievement's links as
- *                 small grayscale icon buttons. Clicking the card opens a
- *                 menu listing those same links, so the card never navigates
- *                 away on its own.
- *   plain cards   everything else. The whole card links to its detail page.
- *
- * A third shape sits between them: entries with `pageMenu` keep their detail
- * page but open a menu instead of navigating. That menu lists the page as an
- * "Activity Description" entry, followed by the achievement's links.
- *
- * Links are per-achievement data (`links` in src/data/achievements.ts), so
- * each card's buttons are whatever that achievement actually has.
+ * The card itself lives in AchievementCard.astro and the link menu in
+ * LinkMenu.astro; this component owns the page shell, the grouping, and the
+ * per-group headings.
  */
-import {
-	Trophy,
-	FlaskConical,
-	Accessibility,
-	Ghost,
-	Code,
-	Users,
-	GraduationCap,
-	Container,
-	Heart,
-	GitPullRequest,
-	Medal,
-	Linkedin,
-	Info,
-	Github,
-	ExternalLink,
-	Youtube,
-	FileText,
-	ArrowUpRight,
-	X,
-} from 'lucide-astro';
+import { FileText, Github, Info, Linkedin, ExternalLink, Youtube, Heart, Code } from 'lucide-astro';
 import {
 	groupByCategory,
-	hasDetailPage,
 	opensMenu,
 	type AchievementGroup,
-	type AchievementIcon,
 	type LinkIcon,
 } from '../data/achievements';
+import AchievementCard from './AchievementCard.astro';
+import LinkMenu, { type MenuLink } from './LinkMenu.astro';
+import Window from './Window.astro';
 import LeetCode from './icons/LeetCode.astro';
 
 interface Props {
@@ -64,8 +30,6 @@ interface Props {
 	prompt?: string;
 	/** Page heading. */
 	heading?: string;
-	/** Intro paragraph. */
-	lede?: string;
 	/** Section id, used for the scroll container. */
 	sectionId?: string;
 	/** Base path for detail pages, e.g. /achievements or /university. */
@@ -79,25 +43,10 @@ const {
 	windowTitle = 'anga@portfolio — achievements',
 	prompt = '$ ls ~/achievements',
 	heading = 'achievements',
-	lede,
 	sectionId = 'achievements',
 	detailBase = '/achievements',
 	roleMode = false,
 } = Astro.props;
-
-const ICONS: Record<AchievementIcon, typeof Trophy> = {
-	trophy: Trophy,
-	flask: FlaskConical,
-	accessibility: Accessibility,
-	ghost: Ghost,
-	code: Code,
-	leetcode: LeetCode as unknown as typeof Trophy,
-	users: Users,
-	graduation: GraduationCap,
-	container: Container,
-	heart: Heart,
-	'git-pull-request': GitPullRequest,
-};
 
 const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
 	linkedin: Linkedin,
@@ -110,497 +59,131 @@ const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
 	leetcode: LeetCode as unknown as typeof Linkedin,
 };
 
-const total = groups.reduce((sum, group) => sum + group.items.length, 0);
-const intro =
-	lede ??
-	`${total} entries. Hackathon results, contest milestones, things I ran, and one merged pull request. Each one opens into the longer version.`;
+/** Cards that open a menu, with the links that menu should list. */
+const menuCards = groups
+	.flatMap((group) => group.items)
+	.filter(
+		(achievement) =>
+			opensMenu(achievement) &&
+			((achievement.links?.length ?? 0) > 0 || Boolean(achievement.pageMenu)),
+	);
 ---
 
-<section class="achievements ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24" id={sectionId}>
-	<div class="window mx-auto max-w-5xl overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
-		<div class="headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none">
-			<span class="dots flex gap-1.5" aria-hidden="true">
-				<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span class="size-2.5 rounded-full bg-[#e5a50a]"></span><span class="size-2.5 rounded-full bg-[#33d17a]"></span>
-			</span>
-			<span class="title text-center whitespace-nowrap">{windowTitle}</span>
-			<span aria-hidden="true"></span>
-		</div>
+<section
+	class="achievements ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+	id={sectionId}
+>
+	<Window title={windowTitle} width="wide">
+		<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">{prompt}</p>
+		<h1 class="mb-8 text-[1.35rem] font-normal">{heading}</h1>
 
-		<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
-			<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">{prompt}</p>
-			<h1 class="mb-2 text-[1.35rem] font-normal">{heading}</h1>
-			<p class="lede mb-8 max-w-[62ch] text-[#a5a3a9]">{intro}</p>
-
-			{
-				groups.map((group) => (
-					<section class="group" aria-labelledby={`group-${group.category}`}>
-						<div class="group-head mb-4 grid grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-[0.6rem] max-[639px]:grid-cols-[auto_auto]">
-							<h2 class="m-0 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase" id={`group-${group.category}`}>{group.label}</h2>
-							<span class="group-count text-[0.6875rem] text-[#4a4a4a]" aria-hidden="true">
-								{String(group.items.length).padStart(2, '0')}
-							</span>
-							<p class="group-blurb m-0 text-[0.75rem] text-dim max-[639px]:col-span-full">{group.blurb}</p>
-						</div>
-
-						<ul
-							class:list={[
-								'grid m-0 list-none grid-cols-1 gap-3 p-0',
-							]}
+		{
+			groups.map((group) => (
+				<section class="group" aria-labelledby={`group-${group.category}`}>
+					<div class="group-head mb-4">
+						<h2
+							class="m-0 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase"
+							id={`group-${group.category}`}
 						>
-							{group.items.map((achievement) => {
-								const Icon = ICONS[achievement.icon];
-								const links = achievement.links ?? [];
-								const isMedal = Boolean(achievement.medal);
-								// A menu card only opens a menu when it has something to list:
-								// links, or a detail page offered as "Activity Description".
-								const menuCard =
-									opensMenu(achievement) && (links.length > 0 || Boolean(achievement.pageMenu));
-								const menuId = `menu-${achievement.slug}`;
-								// Role cards read like a LinkedIn entry: the role is the
-								// heading, then the organisation, then the team. Only the
-								// university page renders this shape.
-								const isRole = roleMode;
-								const heading = isRole ? (achievement.position ?? achievement.title) : achievement.title;
-								const headingLabel = isRole
-									? `${achievement.position}, ${achievement.organization}`
-									: undefined;
+							{group.label}
+						</h2>
+						{/*
+						 * The count and blurb are kept in the DOM for crawlers and
+						 * scrapers, but they are not part of the visible layout: the
+						 * heading alone is enough for a reader.
+						 */}
+						<span class="sr-only" aria-hidden="true">
+							{String(group.items.length).padStart(2, '0')}
+						</span>
+						<span class="sr-only" aria-hidden="true">
+							{group.blurb}
+						</span>
+					</div>
 
-								return (
-									<li
-										class:list={[
-											'card relative flex flex-col overflow-hidden rounded-md border border-[#3d3846] bg-[#1c1c1c] hover:border-[#5a5560] focus-within:outline-1 focus-within:outline-[#26a269] focus-within:outline-offset-2',
-											isRole && 'card--role',
-										]}
-										data-medal={achievement.medal}
-									>
-										<div class="card-bar flex items-center justify-between gap-2 border-b border-[#3d3846] bg-[#303030] px-2 py-[0.3rem] select-none">
-											<span class="card-dots flex gap-1" aria-hidden="true">
-												<span class="size-1.5 rounded-full bg-[#e01b24]"></span>
-												<span class="size-1.5 rounded-full bg-[#e5a50a]"></span>
-												<span class="size-1.5 rounded-full bg-[#33d17a]"></span>
-											</span>
-
-											{menuCard && (links.length > 0 || achievement.pageMenu) ? (
-													<span class="card-actions flex items-center gap-1">
-													{achievement.pageMenu && (
-														<a
-															class="card-action inline-flex size-4.5 items-center justify-center rounded-[3px] text-[#8a8a8a] no-underline hover:bg-[#3d3846] hover:text-[#deddda] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-1"
-															href={achievement.href ?? `${detailBase}/${achievement.slug}`}
-															aria-label="Activity Description"
-															title="Activity Description"
-														>
-															<FileText size={12} strokeWidth={1.5} aria-hidden="true" />
-														</a>
-													)}
-													{links.map((link) => {
-														const LinkIconComponent = LINK_ICONS[link.icon ?? 'external'];
-														return (
-															<a
-																		class="card-action inline-flex size-4.5 items-center justify-center rounded-[3px] text-[#8a8a8a] no-underline hover:bg-[#3d3846] hover:text-[#deddda] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-1"
-																href={link.href}
-																target="_blank"
-																rel="noreferrer"
-																aria-label={link.label}
-																title={link.label}
-															>
-																<LinkIconComponent size={12} strokeWidth={1.5} aria-hidden="true" />
-															</a>
-														);
-													})}
-												</span>
-											) : (
-												<span class="card-result">{achievement.result}</span>
-											)}
-										</div>
-
-										<div class="card-body flex items-start gap-[0.6rem] p-3">
-											<span class="card-icon flex size-7 shrink-0 items-center justify-center rounded-sm border border-[#3d3846] text-[#26a269]" data-medal={achievement.medal} aria-hidden="true">
-												{isMedal ? (
-													<Medal size={16} strokeWidth={1.5} />
-												) : (
-													<Icon size={16} strokeWidth={1.5} />
-												)}
-											</span>
-
-											<div class="card-text min-w-0 flex-1">
-												<div class="card-heading flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-													<h3 class="m-0 text-[0.8125rem] font-medium leading-[1.4]">
-														{!menuCard && hasDetailPage(achievement) ? (
-															<a
-																class="card-link text-white no-underline"
-																href={achievement.href ?? `${detailBase}/${achievement.slug}`}
-																aria-label={headingLabel}
-															>
-																{heading}
-															</a>
-														) : menuCard ? (
-															<button
-																type="button"
-																class="card-open cursor-pointer border-0 bg-transparent p-0 text-left text-[0.8125rem] font-[inherit] font-medium leading-[1.4]"
-																data-menu={menuId}
-																aria-haspopup="dialog"
-																aria-label={headingLabel}
-															>
-																{heading}
-															</button>
-														) : (
-															<span class="card-static text-white">{heading}</span>
-														)}
-													</h3>
-													<span class="card-dates shrink-0 text-[0.6875rem] leading-normal text-[#8a8a8a]">{achievement.date}</span>
-												</div>
-
-												{isRole ? (
-													<div class="card-role mt-[0.3rem] text-[0.6875rem] leading-normal text-[#a5a3a9]">
-														<p class="card-org m-0 text-[#deddda]">{achievement.organization}</p>
-														{achievement.department && <p class="card-dept m-0">{achievement.department}</p>}
-													</div>
-												) : (
-													<p class="card-summary mt-[0.15rem] mb-0 text-[0.6875rem] leading-normal text-[#a5a3a9]">{achievement.summary}</p>
-												)}
-											</div>
-										</div>
-									</li>
-								);
-							})}
-						</ul>
-					</section>
-				))
-			}
-		</div>
-	</div>
+					<ul class="grid m-0 list-none grid-cols-1 gap-3 p-0">
+						{group.items.map((achievement) => (
+							<AchievementCard
+								achievement={achievement}
+								detailBase={detailBase}
+								roleMode={roleMode}
+							/>
+						))}
+					</ul>
+				</section>
+			))
+		}
+	</Window>
 </section>
 
 {
-	groups
-		.flatMap((group) => group.items)
-		.filter(
-			(achievement) =>
-				opensMenu(achievement) &&
-				((achievement.links?.length ?? 0) > 0 || Boolean(achievement.pageMenu)),
-		)
-		.map((achievement) => {
-			const links = achievement.links ?? [];
-			// `pageMenu` entries keep their detail page, so the menu offers it
-			// first as "Activity Description" before the external links.
-			const pageHref = achievement.pageMenu
-				? (achievement.href ?? `${detailBase}/${achievement.slug}`)
-				: undefined;
-			return (
-				<dialog class="menu" id={`menu-${achievement.slug}`} aria-label={`${achievement.title} links`}>
-					<div class="menu-inner">
-						<div class="menu-bar">
-							<span class="menu-title">{achievement.title}</span>
-							<button type="button" class="menu-close" data-close aria-label="close">
-								<X size={13} strokeWidth={1.5} aria-hidden="true" />
-							</button>
-						</div>
+	menuCards.map((achievement) => {
+		const links = achievement.links ?? [];
+		// `pageMenu` entries keep their detail page, so the menu offers it
+		// first as "Activity Description" before the external links.
+		const pageHref = achievement.pageMenu
+			? (achievement.href ?? `${detailBase}/${achievement.slug}`)
+			: undefined;
 
-						<ul class="menu-list">
-							{pageHref && (
-								<li>
-									<a href={pageHref}>
-										<FileText size={14} strokeWidth={1.5} aria-hidden="true" />
-										<span class="menu-label">Activity Description</span>
-										<ArrowUpRight size={12} strokeWidth={1.5} aria-hidden="true" />
-									</a>
-								</li>
-							)}
-							{links.map((link) => {
-								const LinkIconComponent = LINK_ICONS[link.icon ?? 'external'];
-								return (
-									<li>
-										<a href={link.href} target="_blank" rel="noreferrer">
-											<LinkIconComponent size={14} strokeWidth={1.5} aria-hidden="true" />
-											<span class="menu-label">{link.label}</span>
-											<ArrowUpRight size={12} strokeWidth={1.5} aria-hidden="true" />
-										</a>
-									</li>
-								);
-							})}
-						</ul>
-					</div>
-				</dialog>
-			);
-		})
+		const menuLinks: MenuLink[] = [
+			...(pageHref ? [{ label: 'Activity Description', href: pageHref, icon: FileText }] : []),
+			...links.map((link) => ({
+				label: link.label,
+				href: link.href,
+				icon: LINK_ICONS[link.icon ?? 'external'],
+				external: true,
+			})),
+		];
+
+		return (
+			<LinkMenu id={`menu-${achievement.slug}`} title={achievement.title} links={menuLinks} />
+		);
+	})
 }
 
 <style>
+	/*
+	 * Only the group rhythm lives here. Everything that styles a card belongs
+	 * to AchievementCard.astro, because Astro scopes styles to the component
+	 * that renders the element.
+	 */
 	.group + .group {
 		margin-top: 2.25rem;
 		padding-top: 2rem;
 		border-top: 1px solid #262626;
 	}
-
-	.card:hover {
-		border-color: #5a5560;
-	}
-
-	.card:focus-within {
-		outline: 1px solid #26a269;
-		outline-offset: 2px;
-	}
-
-	.card-result {
-		overflow: hidden;
-		color: #a5a3a9;
-		font-size: 0.625rem;
-		letter-spacing: 0.04em;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	/* Cards are full-width rows, so they get more room to breathe. */
-	.card-body {
-		gap: 0.75rem;
-		padding: 0.85rem 1rem;
-	}
-
-	.card-icon {
-		width: 2rem;
-		height: 2rem;
-	}
-
-	.card--role .card-org {
-		color: #deddda;
-	}
-
-	.card--role .card-dept {
-		color: #8a8a8a;
-	}
-
-	.card-dates {
-		font-variant-numeric: tabular-nums;
-	}
-
-	.card:hover .card-dates {
-		color: #a5a3a9;
-	}
-
-	@media (max-width: 639px) {
-		.card-heading {
-			flex-direction: column;
-			align-items: flex-start;
-		}
-	}
-
-	.card:hover .card-result {
-		color: #26a269;
-	}
-
-	.card-action:hover {
-		background: #3d3846;
-		color: #deddda;
-	}
-
-	.card-action:focus-visible {
-		outline: 1px solid #26a269;
-		outline-offset: 1px;
-	}
-
-	/* Medals replace the category icon on hackathon cards. */
-	.card-icon[data-medal='gold'] {
-		border-color: #6b5a2a;
-		background: rgba(229, 165, 10, 0.08);
-		color: #e5a50a;
-	}
-
-	.card-icon[data-medal='silver'] {
-		border-color: #4a4a4a;
-		background: rgba(197, 197, 197, 0.06);
-		color: #c5c5c5;
-	}
-
-	/* Stretch the title link over the whole card. */
-	.card-link::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		border-radius: 6px;
-	}
-
-	.card-link:focus-visible {
-		outline: none;
-	}
-
-	.card-open::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		border-radius: 6px;
-	}
-
-	.card-open:focus-visible {
-		outline: none;
-	}
-
-	.card:hover .card-open {
-		color: #26a269;
-	}
-
-	/* Link menu, opened by a medal card. */
-	.menu {
-		width: min(22rem, calc(100vw - 2rem));
-		max-width: none;
-		margin: auto;
-		overflow: hidden;
-		padding: 0;
-		border: 1px solid #3d3846;
-		border-radius: 6px;
-		background: #000000;
-		color: #ffffff;
-	}
-
-	.menu::backdrop {
-		background: rgba(0, 0, 0, 0.82);
-	}
-
-	.menu-inner {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.menu-bar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-		padding: 0.4rem 0.5rem;
-		border-bottom: 1px solid #3d3846;
-		background: #303030;
-		color: #deddda;
-		font-size: 0.6875rem;
-		user-select: none;
-	}
-
-	.menu-title {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.menu-close {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0.15rem;
-		border: 0;
-		border-radius: 3px;
-		background: none;
-		color: #a5a3a9;
-		cursor: pointer;
-	}
-
-	.menu-close:hover {
-		background: #3d3846;
-		color: #ffffff;
-	}
-
-	.menu-close:focus-visible {
-		outline: 1px solid #26a269;
-		outline-offset: 1px;
-	}
-
-	.menu-list {
-		margin: 0;
-		padding: 0.35rem;
-		list-style: none;
-	}
-
-	.menu-list a {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.45rem 0.5rem;
-		border-radius: 4px;
-		color: #deddda;
-		font-size: 0.75rem;
-		text-decoration: none;
-	}
-
-	.menu-list a:hover {
-		background: #1c1c1c;
-		color: #ffffff;
-	}
-
-	.menu-list a:focus-visible {
-		outline: 1px solid #26a269;
-		outline-offset: -1px;
-	}
-
-	.menu-list a > :global(svg:first-child) {
-		flex-shrink: 0;
-		color: #8a8a8a;
-	}
-
-	.menu-list a:hover > :global(svg:first-child) {
-		color: #26a269;
-	}
-
-	.menu-label {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.menu-list a > :global(svg:last-child) {
-		flex-shrink: 0;
-		color: #4a4a4a;
-	}
-
-	@media (prefers-reduced-motion: no-preference) {
-		.menu[open] {
-			animation: menu-in 120ms ease-out;
-		}
-
-		@keyframes menu-in {
-			from {
-				opacity: 0;
-			}
-			to {
-				opacity: 1;
-			}
-		}
-	}
-
 </style>
 
 <script>
-	// Medal cards open a link menu rather than navigating. The dialog is native,
-	// so focus trapping, Esc, and the backdrop come from the platform.
-	const openers = document.querySelectorAll<HTMLButtonElement>('[data-menu]');
+	/**
+	 * Live LeetCode solve count.
+	 *
+	 * The card ships with the fallback sentence ending in "1337+ solves", so the
+	 * page is correct before any JavaScript runs. This script swaps in the exact
+	 * number once the API answers, and does nothing at all if the request fails —
+	 * the static sentence is already the fallback.
+	 *
+	 * The number is the raw `totalSolved` value, formatted with locale commas and
+	 * no rounding, flooring, or "+" suffix: 1414 shows as "1,414".
+	 */
+	const LEETCODE_API = 'https://leetcode-api-faisalshohag.anga.codes/Anga205';
 
-	for (const opener of openers) {
-		const id = opener.dataset.menu;
-		if (!id) continue;
+	const summaries = document.querySelectorAll<HTMLElement>('[data-leetcode-summary]');
 
-		const dialog = document.getElementById(id) as HTMLDialogElement | null;
-		if (!dialog) continue;
+	if (summaries.length > 0) {
+		const format = (solved: number) =>
+			`Not that quantity and quality are the same thing, but it's an achievement of consistency. This number currently sits at ${solved.toLocaleString('en-US')} solves`;
 
-		opener.addEventListener('click', () => dialog.showModal());
+		fetch(LEETCODE_API)
+			.then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+			.then((data: { totalSolved?: unknown }) => {
+				const solved = Number(data?.totalSolved);
+				if (!Number.isFinite(solved) || solved <= 0) return;
 
-		dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
-
-		// Escape closes. The platform already does this for a modal dialog, but
-		// handling it explicitly keeps the behaviour independent of how the
-		// dialog was opened and stops the key from reaching the page.
-		dialog.addEventListener('keydown', (event) => {
-			if (event.key !== 'Escape') return;
-			event.preventDefault();
-			dialog.close();
-		});
-
-		// Clicking the backdrop closes. A backdrop click is dispatched to the
-		// dialog element itself, so compare the pointer against the dialog's own
-		// box: anything outside it is the backdrop.
-		dialog.addEventListener('click', (event) => {
-			if (event.target !== dialog) return;
-			const box = dialog.getBoundingClientRect();
-			const outside =
-				event.clientX < box.left ||
-				event.clientX > box.right ||
-				event.clientY < box.top ||
-				event.clientY > box.bottom;
-			if (outside) dialog.close();
-		});
+				for (const element of summaries) {
+					element.textContent = format(solved);
+				}
+			})
+			// A failed request leaves the static "1337+ solves" in place.
+			.catch(() => {});
 	}
 </script>

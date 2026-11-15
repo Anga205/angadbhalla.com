@@ -15,7 +15,12 @@ test('home page shows a rounded portrait photo in the intro', async ({ page }) =
 
 	const photo = page.locator('.portrait-photo img');
 	await expect(photo).toBeVisible();
-	await expect(photo).toHaveAttribute('src', '/angad.png');
+	// The portrait is processed by astro:assets, so the URL is either a
+	// fingerprinted build asset or a dev-mode `/_image?href=...` transform.
+	// Either way it must resolve to the angad source, in a modern format.
+	const src = decodeURIComponent((await photo.getAttribute('src')) ?? '');
+	expect(src).toMatch(/angad/);
+	expect(src).toMatch(/\.(avif|webp|jpe?g|png)/);
 	await expect(photo).toHaveAttribute('alt', 'Angad Bhalla');
 
 	const radius = await photo.evaluate((el) => getComputedStyle(el).borderRadius);
@@ -50,21 +55,20 @@ test('home page links out to every social profile', async ({ page }) => {
 		'https://www.duolingo.com/profile/AngadBhalla',
 	);
 
-	// The cards are icon-only, so the accessible name carries the detail.
+	// The cards carry the icon plus the handle, so the accessible name and the
+	// visible text agree.
 	const labels = await cards.evaluateAll((els) =>
 		els.map((el) => el.getAttribute('aria-label')?.split(':')[0]),
 	);
 	expect(labels).toEqual(['email', 'github', 'linkedin', 'discord', 'instagram', 'duolingo']);
 
-	// Every card is a single icon and nothing else.
 	for (const card of await cards.all()) {
 		await expect(card.locator('svg')).toHaveCount(1);
-		await expect(card).toHaveText('');
 	}
 });
 
-test('home page social cards sit in one full-width row', async ({ page }, testInfo) => {
-	testInfo.skip(testInfo.project.name === 'mobile', 'the row is measured on desktop');
+test('home page social cards stack one per row on desktop', async ({ page }, testInfo) => {
+	testInfo.skip(testInfo.project.name === 'mobile', 'the compact grid is measured on mobile');
 
 	await page.goto('/');
 
@@ -72,19 +76,33 @@ test('home page social cards sit in one full-width row', async ({ page }, testIn
 	const boxes = await cards.evaluateAll((els) =>
 		els.map((el) => {
 			const box = el.getBoundingClientRect();
-			return { top: Math.round(box.top), height: Math.round(box.height), width: Math.round(box.width) };
+			return { top: Math.round(box.top), width: Math.round(box.width) };
 		}),
 	);
 
-	// One row: every card shares a top edge.
-	expect(new Set(boxes.map((box) => box.top)).size).toBe(1);
+	// One card per row: six distinct top edges.
+	expect(new Set(boxes.map((box) => box.top)).size).toBe(6);
 
-	// Compact: no card is taller than a comfortable icon button.
-	for (const box of boxes) expect(box.height).toBeLessThanOrEqual(32);
-
-	// The row spans the window body, so the cards share the width evenly.
+	// Every row spans the same width.
 	const widths = boxes.map((box) => box.width);
 	expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+});
+
+test('home page social cards show the handle on the button', async ({ page }, testInfo) => {
+	testInfo.skip(testInfo.project.name === 'mobile', 'the handle is hidden in the compact grid');
+
+	await page.goto('/');
+
+	const cards = page.locator('.contact-card');
+	await expect(cards.nth(0).locator('.contact-value')).toHaveText('angadbhalla2005@gmail.com');
+	await expect(cards.nth(1).locator('.contact-value')).toHaveText('github.com/Anga205');
+	await expect(cards.nth(3).locator('.contact-value')).toHaveText('@anga205');
+	await expect(cards.nth(5).locator('.contact-value')).toHaveText(
+		'duolingo.com/profile/AngadBhalla',
+	);
+
+	// The label sits above the handle.
+	await expect(cards.nth(0).locator('.contact-label')).toHaveText('email');
 });
 
 test('about page does not overflow on mobile', async ({ page }) => {

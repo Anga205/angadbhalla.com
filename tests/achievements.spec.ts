@@ -54,6 +54,55 @@ test('achievements index groups every achievement into sections', async ({ page 
 	).toHaveCount(0);
 });
 
+test('group headings show only the title, with the count and blurb kept out of view', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const head = page.locator('.group-head').first();
+
+	// Only the heading is visible; the count and blurb are clipped to 1x1.
+	await expect(head.getByRole('heading', { level: 2 })).toBeVisible();
+	await expect(head.locator('.sr-only')).toHaveCount(2);
+
+	const hidden = await head.locator('.sr-only').evaluateAll((els) =>
+		els.map((el) => {
+			const box = el.getBoundingClientRect();
+			return { width: box.width, height: box.height, text: el.textContent ?? '' };
+		}),
+	);
+
+	for (const item of hidden) {
+		expect(item.width).toBeLessThanOrEqual(1);
+		expect(item.height).toBeLessThanOrEqual(1);
+	}
+
+	// The text is still in the DOM for crawlers.
+	expect(hidden.map((item) => item.text)).toEqual(['02', 'time-boxed builds, judged.']);
+
+	// Nothing else renders in the header row.
+	await expect(head.locator('.group-count')).toHaveCount(0);
+	await expect(head.locator('.group-blurb')).toHaveCount(0);
+});
+
+test('university group headings hide their count and blurb too', async ({ page }) => {
+	await page.goto('/university');
+
+	const head = page.locator('.group-head').first();
+	await expect(head.getByRole('heading', { level: 2 })).toBeVisible();
+	await expect(head.locator('.sr-only')).toHaveCount(2);
+
+	const hidden = await head.locator('.sr-only').evaluateAll((els) =>
+		els.map((el) => {
+			const box = el.getBoundingClientRect();
+			return { width: box.width, height: box.height };
+		}),
+	);
+
+	for (const item of hidden) {
+		expect(item.width).toBeLessThanOrEqual(1);
+		expect(item.height).toBeLessThanOrEqual(1);
+	}
+});
+
 test('achievement cards stay compact: icon, name, one-line summary', async ({ page }) => {
 	await page.goto('/achievements');
 
@@ -64,8 +113,37 @@ test('achievement cards stay compact: icon, name, one-line summary', async ({ pa
 
 	// Tags and long copy belong on the detail page, not on the card.
 	await expect(card.locator('.stack')).toHaveCount(0);
-	await expect(card.locator('.card-description')).toHaveCount(0);
 	await expect(card.locator('.card-more')).toHaveCount(0);
+});
+
+test('card descriptions stay in the DOM but out of the visible layout', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const descriptions = page.locator('.card-description');
+	expect(await descriptions.count()).toBeGreaterThan(0);
+
+	// Every description is clipped to 1x1, like the group counts and blurbs.
+	const boxes = await descriptions.evaluateAll((els) =>
+		els.map((el) => {
+			const box = el.getBoundingClientRect();
+			return { width: box.width, height: box.height, text: el.textContent ?? '' };
+		}),
+	);
+
+	for (const box of boxes) {
+		expect(box.width).toBeLessThanOrEqual(1);
+		expect(box.height).toBeLessThanOrEqual(1);
+		expect(box.text.length).toBeGreaterThan(0);
+	}
+
+	// The text is still crawlable, and marked up as a schema.org description.
+	const algomania = page.locator('.card').filter({ hasText: 'Algomania 3.0' }).first();
+	await expect(algomania.locator('.card-description')).toHaveAttribute(
+		'itemprop',
+		'description',
+	);
+	await expect(algomania.locator('.card-description')).toContainText('110 teams entered');
+	await expect(algomania).toHaveAttribute('itemtype', 'https://schema.org/CreativeWork');
 });
 
 test('achievement cards show the date and span the full width', async ({ page }) => {
@@ -190,15 +268,16 @@ test('IAMPro has a research detail page with three gallery slots', async ({ page
 	await expect(page.getByRole('heading', { name: 'Research Intern', level: 1 })).toBeVisible();
 	await expect(page.locator('.thumb')).toHaveCount(3);
 
-	// Real photographs, not the generated placeholders.
+	// Real photographs, not the generated placeholders. The URLs are
+	// fingerprinted and format-negotiated by astro:assets, so assert on the
+	// source file name rather than the emitted path.
 	const sources = await page
 		.locator('.thumb img')
-		.evaluateAll((els) => els.map((el) => el.getAttribute('src')));
-	expect(sources).toEqual([
-		'/achievements/ieee-cs-iampro-2025/certificate.png',
-		'/achievements/ieee-cs-iampro-2025/pic1.jpg',
-		'/achievements/ieee-cs-iampro-2025/pic2.jpg',
-	]);
+		.evaluateAll((els) => els.map((el) => decodeURIComponent(el.getAttribute('src') ?? '')));
+	expect(sources).toHaveLength(3);
+	expect(sources[0]).toContain('certificate');
+	expect(sources[1]).toContain('pic1');
+	expect(sources[2]).toContain('pic2');
 
 	testInfo.project.name === 'mobile' && testInfo.skip();
 
@@ -245,6 +324,46 @@ test('hackathon cards show a gold or silver medal instead of the result text', a
 	// Every hackathon now has links, so the result text is replaced by buttons.
 	await expect(page.getByText('first place')).toHaveCount(0);
 	await expect(page.getByText('second place')).toHaveCount(0);
+});
+
+test('first place uses a trophy and second place uses a medal', async ({ page }) => {
+	await page.goto('/achievements');
+
+	// Lucide marks each glyph with a `lucide-<name>` class on the svg.
+	const gold = page.locator('.card-icon[data-medal="gold"] svg');
+	const silver = page.locator('.card-icon[data-medal="silver"] svg');
+
+	await expect(gold).toHaveCount(3);
+	await expect(silver).toHaveCount(1);
+
+	for (const icon of await gold.all()) {
+		await expect(icon).toHaveClass(/lucide-trophy/);
+	}
+	await expect(silver).toHaveClass(/lucide-medal/);
+
+	// The colour scheme still separates the two placements.
+	await expect(gold.first()).toHaveCSS('color', 'rgb(229, 165, 10)');
+	await expect(silver).toHaveCSS('color', 'rgb(197, 197, 197)');
+});
+
+test('the vosd card uses a dog icon and the tedx card uses an atom', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const vosd = page.locator('.card').filter({ hasText: 'VOSD Newspaper Drive' }).first();
+	await expect(vosd.locator('.card-icon svg')).toHaveClass(/lucide-dog/);
+
+	const tedx = page.locator('.card').filter({ hasText: 'TEDx Speaker' }).first();
+	await expect(tedx.locator('.card-icon svg')).toHaveClass(/lucide-atom/);
+});
+
+test('the tedx card describes the quantum physics talk', async ({ page }) => {
+	await page.goto('/achievements');
+
+	const tedx = page.locator('.card').filter({ hasText: 'TEDx Speaker' }).first();
+	await expect(tedx.locator('.card-summary')).toHaveText('a talk on quantum physics at TEDxSNSCE.');
+	// The crawlable description carries the talk title and year.
+	await expect(tedx.locator('.card-description')).toContainText('Magic of Quantum Physics');
+	await expect(tedx.locator('.card-description')).toContainText('TEDxSNSCE');
 });
 
 test('hackathon cards carry grayscale link buttons in the headerbar', async ({ page }) => {
@@ -335,7 +454,7 @@ test('every menu card opens a menu with its links', async ({ page }) => {
 		'Tensor 2026',
 		'IEEE Kalpana 2025',
 		'Hack-o-ween 2025',
-		'LeetCode — 1,337 solved',
+		'LeetCode — 1337+ solved',
 		'VOSD Newspaper Drive',
 		'TEDx Speaker',
 		'docker/docker #51670',
@@ -357,7 +476,7 @@ test('leetcode card uses the leetcode mark and links to the post and profile', a
 	const card = page.locator('.card').filter({ hasText: 'LeetCode' }).first();
 	await expect(card.locator('.card-icon svg')).toBeVisible();
 
-	await page.getByRole('button', { name: 'LeetCode — 1,337 solved' }).click();
+	await page.getByRole('button', { name: 'LeetCode — 1337+ solved' }).click();
 
 	const hrefs = await page
 		.locator('dialog.menu[open] .menu-list a')
@@ -376,6 +495,48 @@ test('the leetcode profile link uses the leetcode mark, not the external icon', 
 	// The LeetCode mark is a filled path; lucide's ExternalLink is stroked.
 	await expect(profile.locator('svg[fill="currentColor"]')).toHaveCount(1);
 	await expect(profile.locator('svg[stroke="currentColor"]')).toHaveCount(0);
+});
+
+test('the leetcode card shows the exact solve count in its summary', async ({ page }) => {
+	await page.route('https://leetcode-api-faisalshohag.anga.codes/**', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({ totalSolved: 1414 }),
+		}),
+	);
+
+	await page.goto('/achievements');
+
+	const summary = page.locator('[data-leetcode-summary]');
+	await expect(summary).toHaveText(
+		"Not that quantity and quality are the same thing, but it's an achievement of consistency. This number currently sits at 1,414 solves",
+	);
+	await expect(summary).toBeVisible();
+});
+
+test('the leetcode summary is not rounded or floored', async ({ page }) => {
+	await page.route('https://leetcode-api-faisalshohag.anga.codes/**', (route) =>
+		route.fulfill({
+			status: 200,
+			contentType: 'application/json',
+			body: JSON.stringify({ totalSolved: 1356 }),
+		}),
+	);
+
+	await page.goto('/achievements');
+
+	await expect(page.locator('[data-leetcode-summary]')).toHaveText(/sits at 1,356 solves$/);
+});
+
+test('the leetcode summary falls back to 1337+ when the api fails', async ({ page }) => {
+	await page.route('https://leetcode-api-faisalshohag.anga.codes/**', (route) => route.abort());
+
+	await page.goto('/achievements');
+
+	// The static sentence carries the fallback, and the title keeps the joke.
+	await expect(page.getByRole('button', { name: 'LeetCode — 1337+ solved' })).toBeVisible();
+	await expect(page.locator('[data-leetcode-summary]')).toHaveText(/sits at 1337\+ solves$/);
 });
 
 test('page-menu cards list their activity description and every related link', async ({ page }) => {
@@ -423,7 +584,7 @@ test('algomania sits under competitive programming, not hackathons', async ({ pa
 
 	const competitive = page.getByRole('region', { name: 'competitive programming' });
 	await expect(competitive.getByRole('button', { name: 'Algomania 3.0' })).toBeVisible();
-	await expect(competitive.getByRole('button', { name: 'LeetCode — 1,337 solved' })).toBeVisible();
+	await expect(competitive.getByRole('button', { name: 'LeetCode — 1337+ solved' })).toBeVisible();
 
 	const hackathons = page.getByRole('region', { name: 'hackathons' });
 	await expect(hackathons.getByRole('button', { name: 'Algomania 3.0' })).toHaveCount(0);
@@ -488,11 +649,10 @@ test('detail page gallery opens a lightbox with the image caption', async ({ pag
 	await expect(thumbs).toHaveCount(2);
 	const sources = await page
 		.locator('.thumb img')
-		.evaluateAll((els) => els.map((el) => el.getAttribute('src')));
-	expect(sources).toEqual([
-		'/achievements/alcoding-club-head/alcoding1.jpg',
-		'/achievements/alcoding-club-head/alcoding2.jpg',
-	]);
+		.evaluateAll((els) => els.map((el) => decodeURIComponent(el.getAttribute('src') ?? '')));
+	expect(sources).toHaveLength(2);
+	expect(sources[0]).toContain('alcoding1');
+	expect(sources[1]).toContain('alcoding2');
 
 	await thumbs.first().click();
 

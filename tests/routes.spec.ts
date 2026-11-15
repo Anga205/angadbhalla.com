@@ -20,7 +20,7 @@ test('mobile rail drops the trailing slash and uses short labels', async ({ page
 	const slash = page.locator('.waypoint-slash').first();
 	await expect(slash).toBeHidden();
 
-	// The rail is six items wide, so the full labels are replaced by short
+	// The rail is five items wide, so the full labels are replaced by short
 	// ones: no trailing slash, nothing truncated away.
 	await expect(page.locator('.waypoint-label').first()).toBeHidden();
 	await expect(page.locator('.waypoint-label-short').first()).toBeVisible();
@@ -30,7 +30,7 @@ test('mobile rail drops the trailing slash and uses short labels', async ({ page
 		.evaluateAll((els) =>
 			els.map((el) => ({ text: el.textContent ?? '', clipped: el.scrollWidth > el.clientWidth })),
 		);
-	expect(labels).toHaveLength(6);
+	expect(labels).toHaveLength(5);
 	for (const label of labels) {
 		expect(label.text.endsWith('/')).toBe(false);
 		expect(label.clipped).toBe(false);
@@ -44,7 +44,7 @@ test('sidebar columns align across every destination', async ({ page }, testInfo
 	await page.goto('/');
 
 	const links = page.locator('.waypoint-link');
-	await expect(links).toHaveCount(6);
+	await expect(links).toHaveCount(5);
 
 	// The rail is the minimized sidebar: icon + label, two columns.
 	const columns = await links.first().evaluate((el) => getComputedStyle(el).gridTemplateColumns);
@@ -86,7 +86,6 @@ test('every destination has its own route and keeps the navigation available', a
 		['University', '/university'],
 		['Achievements', '/achievements'],
 		['Philosophy', '/philosophy'],
-		['Contact', '/contact'],
 	] as const;
 
 	for (const [name, route] of routes) {
@@ -112,6 +111,23 @@ test('projects route renders the project cards', async ({ page }) => {
 
 	// Cards must not depend on having every link.
 	await expect(page.locator('.card-actions').first()).toBeVisible();
+});
+
+test('project cards stack one per row', async ({ page }) => {
+	await page.goto('/projects');
+
+	const list = page.locator('.projects ul').first();
+	const columns = await list.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
+	expect(columns.split(' ')).toHaveLength(1);
+
+	// Every card spans the full width of the list.
+	const listWidth = await list.evaluate((el) => el.getBoundingClientRect().width);
+	const widths = await page
+		.locator('.card')
+		.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+	for (const width of widths) {
+		expect(Math.abs(listWidth - width)).toBeLessThanOrEqual(1);
+	}
 });
 
 test('archived project cards explain the warning icon on hover', async ({ page }, testInfo) => {
@@ -188,9 +204,9 @@ test('code execution API uses its live deployment link', async ({ page }) => {
 });
 
 test('sidebar highlights the current route, not always projects', async ({ page }) => {
-	await page.goto('/contact');
+	await page.goto('/philosophy');
 
-	await expect(page.locator('[data-destination-link="contact"]')).toHaveAttribute(
+	await expect(page.locator('[data-destination-link="philosophy"]')).toHaveAttribute(
 		'aria-current',
 		'page',
 	);
@@ -220,7 +236,7 @@ test('mobile home page has no overflow and keeps the bottom rail usable', async 
 	);
 	expect(overflow).toBeLessThanOrEqual(1);
 
-	await page.getByRole('link', { name: /Contact:/ }).click();
+	await page.getByRole('link', { name: /Philosophy:/ }).click();
 	await expect(page.locator('#wayfinder')).toHaveCSS('bottom', '0px');
 	await expect(page.locator('#wayfinder')).toHaveCSS('width', '375px');
 });

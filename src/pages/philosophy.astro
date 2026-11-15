@@ -1,22 +1,31 @@
 ---
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
+import Window from '../components/Window.astro';
+import { creativeWorkSchema, type JsonLd } from '../lib/seo';
+
+const description =
+	'How Angad Bhalla thinks about building software: craft, mistakes, and the goofy projects.';
+
+const schema: JsonLd[] = [
+	creativeWorkSchema({
+		path: '/philosophy',
+		name: 'On building things',
+		description,
+		type: 'Article',
+		keywords: ['software engineering', 'craft', 'philosophy', 'engineering culture'],
+	}),
+];
 ---
 
-<Base title="anga / philosophy" description="How Angad Bhalla thinks about building software: craft, mistakes, and the goofy projects.">
+<Base title="anga / philosophy" {description} path="/philosophy" type="article" {schema}>
 	<PortfolioMenu minimized />
 
-	<main class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24">
-		<div class="window mx-auto max-w-240 overflow-hidden rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]">
-			<div class="headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none">
-				<span class="dots flex gap-1.5" aria-hidden="true">
-					<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span class="size-2.5 rounded-full bg-[#e5a50a]"></span><span class="size-2.5 rounded-full bg-[#33d17a]"></span>
-				</span>
-				<span class="title text-center whitespace-nowrap">anga@portfolio — philosophy</span>
-				<span aria-hidden="true"></span>
-			</div>
-
-			<div class="body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5">
+	<main
+		id="main"
+		class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+	>
+		<Window title="anga@portfolio — philosophy">
 				<section class="philosophy">
 					<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ cat philosophy.txt</p>
 
@@ -74,8 +83,7 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 						</div>
 					</div>
 				</section>
-			</div>
-		</div>
+		</Window>
 	</main>
 </Base>
 
@@ -364,13 +372,60 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 				controls.addEventListener('change', () => renderer.render(scene, camera));
 				renderer.render(scene, camera);
 			} else {
-				function frame() {
+				/*
+				 * The idle loop is a continuous repaint, which is wasteful when
+				 * nobody is looking at it. Two things stop it: the tab losing
+				 * visibility, and the portrait scrolling out of view. Both are
+				 * tracked independently, and the loop only runs when neither is
+				 * true.
+				 */
+				let running = false;
+				let frameHandle = 0;
+				let visible = !document.hidden;
+				let onScreen = true;
+
+				const frame = () => {
 					controls.update();
 					renderer.render(scene, camera);
-					requestAnimationFrame(frame);
-				}
+					frameHandle = window.requestAnimationFrame(frame);
+				};
 
-				frame();
+				const sync = () => {
+					const shouldRun = visible && onScreen;
+					if (shouldRun === running) return;
+					running = shouldRun;
+
+					if (shouldRun) {
+						frameHandle = window.requestAnimationFrame(frame);
+					} else {
+						window.cancelAnimationFrame(frameHandle);
+						frameHandle = 0;
+					}
+				};
+
+				document.addEventListener('visibilitychange', () => {
+					visible = !document.hidden;
+					sync();
+				});
+
+				// A second observer, separate from the lazy-load one, so the
+				// loop can pause and resume as the portrait leaves and re-enters
+				// the viewport.
+				new IntersectionObserver(
+					(entries) => {
+						onScreen = entries.some((entry) => entry.isIntersecting);
+						sync();
+					},
+					{ rootMargin: '100px' },
+				).observe(portraitElement);
+
+				// Release the GPU context when the page is torn down.
+				window.addEventListener('pagehide', () => {
+					window.cancelAnimationFrame(frameHandle);
+					renderer.dispose();
+				});
+
+				sync();
 			}
 		}
 

@@ -1,0 +1,65 @@
+---
+/**
+ * Window.astro
+ *
+ * The GNOME-style window chrome shared by every page: a headerbar with traffic
+ * lights and a title, wrapping a body slot.
+ *
+ * The markup is intentionally identical to what each page used to inline, down
+ * to the utility classes, so the rendered DOM and the visual result are
+ * unchanged. Only the duplication is gone.
+ */
+interface Props {
+	/** Titlebar text, e.g. `anga@portfolio — projects`. */
+	title: string;
+	/** Max width utility for the window. */
+	width?: 'narrow' | 'wide';
+	/**
+	 * Clip children to the rounded corners. Off for pages whose cards render
+	 * tooltips that hang outside the card box.
+	 */
+	clip?: boolean;
+	/** Extra classes for the outer window element. */
+	class?: string;
+}
+
+const { title, width = 'narrow', clip = true, class: className } = Astro.props;
+
+const widthClass = width === 'wide' ? 'max-w-5xl' : 'max-w-240';
+---
+
+<div
+	class:list={[
+		'window mx-auto rounded-md border border-[#3d3846] bg-[#000000] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)]',
+		clip && 'overflow-hidden',
+		widthClass,
+		className,
+	]}
+>
+	<div
+		class:list={[
+			'headerbar grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[#3d3846] bg-[#303030] px-3 py-2 text-[0.75rem] tracking-[0.02em] text-[#deddda] select-none',
+			// Without `overflow-hidden` the corners have to be rounded on the
+			// children instead, or the headerbar paints over the border radius.
+			!clip && 'rounded-t-[5px]',
+		]}
+	>
+		<span class="dots flex gap-1.5" aria-hidden="true">
+			<span class="size-2.5 rounded-full bg-[#e01b24]"></span><span
+				class="size-2.5 rounded-full bg-[#e5a50a]"></span><span
+				class="size-2.5 rounded-full bg-[#33d17a]"></span
+			>
+		</span>
+		<span class="title overflow-hidden text-center text-ellipsis whitespace-nowrap">{title}</span>
+		<span aria-hidden="true"></span>
+	</div>
+
+	<div
+		class:list={[
+			'body p-7 text-[0.875rem] leading-[1.75] text-white max-[639px]:p-5',
+			!clip && 'rounded-b-[5px]',
+		]}
+	>
+		<slot />
+	</div>
+</div>

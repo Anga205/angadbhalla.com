@@ -4,7 +4,7 @@
  * `href` is a real route, so navigation is plain links: browser back/forward
  * works without any client-side routing.
  *
- * `shortLabel` is used by the six-item mobile rail, where the full label would
+ * `shortLabel` is used by the five-item mobile rail, where the full label would
  * be truncated away.
  */
 export const DESTINATIONS = [
@@ -47,14 +47,6 @@ export const DESTINATIONS = [
 		href: '/philosophy',
 		icon: 'philosophy',
 		description: 'how I think about building software, and why the goofy ones win.',
-	},
-	{
-		id: 'contact',
-		label: 'Contact',
-		shortLabel: 'contact',
-		href: '/contact',
-		icon: 'contact',
-		description: 'GitHub, LinkedIn, email, and the other places I turn up.',
 	},
 ] as const;
 
