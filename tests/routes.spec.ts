@@ -4,8 +4,16 @@ test('sidebar uses the Adwaita dark palette', async ({ page }) => {
 	await page.goto('/');
 
 	await expect(page.locator('#wayfinder')).toHaveCSS('background-color', 'rgb(23, 23, 23)');
-	await expect(page.locator('main .window')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
-	await expect(page.locator('main .headerbar')).toHaveCSS('background-color', 'rgb(48, 48, 48)');
+	// Scoped to the home panel: on mobile the pager also holds the other
+	// destinations, which are prefetched into their own panels.
+	await expect(page.locator('[data-panel="home"] .window')).toHaveCSS(
+		'background-color',
+		'rgb(0, 0, 0)',
+	);
+	await expect(page.locator('[data-panel="home"] .headerbar')).toHaveCSS(
+		'background-color',
+		'rgb(48, 48, 48)',
+	);
 	await expect(page.locator('#wayfinder .terminal')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
 	await expect(
 		page.locator('.waypoint-link[aria-current="page"] .waypoint-icon'),
@@ -165,12 +173,36 @@ test('AngaDriveV2 links to its archived repository', async ({ page }) => {
 	await expect(page.locator('#menu-angadrive-v2 a[href="https://github.com/Anga205/AngaDriveV2"]')).toBeVisible();
 });
 
+test('AngaDriveV3 offers its report as a Project Description entry', async ({ page }) => {
+	await page.goto('/projects');
+
+	const card = page.locator('.card').filter({ hasText: 'AngaDriveV3' });
+
+	// The title still opens the links menu, like every other card.
+	await card.getByRole('button', { name: 'AngaDriveV3', exact: true }).click();
+	const menu = page.locator('#menu-angadrive[open]');
+	await expect(menu).toBeVisible();
+	await expect(page).toHaveURL(/\/projects$/);
+
+	// The report is the first entry, mirroring "Activity Description".
+	const first = menu.locator('a').first();
+	await expect(first).toHaveText(/Project Description/);
+	await expect(first).toHaveAttribute('href', '/projects/angadrive');
+
+	// The card bar also links to it directly.
+	await page.keyboard.press('Escape');
+	await expect(card.getByRole('link', { name: 'AngaDriveV3 Project Description' })).toHaveAttribute(
+		'href',
+		'/projects/angadrive',
+	);
+});
+
 test('project cards open link menus with the published project links', async ({ page }, testInfo) => {
 	if (testInfo.project.name === 'mobile') testInfo.skip();
 
 	await page.goto('/projects');
 
-	await page.getByRole('button', { name: 'AngaDriveV3' }).click();
+	await page.getByRole('button', { name: 'AngaDriveV3', exact: true }).click();
 	const driveMenu = page.locator('#menu-angadrive[open]');
 	await expect(driveMenu).toBeVisible();
 	const driveHrefs = await driveMenu.locator('a').evaluateAll((links) => links.map((link) => link.getAttribute('href')));

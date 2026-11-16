@@ -12,6 +12,27 @@
   port = 8888
 
 # ---------------------------------------------------------------------------
+# Redirects
+# ---------------------------------------------------------------------------
+
+# The site mark is served under a few friendly names. These are rewrites, not
+# redirects: the browser keeps the requested URL and gets the SVG bytes, so
+# `/anga.svg` and `/logo.svg` behave exactly like `/favicon.svg` under a
+# different name. `force = false` keeps the real file winning if one is ever
+# added at that path.
+[[redirects]]
+  from = "/anga.svg"
+  to = "/favicon.svg"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/logo.svg"
+  to = "/favicon.svg"
+  status = 200
+  force = false
+
+# ---------------------------------------------------------------------------
 # Headers
 # ---------------------------------------------------------------------------
 

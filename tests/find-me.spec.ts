@@ -48,6 +48,72 @@ test('contact form requires both fields', async ({ page }) => {
 	await expect(page.locator('.toast')).toHaveText('email and message are required.');
 });
 
+test('a toast can be dismissed with its close button', async ({ page }) => {
+	await page.goto('/');
+
+	await page.click('#send');
+	const toast = page.locator('.toast');
+	await expect(toast).toBeVisible();
+
+	const close = page.getByRole('button', { name: 'Dismiss notification' });
+	await expect(close).toBeVisible();
+	await close.click();
+
+	await expect(page.locator('.toast')).toHaveCount(0);
+});
+
+test('a toast can be dismissed with Escape', async ({ page }) => {
+	await page.goto('/');
+
+	await page.click('#send');
+	await expect(page.locator('.toast')).toBeVisible();
+
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.toast')).toHaveCount(0);
+});
+
+test('the toast carries a kind icon and a draining progress bar', async ({ page }) => {
+	await page.goto('/');
+
+	await page.click('#send');
+	const toast = page.locator('.toast[data-kind="error"]');
+	await expect(toast).toBeVisible();
+
+	// Decorative, so neither contributes to the announced text.
+	await expect(toast.locator('.toast-icon')).toHaveCount(1);
+	await expect(toast.locator('.toast-progress')).toHaveCount(1);
+	await expect(toast.locator('.toast-icon')).toHaveAttribute('aria-hidden', 'true');
+	await expect(toast.locator('.toast-progress')).toHaveAttribute('aria-hidden', 'true');
+});
+
+test('hovering a toast pauses its timer', async ({ page }) => {
+	await page.goto('/');
+
+	await page.click('#send');
+	const toast = page.locator('.toast');
+	await expect(toast).toBeVisible();
+
+	await toast.hover();
+	await expect(toast).toHaveClass(/is-paused/);
+	await expect(toast.locator('.toast-progress')).toHaveCSS('animation-play-state', 'paused');
+
+	// Held open well past the default lifetime.
+	await page.waitForTimeout(6000);
+	await expect(toast).toBeVisible();
+
+	await page.mouse.move(0, 0);
+	await expect(toast).not.toHaveClass(/is-paused/);
+	await expect(toast).toHaveCount(0, { timeout: 8000 });
+});
+
+test('an auto-dismissing toast goes away on its own', async ({ page }) => {
+	await page.goto('/');
+
+	await page.click('#send');
+	await expect(page.locator('.toast')).toBeVisible();
+	await expect(page.locator('.toast')).toHaveCount(0, { timeout: 10_000 });
+});
+
 test('contact form sends the template variables and confirms with a toast', async ({ page }) => {
 	// The real service is live, so the request is intercepted: the test asserts
 	// what the form sends without delivering mail.
@@ -66,6 +132,9 @@ test('contact form sends the template variables and confirms with a toast', asyn
 	await expect(page.locator('.toast[data-kind="ok"]')).toContainText('sent', {
 		timeout: 15_000,
 	});
+	// The in-flight toast is replaced by the result, never shown beside it.
+	await expect(page.locator('.toast[data-kind="info"]')).toHaveCount(0);
+	await expect(page.locator('.toast')).toHaveCount(1);
 	await expect(page.locator('#send')).toBeEnabled();
 	await expect(page.locator('#email')).toHaveValue('');
 
@@ -217,4 +286,60 @@ test('home page and its message form do not overflow on mobile', async ({ page }
 		() => document.documentElement.scrollWidth - window.innerWidth,
 	);
 	expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test('toasts stay clear of the mobile navigation rail', async ({ page }, testInfo) => {
+	testInfo.skip(testInfo.project.name !== 'mobile', 'the rail only exists on phones');
+
+	await page.goto('/');
+	await page.click('#send');
+
+	const toast = page.locator('.toast');
+	await expect(toast).toBeVisible();
+
+	const toastBox = await toast.evaluate(async (element) => {
+		// The entrance animation scales the box; measure once it has settled.
+		await Promise.all(element.getAnimations().map((animation) => animation.finished));
+		const box = element.getBoundingClientRect();
+		return { x: box.x, y: box.y, width: box.width, height: box.height };
+	});
+	const railBox = await page.locator('#wayfinder').boundingBox();
+	expect(railBox).not.toBeNull();
+
+	// Sits fully above the fixed rail rather than behind it.
+	expect(toastBox.y + toastBox.height).toBeLessThanOrEqual(railBox!.y + 1);
+
+	// Edge to edge, less the 0.75rem gutters.
+	const viewport = page.viewportSize()!;
+	expect(Math.abs(toastBox.width - (viewport.width - 24))).toBeLessThanOrEqual(2);
+});
+
+test('a sideways swipe dismisses a toast on touch', async ({ page }) => {
+	await page.goto('/');
+	await page.click('#send');
+
+	const toast = page.locator('.toast');
+	await expect(toast).toBeVisible();
+
+	// The handler ignores mouse pointers, so the gesture is dispatched as a
+	// real touch-typed pointer sequence.
+	await toast.evaluate((element) => {
+		const box = element.getBoundingClientRect();
+		const x = box.x + box.width / 2;
+		const y = box.y + box.height / 2;
+		const init = (clientX: number) => ({
+			bubbles: true,
+			pointerId: 1,
+			pointerType: 'touch',
+			isPrimary: true,
+			clientX,
+			clientY: y,
+		});
+
+		element.dispatchEvent(new PointerEvent('pointerdown', init(x)));
+		element.dispatchEvent(new PointerEvent('pointermove', init(x + 140)));
+		element.dispatchEvent(new PointerEvent('pointerup', init(x + 140)));
+	});
+
+	await expect(page.locator('.toast')).toHaveCount(0);
 });

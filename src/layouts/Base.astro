@@ -75,5 +75,11 @@ const {
 			skip to content
 		</a>
 		<slot />
+		<!--
+			Toasts live outside the pager on purpose: they are fixed-position
+			and would otherwise be swiped off-screen with the panel that
+			created them. `src/scripts/toast.ts` appends here.
+		-->
+		<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
 	</body>
 </html>

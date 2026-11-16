@@ -13,7 +13,7 @@ test('home page renders the intro', async ({ page }) => {
 test('home page shows a rounded portrait photo in the intro', async ({ page }) => {
 	await page.goto('/');
 
-	const photo = page.locator('.portrait-photo img');
+	const photo = page.locator('.portrait-img');
 	await expect(photo).toBeVisible();
 	// The portrait is processed by astro:assets, so the URL is either a
 	// fingerprinted build asset or a dev-mode `/_image?href=...` transform.
@@ -32,12 +32,49 @@ test('home page shows a rounded portrait photo in the intro', async ({ page }) =
 	expect(radius).toBe('9999px');
 });
 
+test('the portrait flips to the site mark on hover', async ({ page }, testInfo) => {
+	// The flip is a hover affordance and is disabled under reduced motion.
+	testInfo.skip(testInfo.project.name !== 'default', 'hover flip is desktop-only coverage');
+
+	await page.goto('/');
+
+	const photo = page.locator('.portrait-photo');
+	const flip = page.locator('.portrait-flip');
+	const mark = page.locator('.portrait-mark');
+
+	// The back face is the site mark, and it is deliberately not rounded: the
+	// SVG is transparent and already oval, so a circle would clip it.
+	expect(decodeURIComponent((await mark.getAttribute('src')) ?? '')).toBe('/favicon.svg');
+	expect(await mark.evaluate((el) => getComputedStyle(el).borderRadius)).toBe('0px');
+
+	// At rest the box is untransformed, so the photo is the visible face.
+	expect(await flip.evaluate((el) => getComputedStyle(el).transform)).toBe('none');
+
+	await photo.hover();
+
+	// A 3D rotation resolves to a matrix3d, which only appears once the flip
+	// has actually started.
+	await expect
+		.poll(() => flip.evaluate((el) => getComputedStyle(el).transform))
+		.toMatch(/^matrix3d/);
+
+	// Leaving the portrait turns it back to the photo.
+	await page.mouse.move(0, 0);
+	await expect
+		.poll(() => flip.evaluate((el) => getComputedStyle(el).transform))
+		.toBe('none');
+});
+
 test('philosophy does not live on the home page any more', async ({ page }) => {
 	await page.goto('/');
 
-	await expect(page.locator('.philosophy')).toHaveCount(0);
-	await expect(page.locator('#portrait')).toHaveCount(0);
-	await expect(page.getByText('The goofier the project, the better.')).toHaveCount(0);
+	// Scoped to the home panel: on mobile the pager prefetches the other
+	// destinations into their own panels, so their markup is in the DOM.
+	const home = page.locator('[data-panel="home"]');
+
+	await expect(home.locator('.philosophy')).toHaveCount(0);
+	await expect(home.locator('#portrait')).toHaveCount(0);
+	await expect(home.getByText('The goofier the project, the better.')).toHaveCount(0);
 });
 
 test('home page links out to every social profile', async ({ page }) => {

@@ -17,6 +17,7 @@ import {
 	Globe,
 	Wrench,
 	BookOpen,
+	FileText,
 	Github,
 	Linkedin,
 	ExternalLink,
@@ -86,6 +87,24 @@ const links = [
 				)
 			}
 			{
+				/*
+				 * A project with a write-up keeps its menu on the title, and the
+				 * write-up is offered inside that menu as "Project Description".
+				 * This icon is the direct route to it, mirroring the achievements
+				 * cards.
+				 */
+				project.detail && (
+					<a
+						class="card-action inline-flex size-4.5 items-center justify-center rounded-[3px] text-[#8a8a8a] no-underline hover:bg-[#3d3846] hover:text-[#deddda] focus-visible:outline focus-visible:outline-[#26a269] focus-visible:outline-offset-1"
+						href={project.detail}
+						aria-label={`${project.name} Project Description`}
+						title="Project Description"
+					>
+						<FileText size={12} strokeWidth={1.5} aria-hidden="true" />
+					</a>
+				)
+			}
+			{
 				links.map((link) => {
 					const LinkIcon = link.icon;
 					return (
@@ -150,6 +169,13 @@ const links = [
 </li>
 
 <style>
+	.card-actions {
+		/* The title's overlay covers the whole tile, so the bar's controls have
+		   to sit above it to stay clickable. */
+		position: relative;
+		z-index: 1;
+	}
+
 	.card-status {
 		display: inline-flex;
 		align-items: center;

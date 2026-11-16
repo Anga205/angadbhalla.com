@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
+import Pager from '../components/Pager.astro';
 import ProjectCards from '../components/ProjectCards.astro';
 import { PROJECTS } from '../data/projects';
 import { collectionPageSchema, softwareSourceCodeSchema, type JsonLd } from '../lib/seo';
@@ -31,5 +32,7 @@ const schema: JsonLd[] = [
 
 <Base title="Angad Bhalla — Projects" {description} path="/projects" {schema}>
 	<PortfolioMenu minimized />
-	<ProjectCards />
+	<Pager active="projects">
+		<ProjectCards />
+	</Pager>
 </Base>

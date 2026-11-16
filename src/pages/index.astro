@@ -2,6 +2,7 @@
 import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
+import Pager from '../components/Pager.astro';
 import Window from '../components/Window.astro';
 import { Mail, Github, Linkedin, Instagram, Send } from 'lucide-astro';
 import Discord from '../components/icons/Discord.astro';
@@ -37,11 +38,11 @@ const schema: JsonLd[] = [
 >
 	<PortfolioMenu minimized />
 
-	<main
-		id="main"
-		class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
-	>
-		<Window title="anga@portfolio — home">
+	<Pager active="home">
+		<div
+			class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+		>
+			<Window title="anga@portfolio — home">
 			<div class="intro mb-8 border-b border-line pb-8">
 				<p class="intro-prompt text-[0.75rem] text-[#26a269]">$ cat home.txt</p>
 				<h1 class="intro-heading mb-2 text-[1.35rem] font-normal">Angad Bhalla</h1>
@@ -58,26 +59,52 @@ const schema: JsonLd[] = [
 				</div>
 
 				{/*
-				 * Portrait photo, fully rounded.
+				 * Portrait photo, fully rounded, with a coin-flip on hover.
 				 *
-				 * The LQIP is painted as the background so the circle is filled
-				 * the moment the box exists; the real AVIF fades in over it once
-				 * decoded. `quality` is raised from Astro's default of 50, which
-				 * visibly smeared the face.
+				 * Two faces sit back to back inside a `preserve-3d` box: the
+				 * photo on the front, the site mark on the back. Hovering the
+				 * outer `.portrait-photo` (which never rotates, so the pointer
+				 * cannot fall off an edge-on element mid-flip) turns the box
+				 * 180deg around Y and the back face comes into view.
+				 *
+				 * The LQIP is painted as the background of the front face so the
+				 * circle is filled the moment the box exists; the real AVIF fades
+				 * in over it once decoded. `quality` is raised from Astro's
+				 * default of 50, which visibly smeared the face.
 				 */}
 				<div class="portrait-photo" style={`--lqip: url(${PORTRAIT_LQIP})`}>
-					<Image
-						src={portrait}
-						alt="Angad Bhalla, a software engineer in Bengaluru, smiling in a black beanie and glasses."
-						widths={[128, 256, 512]}
-						sizes="(max-width: 899px) 6rem, 16rem"
-						format="avif"
-						quality={PORTRAIT_QUALITY}
-						loading="eager"
-						fetchpriority="high"
-						decoding="async"
-						class="portrait-img"
-					/>
+					<div class="portrait-flip">
+						<div class="portrait-face portrait-face--front">
+							<Image
+								src={portrait}
+								alt="Angad Bhalla, a software engineer in Bengaluru, smiling in a black beanie and glasses."
+								widths={[128, 256, 512]}
+								sizes="(max-width: 899px) 6rem, 16rem"
+								format="avif"
+								quality={PORTRAIT_QUALITY}
+								loading="eager"
+								fetchpriority="high"
+								decoding="async"
+								class="portrait-img"
+							/>
+						</div>
+						{/*
+						 * Decorative: the mark repeats the identity the alt text
+						 * already carries, so it is hidden from assistive tech.
+						 * The SVG is transparent and already oval, so it gets no
+						 * border radius and no border of its own.
+						 */}
+						<div class="portrait-face portrait-face--back" aria-hidden="true">
+							<img
+								src="/favicon.svg"
+								alt=""
+								width="955"
+								height="927"
+								decoding="async"
+								class="portrait-mark"
+							/>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -121,10 +148,9 @@ const schema: JsonLd[] = [
 					</form>
 				</section>
 			</div>
-
-			<div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
-		</Window>
-	</main>
+			</Window>
+		</div>
+	</Pager>
 </Base>
 
 <style>
@@ -158,12 +184,48 @@ const schema: JsonLd[] = [
 		display: grid;
 		align-items: start;
 		justify-items: center;
+		position: relative;
+		/* Depth for the flip. Without it the rotation reads as a flat squash. */
+		perspective: 900px;
 	}
 
-	.portrait-photo img {
-		display: block;
+	/*
+	 * The flipping box. It is the only element that rotates, and it is sized
+	 * here rather than on the faces so both faces share one square.
+	 */
+	.portrait-flip {
+		position: relative;
 		width: 100%;
 		max-width: 16rem;
+		aspect-ratio: 1;
+		transform-style: preserve-3d;
+		transition: transform 600ms cubic-bezier(0.45, 0, 0.55, 1);
+	}
+
+	.portrait-photo:hover .portrait-flip {
+		transform: rotateY(180deg);
+	}
+
+	/*
+	 * Both faces are stacked in the same box and hidden when they turn away.
+	 * `transform-style` stays flat on the faces themselves so their contents
+	 * are hidden along with them.
+	 */
+	.portrait-face {
+		position: absolute;
+		inset: 0;
+		backface-visibility: hidden;
+		-webkit-backface-visibility: hidden;
+	}
+
+	.portrait-face--back {
+		transform: rotateY(180deg);
+	}
+
+	.portrait-img {
+		display: block;
+		width: 100%;
+		height: 100%;
 		aspect-ratio: 1;
 		border-radius: 9999px;
 		border: 1px solid #3d3846;
@@ -171,21 +233,27 @@ const schema: JsonLd[] = [
 	}
 
 	/*
-	 * Blur-up: the 24x24 LQIP is painted as the background of the circle, so
-	 * the portrait is never an empty box. The real image fades in over it once
-	 * it has decoded, which keeps the sharp version from popping in abruptly.
+	 * The mark is transparent and already oval, so it is deliberately not
+	 * rounded and carries no border — a circle would clip its edges.
 	 */
-	.portrait-photo {
-		position: relative;
+	.portrait-mark {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
 	}
 
-	.portrait-photo::before {
+	/*
+	 * Blur-up: the 24x24 LQIP is painted as the background of the front face,
+	 * so the portrait is never an empty box. The real image fades in over it
+	 * once it has decoded, which keeps the sharp version from popping in
+	 * abruptly. It lives on the face, not the outer box, so it flips away with
+	 * the photo instead of showing through the transparent mark.
+	 */
+	.portrait-face--front::before {
 		content: '';
 		position: absolute;
 		inset: 0;
-		width: 100%;
-		max-width: 16rem;
-		aspect-ratio: 1;
 		border-radius: 9999px;
 		background-image: var(--lqip);
 		background-size: cover;
@@ -194,7 +262,7 @@ const schema: JsonLd[] = [
 		transition: opacity 300ms ease-out;
 	}
 
-	:global(html.js) .portrait-photo:has(.portrait-img.is-loaded)::before {
+	:global(html.js) .portrait-face--front:has(.portrait-img.is-loaded)::before {
 		opacity: 0;
 	}
 
@@ -212,9 +280,18 @@ const schema: JsonLd[] = [
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.portrait-photo::before,
+		.portrait-face--front::before,
 		.portrait-img {
 			transition: none;
+		}
+
+		/* No flip at all: the photo simply stays put. */
+		.portrait-flip {
+			transition: none;
+		}
+
+		.portrait-photo:hover .portrait-flip {
+			transform: none;
 		}
 	}
 
@@ -403,73 +480,6 @@ const schema: JsonLd[] = [
 		outline-offset: 2px;
 	}
 
-	/*
-	 * Toasts stack in the bottom-right corner. On phones the fixed navigation
-	 * rail owns the bottom of the screen, so the stack is lifted above it.
-	 */
-	.toasts {
-		position: fixed;
-		right: 1rem;
-		bottom: 1rem;
-		z-index: 30;
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.4rem;
-		pointer-events: none;
-	}
-
-	.toast {
-		max-width: min(22rem, calc(100vw - 2rem));
-		padding: 0.5rem 0.7rem;
-		border: 1px solid #3d3846;
-		border-radius: 4px;
-		background: #1c1c1c;
-		box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
-		color: #deddda;
-		font-size: 0.75rem;
-		line-height: 1.5;
-		pointer-events: auto;
-		cursor: pointer;
-		animation: toast-in 140ms ease-out;
-	}
-
-	.toast[data-kind='ok'] {
-		border-color: #2f5c3f;
-		color: #26a269;
-	}
-
-	.toast[data-kind='error'] {
-		border-color: #6b2b2b;
-		color: #ff7b72;
-	}
-
-	.toast.is-leaving {
-		opacity: 0;
-		transition: opacity 160ms ease-in;
-	}
-
-	@keyframes toast-in {
-		from {
-			opacity: 0;
-			transform: translateY(0.35rem);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.toast {
-			animation: none;
-		}
-
-		.toast.is-leaving {
-			transition: none;
-		}
-	}
-
 	@media (max-width: 899px) {
 		.contact-grid {
 			grid-template-columns: minmax(0, 1fr);
@@ -499,19 +509,6 @@ const schema: JsonLd[] = [
 		}
 	}
 
-	@media (max-width: 639px) {
-		.toasts {
-			right: 0.75rem;
-			bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
-			left: 0.75rem;
-			align-items: stretch;
-		}
-
-		.toast {
-			max-width: none;
-		}
-	}
-
 	@media (max-width: 899px) {
 		.intro {
 			grid-template-columns: minmax(0, 1fr) auto;
@@ -528,7 +525,7 @@ const schema: JsonLd[] = [
 			margin-bottom: 0.5rem;
 		}
 
-		.portrait-photo img {
+		.portrait-flip {
 			width: 6rem;
 			max-width: 6rem;
 		}
@@ -536,128 +533,7 @@ const schema: JsonLd[] = [
 </style>
 
 <script>
-	/*
-	 * Blur-up for the portrait.
-	 *
-	 * `html.js` is set first so the fade-in styles only apply when this script
-	 * is actually running; without it the image is visible immediately. The
-	 * class is added on load, or straight away if the image was already cached.
-	 */
-	document.documentElement.classList.add('js');
+	import { initHome } from '../scripts/home';
 
-	const portraitImage = document.querySelector<HTMLImageElement>('.portrait-img');
-	if (portraitImage) {
-		const reveal = () => portraitImage.classList.add('is-loaded');
-		if (portraitImage.complete && portraitImage.naturalWidth > 0) reveal();
-		else portraitImage.addEventListener('load', reveal, { once: true });
-		// Never leave the image hidden if decoding fails.
-		portraitImage.addEventListener('error', reveal, { once: true });
-	}
-</script>
-
-<script>
-	// Age is computed on the client so it stays correct without a rebuild.
-	const ageElement = document.getElementById('age');
-	if (ageElement) {
-		const birthday = new Date(1117650600 * 1000);
-		const now = new Date();
-		let age = now.getUTCFullYear() - birthday.getUTCFullYear();
-		const monthDelta = now.getUTCMonth() - birthday.getUTCMonth();
-		if (monthDelta < 0 || (monthDelta === 0 && now.getUTCDate() < birthday.getUTCDate())) {
-			age -= 1;
-		}
-		ageElement.textContent = String(age);
-	}
-
-	// `/contact` redirects to `/#contact`. The page scrolls inside `main`, not
-	// the document, so the browser's own anchor jump never moves anything and
-	// the form has to be brought into view by hand.
-	if (window.location.hash === '#contact') {
-		document.getElementById('contact')?.scrollIntoView({ block: 'start' });
-	}
-</script>
-
-<script>
-	import emailjs from '@emailjs/browser';
-	import {
-		EMAILJS_APP,
-		EMAILJS_PUBLIC_KEY,
-		EMAILJS_SERVICE_ID,
-		EMAILJS_TEMPLATE_ID,
-	} from '../data/emailjs';
-
-	const form = document.getElementById('contact-form') as HTMLFormElement | null;
-	const send = document.getElementById('send') as HTMLButtonElement | null;
-	const toasts = document.getElementById('toasts');
-
-	/** How long a toast stays on screen before it fades out. */
-	const TOAST_LIFETIME = 4000;
-	/** Keep the stack short so it never covers the form it is reporting on. */
-	const TOAST_LIMIT = 3;
-
-	type ToastKind = 'ok' | 'error' | 'info';
-
-	function dismiss(toast: HTMLElement) {
-		toast.classList.add('is-leaving');
-		toast.addEventListener('transitionend', () => toast.remove(), { once: true });
-		// Reduced motion skips the transition, so remove on a timer as well.
-		window.setTimeout(() => toast.remove(), 400);
-	}
-
-	function showToast(kind: ToastKind, text: string) {
-		if (!toasts) return;
-
-		const toast = document.createElement('p');
-		toast.className = 'toast';
-		toast.dataset.kind = kind;
-		toast.textContent = text;
-		toast.addEventListener('click', () => dismiss(toast));
-
-		toasts.append(toast);
-
-		// Drop the oldest toasts once the stack is full.
-		while (toasts.children.length > TOAST_LIMIT) {
-			toasts.firstElementChild?.remove();
-		}
-
-		window.setTimeout(() => dismiss(toast), TOAST_LIFETIME);
-	}
-
-	if (form && send) {
-		form.addEventListener('submit', async (event) => {
-			event.preventDefault();
-
-			const data = new FormData(form);
-			const email = String(data.get('email') ?? '').trim();
-			const message = String(data.get('message') ?? '').trim();
-
-			if (!email || !message) {
-				showToast('error', 'email and message are required.');
-				return;
-			}
-
-			send.disabled = true;
-			showToast('info', 'sending...');
-
-			try {
-				await emailjs.send(
-					EMAILJS_SERVICE_ID,
-					EMAILJS_TEMPLATE_ID,
-					{
-						time: new Date().toLocaleString(),
-						app: EMAILJS_APP,
-						message,
-						contact: email,
-					},
-					{ publicKey: EMAILJS_PUBLIC_KEY },
-				);
-				form.reset();
-				showToast('ok', 'sent. thanks.');
-			} catch {
-				showToast('error', 'could not send. email me directly instead.');
-			} finally {
-				send.disabled = false;
-			}
-		});
-	}
+	initHome(document);
 </script>

@@ -344,7 +344,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 		medal: 'silver',
 		date: 'October 2025',
 		year: '2025',
-		summary: '24 hours, one idea, something that runs.',
+		summary: '24 hour Halloween-themed hackathon hosted by the Department of AI/ML.',
 		description:
 			'A Halloween-themed 24-hour hackathon. We built a GraphRAG-based cybersecurity tool that discovers connections between log entries produced by different monitoring tools.',
 		tags: [
@@ -644,7 +644,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 		result: 'speaker',
 		date: 'August 25, 2017',
 		year: '2017',
-		summary: 'a talk on quantum physics at TEDxSNSCE.',
+		summary: 'I gave a talk on quantum physics at TEDxSNSCE.',
 		description:
 			'"Magic of Quantum Physics", a TEDx talk delivered at TEDxSNSCE in 2017.',
 		tags: ['tedx', 'speaker', 'talk', 'community', 'quantum-physics', 'physics'],

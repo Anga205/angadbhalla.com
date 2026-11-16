@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
+import Pager from '../components/Pager.astro';
 import Window from '../components/Window.astro';
 import { creativeWorkSchema, type JsonLd } from '../lib/seo';
 
@@ -27,11 +28,11 @@ const schema: JsonLd[] = [
 >
 	<PortfolioMenu minimized />
 
-	<main
-		id="main"
-		class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
-	>
-		<Window title="anga@portfolio — philosophy">
+	<Pager active="philosophy">
+		<div
+			class="page ml-72 h-screen overflow-y-auto bg-[#171717] p-8 max-[639px]:ml-0 max-[639px]:px-4 max-[639px]:pt-4 max-[639px]:pb-24"
+		>
+			<Window title="anga@portfolio — philosophy">
 				<section class="philosophy">
 					<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ cat philosophy.txt</p>
 
@@ -94,9 +95,10 @@ const schema: JsonLd[] = [
 							<p class="portrait-fallback" id="portrait-fallback">loading model…</p>
 						</div>
 					</div>
-				</section>
-		</Window>
-	</main>
+					</section>
+			</Window>
+		</div>
+	</Pager>
 </Base>
 
 <style>
@@ -174,273 +176,7 @@ const schema: JsonLd[] = [
 </style>
 
 <script>
-	// The model is loaded only when the portrait scrolls into view, so the
-	// page stays cheap until someone actually looks at it.
-	const portrait = document.getElementById('portrait');
-	const host = document.getElementById('portrait-canvas');
+	import { initPortraitModel } from '../scripts/philosophy-model';
 
-	if (portrait && host) {
-		const portraitElement = portrait;
-		const hostElement = host;
-		const modelUrl = portraitElement.dataset.model ?? '/anga.glb';
-
-		const observer = new IntersectionObserver(
-			(entries) => {
-				if (!entries.some((entry) => entry.isIntersecting)) return;
-				observer.disconnect();
-				load().catch(() => {
-					// Keep the fallback text if the model cannot be loaded.
-				});
-			},
-			{ rootMargin: '200px' },
-		);
-
-		async function load() {
-			const THREE = await import('three');
-			const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
-			const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls.js');
-			const { MeshoptDecoder } = await import(
-				'three/examples/jsm/libs/meshopt_decoder.module.js'
-			);
-
-			const scene = new THREE.Scene();
-			const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
-			const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-
-			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-			renderer.setClearColor(0x000000, 0);
-			hostElement.append(renderer.domElement);
-
-			const controls = new OrbitControls(camera, renderer.domElement);
-			controls.enableDamping = true;
-			controls.dampingFactor = 0.16;
-			const baseRotateSpeed = 0.6;
-			controls.rotateSpeed = baseRotateSpeed;
-			controls.enablePan = false;
-			controls.enableZoom = false;
-
-			scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2.2));
-			const key = new THREE.DirectionalLight(0xffffff, 2);
-			key.position.set(2, 4, 3);
-			scene.add(key);
-
-			// The model is compressed with EXT_meshopt_compression, so the
-			// decoder has to be registered before parsing.
-			const loader = new GLTFLoader();
-			loader.setMeshoptDecoder(MeshoptDecoder);
-
-			const gltf = await loader.loadAsync(modelUrl);
-			const model = gltf.scene;
-
-			// Ground the model: horizontally centred on the origin, lowest
-			// point resting on Y = 0. The authored scale is left untouched.
-			const box = new THREE.Box3().setFromObject(model);
-			const size = box.getSize(new THREE.Vector3());
-			const center = box.getCenter(new THREE.Vector3());
-			model.position.x -= center.x;
-			model.position.z -= center.z;
-			model.position.y -= box.min.y;
-
-			scene.add(model);
-
-			// Fixed viewing direction: diagonally towards the model's centre
-			// from its positive-X, negative-Z side. The distance is recomputed
-			// on every resize so the model fills the available height instead
-			// of sitting in a fixed-size box.
-			const target = new THREE.Vector3(0, size.y / 2, 0);
-			controls.target.copy(target);
-
-			const viewDirection = new THREE.Vector3(1.1, 0.05, -0.6).normalize();
-			const initialAzimuth = Math.atan2(viewDirection.x, viewDirection.z);
-			const initialPolar = Math.acos(viewDirection.y);
-			let initialPosition = new THREE.Vector3();
-
-			// Seed the camera along the intended direction so the first
-			// framing pass has a valid direction to preserve.
-			camera.position.copy(target).addScaledVector(viewDirection, 1);
-
-			const fitDistance = () => {
-				const heightPx = hostElement.clientHeight;
-				if (!heightPx) return 1;
-
-				// Frame by height, then back off so the figure occupies about
-				// two thirds of the column height and sits centred in it.
-				const verticalFov = THREE.MathUtils.degToRad(camera.fov);
-				const padding = 1.56;
-				return ((size.y / 2) * padding) / Math.tan(verticalFov / 2);
-			};
-
-			// Pull the camera back along its current direction so the model
-			// always fills the box, without resetting the user's rotation.
-			const applyFraming = () => {
-				const distance = fitDistance();
-				const direction = camera.position.clone().sub(target);
-				if (direction.lengthSq() < 1e-6) direction.copy(viewDirection);
-				direction.normalize();
-				camera.position.copy(target).addScaledVector(direction, distance);
-				initialPosition = camera.position.clone();
-				controls.update();
-				controls.saveState();
-			};
-
-			controls.minPolarAngle = initialPolar;
-			controls.maxPolarAngle = initialPolar;
-			const horizontalLimit = THREE.MathUtils.degToRad(82);
-			controls.minAzimuthAngle = initialAzimuth - horizontalLimit;
-			controls.maxAzimuthAngle = initialAzimuth + horizontalLimit;
-			const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-			const resetResistance = () => {
-				controls.rotateSpeed = baseRotateSpeed;
-			};
-
-			const applyResistance = () => {
-				const distance = Math.abs(controls.getAzimuthalAngle() - initialAzimuth);
-				const progress = Math.min(distance / horizontalLimit, 1);
-				controls.rotateSpeed = baseRotateSpeed * Math.exp(-8 * progress * progress);
-			};
-
-			renderer.domElement.addEventListener('pointerdown', resetResistance, { capture: true });
-			renderer.domElement.addEventListener('pointermove', applyResistance, { capture: true });
-			renderer.domElement.addEventListener('pointerup', resetResistance, { capture: true });
-			renderer.domElement.addEventListener('pointercancel', resetResistance, { capture: true });
-
-			let snapFrame = 0;
-			let snapTimeout = 0;
-
-			const cancelSnap = () => {
-				window.clearTimeout(snapTimeout);
-				window.cancelAnimationFrame(snapFrame);
-				snapFrame = 0;
-			};
-
-			const snapBack = () => {
-				const snapStart = camera.position.clone();
-				const startOffset = snapStart.sub(target);
-				const startAzimuth = Math.atan2(startOffset.x, startOffset.z);
-				let azimuthDelta = initialAzimuth - startAzimuth;
-				if (azimuthDelta > Math.PI) azimuthDelta -= Math.PI * 2;
-				if (azimuthDelta < -Math.PI) azimuthDelta += Math.PI * 2;
-
-				const horizontalRadius = Math.hypot(startOffset.x, startOffset.z);
-				const verticalOffset = initialPosition.y - target.y;
-				const startedAt = performance.now();
-				const duration = reduced ? 0 : 420;
-				controls.enableDamping = false;
-
-				const frame = (now: number) => {
-					const progress = Math.min((now - startedAt) / duration, 1);
-					const eased = 1 - Math.pow(1 - progress, 3);
-					const azimuth = startAzimuth + azimuthDelta * eased;
-					camera.position.set(
-						target.x + Math.sin(azimuth) * horizontalRadius,
-						target.y + verticalOffset,
-						target.z + Math.cos(azimuth) * horizontalRadius,
-					);
-					controls.update();
-					renderer.render(scene, camera);
-
-					if (progress < 1) {
-						snapFrame = window.requestAnimationFrame(frame);
-						return;
-					}
-
-					camera.position.copy(initialPosition);
-					controls.update();
-					controls.enableDamping = !reduced;
-					snapFrame = 0;
-				};
-
-				snapFrame = window.requestAnimationFrame(frame);
-			};
-
-			controls.addEventListener('start', cancelSnap);
-			controls.addEventListener('end', () => {
-				window.clearTimeout(snapTimeout);
-				snapTimeout = window.setTimeout(snapBack, 140);
-			});
-
-			function resize() {
-				const width = hostElement.clientWidth;
-				const heightPx = hostElement.clientHeight;
-				if (!width || !heightPx) return;
-				renderer.setSize(width, heightPx);
-				camera.aspect = width / heightPx;
-				camera.updateProjectionMatrix();
-				applyFraming();
-				renderer.render(scene, camera);
-			}
-
-			resize();
-			new ResizeObserver(resize).observe(hostElement);
-
-			// Only reveal the canvas once it has been sized and drawn, so the
-			// first visible frame is already correctly framed.
-			portraitElement.classList.add('is-ready');
-
-			if (reduced) {
-				// No inertia: redraw only when the user actually moves the camera.
-				controls.enableDamping = false;
-				controls.addEventListener('change', () => renderer.render(scene, camera));
-				renderer.render(scene, camera);
-			} else {
-				/*
-				 * The idle loop is a continuous repaint, which is wasteful when
-				 * nobody is looking at it. Two things stop it: the tab losing
-				 * visibility, and the portrait scrolling out of view. Both are
-				 * tracked independently, and the loop only runs when neither is
-				 * true.
-				 */
-				let running = false;
-				let frameHandle = 0;
-				let visible = !document.hidden;
-				let onScreen = true;
-
-				const frame = () => {
-					controls.update();
-					renderer.render(scene, camera);
-					frameHandle = window.requestAnimationFrame(frame);
-				};
-
-				const sync = () => {
-					const shouldRun = visible && onScreen;
-					if (shouldRun === running) return;
-					running = shouldRun;
-
-					if (shouldRun) {
-						frameHandle = window.requestAnimationFrame(frame);
-					} else {
-						window.cancelAnimationFrame(frameHandle);
-						frameHandle = 0;
-					}
-				};
-
-				document.addEventListener('visibilitychange', () => {
-					visible = !document.hidden;
-					sync();
-				});
-
-				// A second observer, separate from the lazy-load one, so the
-				// loop can pause and resume as the portrait leaves and re-enters
-				// the viewport.
-				new IntersectionObserver(
-					(entries) => {
-						onScreen = entries.some((entry) => entry.isIntersecting);
-						sync();
-					},
-					{ rootMargin: '100px' },
-				).observe(portraitElement);
-
-				// Release the GPU context when the page is torn down.
-				window.addEventListener('pagehide', () => {
-					window.cancelAnimationFrame(frameHandle);
-					renderer.dispose();
-				});
-
-				sync();
-			}
-		}
-
-		observer.observe(portraitElement);
-	}
+	initPortraitModel(document);
 </script>

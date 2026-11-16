@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import PortfolioMenu from '../components/PortfolioMenu.astro';
+import Pager from '../components/Pager.astro';
 import AchievementCards from '../components/AchievementCards.astro';
 import { ACHIEVEMENT_INDEX, hasDetailPage } from '../data/achievements';
 import { collectionPageSchema, type JsonLd } from '../lib/seo';
@@ -25,5 +26,7 @@ const schema: JsonLd[] = [
 
 <Base title="Angad Bhalla — Achievements" {description} path="/achievements" {schema}>
 	<PortfolioMenu minimized />
-	<AchievementCards />
+	<Pager active="achievements">
+		<AchievementCards />
+	</Pager>
 </Base>
