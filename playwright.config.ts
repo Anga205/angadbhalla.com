@@ -32,6 +32,15 @@ export default defineConfig({
 			name: 'mobile',
 			use: { ...devices['Pixel 5'] },
 		},
+		{
+			// Firefox renders 3D transforms differently from Chromium, and the
+			// portrait flip depends on that difference (see
+			// tests/portrait-flip.spec.ts). Only the specs that care about it
+			// run here, so the suite does not double in size.
+			name: 'firefox',
+			use: { ...devices['Desktop Firefox'] },
+			testMatch: /portrait-flip\.spec\.ts/,
+		},
 	],
 	webServer: {
 		command: 'bun run dev',

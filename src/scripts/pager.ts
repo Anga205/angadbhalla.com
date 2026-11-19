@@ -8,6 +8,8 @@
  * - the panel for the current route is aligned on load, without animating;
  * - the other panels are fetched and injected on demand, so the first paint
  *   stays as cheap as a single page;
+ * - the bottom rail tracks the swipe continuously: its indicator slides with
+ *   the finger and each icon's brightness follows how close its panel is;
  * - the URL follows the panel the pager settles on, and back/forward move the
  *   pager back to the matching panel;
  * - the bottom rail scrolls the pager instead of reloading the page.
@@ -43,6 +45,28 @@ export function initPager(): void {
 	// Set while the pager is being scrolled on purpose, so the snap handler
 	// does not mistake a programmatic scroll for a user swipe.
 	let suppressSettle = false;
+	// The index the current history entry represents. A gesture rewrites that
+	// entry's URL as it crosses midpoints (`replaceState`) and only pushes a
+	// new entry once it settles, so a swipe adds exactly one entry — and a
+	// swipe dragged back to where it began adds none.
+	let historyIndex = activeIndex;
+	// Where the gesture in progress started, or null when no gesture is live.
+	let gestureOrigin: number | null = null;
+	// True between pointerdown and pointerup. A finger held still mid-drag
+	// must not be mistaken for a finished swipe, so settling waits for it.
+	let pointerActive = false;
+	let progressFrame = 0;
+
+	// The rail is optional: pages without the menu still get a working pager.
+	const rail = document.getElementById('wayfinder');
+	const railLinks = Array.from(
+		document.querySelectorAll<HTMLElement>('[data-destination-link]'),
+	);
+	const linkIndex = new Map<HTMLElement, number>();
+	for (const link of railLinks) {
+		const index = panels.findIndex((panel) => panel.dataset.panel === link.dataset.destination);
+		if (index >= 0) linkIndex.set(link, index);
+	}
 
 	// The server-rendered panel is already initialised by the page's own script.
 	const initialId = panels[activeIndex]?.dataset.panel;
@@ -68,6 +92,7 @@ export function initPager(): void {
 		if (instant) {
 			pager.scrollLeft = target;
 			suppressSettle = false;
+			syncProgress();
 			return;
 		}
 
@@ -91,6 +116,7 @@ export function initPager(): void {
 			pager.style.scrollSnapType = '';
 			tweenFrame = 0;
 			suppressSettle = false;
+			syncProgress();
 		};
 
 		const step = (now: number) => {
@@ -193,9 +219,53 @@ export function initPager(): void {
 		}
 	};
 
-	const setActive = (index: number, options: { push?: boolean; scroll?: boolean } = {}) => {
+	/**
+	 * Paint the rail from the pager's current offset.
+	 *
+	 * `--pager-progress` is the fractional panel index (1.5 is halfway between
+	 * the second and third panels), which the sliding bar uses directly.
+	 * `--proximity` is per link: 1 when its panel fills the viewport, falling
+	 * linearly to 0 one panel away, so a half-swipe leaves both neighbours at
+	 * 50% brightness.
+	 *
+	 * Runs on every scroll frame, including programmatic tweens, so the rail
+	 * follows the finger rather than snapping once the swipe settles.
+	 */
+	const syncProgress = () => {
+		progressFrame = 0;
+		if (!enabled) return;
+
+		const width = pager.clientWidth;
+		const max = panels.length - 1;
+		const progress = width ? Math.min(Math.max(pager.scrollLeft / width, 0), max) : activeIndex;
+
+		rail?.style.setProperty('--pager-progress', progress.toFixed(4));
+
+		// The proximity colours only apply mid-swipe. At rest the rail keeps
+		// its exact palette colours, so the current item is the plain accent
+		// green rather than a colour-mix of it.
+		const swiping = Math.abs(progress - Math.round(progress)) > 0.001;
+		rail?.classList.toggle('is-swiping', swiping);
+
+		for (const [link, index] of linkIndex) {
+			const proximity = Math.min(Math.max(1 - Math.abs(progress - index), 0), 1);
+			link.style.setProperty('--proximity', proximity.toFixed(3));
+		}
+	};
+
+	const scheduleProgress = () => {
+		if (progressFrame) return;
+		progressFrame = window.requestAnimationFrame(syncProgress);
+	};
+
+	/**
+	 * Apply the state that belongs to a panel: which one is active, which
+	 * panels are inert, and which rail link is current. History and scrolling
+	 * are the caller's business, because a swipe commits mid-gesture but only
+	 * settles once the finger is gone.
+	 */
+	const commit = (index: number) => {
 		const next = Math.min(Math.max(index, 0), panels.length - 1);
-		const changed = next !== activeIndex;
 		activeIndex = next;
 
 		const id = panels[next].dataset.panel ?? '';
@@ -208,18 +278,28 @@ export function initPager(): void {
 			else panel.setAttribute('inert', '');
 		});
 
-		for (const link of document.querySelectorAll<HTMLElement>('[data-destination-link]')) {
+		for (const link of railLinks) {
 			if (link.dataset.destination === id) link.setAttribute('aria-current', 'page');
 			else link.removeAttribute('aria-current');
 		}
+
+		void ensureLoaded(next);
+	};
+
+	const setActive = (index: number, options: { push?: boolean; scroll?: boolean } = {}) => {
+		const next = Math.min(Math.max(index, 0), panels.length - 1);
+		const changed = next !== activeIndex;
+		commit(next);
 
 		if (options.scroll) scrollToIndex(next);
 
 		if (options.push && changed) {
 			history.pushState({ pager: next }, '', panels[next].dataset.href ?? '/');
+			historyIndex = next;
+			gestureOrigin = null;
 		}
 
-		void ensureLoaded(next);
+		scheduleProgress();
 	};
 
 	const prefetch = () => {
@@ -260,6 +340,7 @@ export function initPager(): void {
 		requestAnimationFrame(() => {
 			suppressSettle = true;
 			pager.scrollLeft = activeIndex * pager.clientWidth;
+			syncProgress();
 			window.setTimeout(() => {
 				suppressSettle = false;
 			}, 0);
@@ -274,6 +355,13 @@ export function initPager(): void {
 
 		history.scrollRestoration = 'auto';
 		pager.scrollLeft = 0;
+		gestureOrigin = null;
+		historyIndex = activeIndex;
+
+		// The rail's indicator and brightness are mobile-only, so hand the
+		// sidebar back to its static desktop styling.
+		rail?.style.removeProperty('--pager-progress');
+		for (const link of railLinks) link.style.removeProperty('--proximity');
 
 		// Desktop shows one page at a time, so drop anything the pager injected.
 		panels.forEach((panel, index) => {
@@ -286,14 +374,38 @@ export function initPager(): void {
 		});
 	};
 
+	/**
+	 * Reconcile the pager with where it came to rest.
+	 *
+	 * Mid-swipe the URL is rewritten in place (`replaceState`) so it tracks the
+	 * midpoint without adding entries. Settling is what turns the gesture into
+	 * a real navigation: one entry is pushed for the panel the pager landed on,
+	 * and a swipe that was dragged back to where it began pushes nothing.
+	 */
 	const settle = () => {
-		if (!enabled || suppressSettle) return;
+		if (!enabled || suppressSettle || pointerActive) return;
 		const width = pager.clientWidth;
 		if (!width) return;
 
-		const index = Math.round(pager.scrollLeft / width);
-		if (index === activeIndex) return;
-		setActive(index, { push: true });
+		const index = Math.min(Math.max(Math.round(pager.scrollLeft / width), 0), panels.length - 1);
+		if (index !== activeIndex) commit(index);
+
+		const href = panels[index].dataset.href ?? '/';
+
+		if (gestureOrigin !== null) {
+			// Mid-swipe the current entry's URL was rewritten to follow the
+			// midpoint. Put the entry the gesture started from back, then push
+			// the panel it landed on, so back returns to where the swipe began.
+			const originHref = panels[gestureOrigin].dataset.href ?? '/';
+			history.replaceState({ pager: gestureOrigin }, '', originHref);
+			if (index !== gestureOrigin) history.pushState({ pager: index }, '', href);
+			gestureOrigin = null;
+		} else if (index !== historyIndex) {
+			history.replaceState({ pager: index }, '', href);
+		}
+
+		historyIndex = index;
+		scheduleProgress();
 	};
 
 	// The rail is the primary way to change page, so it scrolls the pager
@@ -316,18 +428,75 @@ export function initPager(): void {
 	pager.addEventListener(
 		'pointerdown',
 		() => {
-			if (!tweenFrame) return;
-			window.cancelAnimationFrame(tweenFrame);
-			tweenFrame = 0;
-			suppressSettle = false;
+			pointerActive = true;
+
+			if (tweenFrame) {
+				window.cancelAnimationFrame(tweenFrame);
+				tweenFrame = 0;
+				suppressSettle = false;
+			} else {
+				// A gesture that ended just before this touch may still be
+				// waiting on the settle timer. Finalise it now, or its history
+				// entry would be lost when the new gesture resets the origin.
+				window.clearTimeout(settleTimer);
+				settle();
+			}
+
+			// A new gesture starts from wherever the pager currently rests.
+			gestureOrigin = null;
 		},
 		{ passive: true },
 	);
+
+	// Releasing the finger is what ends a gesture, so the settle that turns it
+	// into a navigation runs from here rather than from a scroll pause.
+	const release = () => {
+		if (!pointerActive) return;
+		pointerActive = false;
+		window.clearTimeout(settleTimer);
+		settleTimer = window.setTimeout(settle, SETTLE_DELAY);
+	};
+
+	pager.addEventListener('pointerup', release, { passive: true });
+	pager.addEventListener('pointercancel', release, { passive: true });
+	window.addEventListener('pointerup', release, { passive: true });
+	window.addEventListener('pointercancel', release, { passive: true });
 
 	pager.addEventListener(
 		'scroll',
 		() => {
 			if (!enabled) return;
+
+			// The rail follows the finger on every frame, including the
+			// programmatic tween, so it never lags behind the panels.
+			scheduleProgress();
+
+			// A user swipe commits as soon as it crosses the midpoint, so the
+			// URL and the rail's current item change while the finger is still
+			// down rather than after the snap.
+			if (!suppressSettle) {
+				const width = pager.clientWidth;
+				if (width) {
+					const nearest = Math.min(
+						Math.max(Math.round(pager.scrollLeft / width), 0),
+						panels.length - 1,
+					);
+					if (nearest !== activeIndex) {
+						if (gestureOrigin === null) gestureOrigin = activeIndex;
+						commit(nearest);
+						// The URL tracks the midpoint immediately, but the entry
+						// is rewritten rather than added: `settle` decides whether
+						// the gesture becomes a real navigation.
+						history.replaceState(
+							{ pager: nearest },
+							'',
+							panels[nearest].dataset.href ?? '/',
+						);
+						historyIndex = nearest;
+					}
+				}
+			}
+
 			window.clearTimeout(settleTimer);
 			settleTimer = window.setTimeout(settle, SETTLE_DELAY);
 		},
@@ -347,6 +516,10 @@ export function initPager(): void {
 		if (!enabled) return;
 		const index = indexForPath(window.location.pathname);
 		if (index < 0) return;
+		// The browser has already moved through history, so the entry we are
+		// on is the one to reconcile against.
+		historyIndex = index;
+		gestureOrigin = null;
 		setActive(index, { scroll: true });
 	});
 
@@ -355,6 +528,7 @@ export function initPager(): void {
 		if (!enabled) return;
 		suppressSettle = true;
 		pager.scrollLeft = activeIndex * pager.clientWidth;
+		syncProgress();
 		window.setTimeout(() => {
 			suppressSettle = false;
 		}, 0);

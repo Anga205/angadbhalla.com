@@ -142,7 +142,9 @@ test('contact form sends the template variables and confirms with a toast', asyn
 	expect(params.app).toBe('angadbhalla.com');
 	expect(params.message).toBe('hello there');
 	expect(params.contact).toBe('someone@example.com');
-	expect(params.time).toBeTruthy();
+	// `20 Nov 2026, 3:17 am`: no slashes (EmailJS escapes them into `&#x2F;`
+	// in the subject) and no seconds.
+	expect(params.time).toMatch(/^\d{1,2} [A-Z][a-z]{2} \d{4}, \d{1,2}:\d{2} [ap]m$/);
 });
 
 test('contact form reports a failed send with a toast', async ({ page }) => {
