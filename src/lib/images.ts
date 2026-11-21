@@ -13,8 +13,23 @@
  *   q80 22.6 KB  43.6 dB   clean
  *   q90 36.4 KB  45.7 dB   no perceptible gain over q80
  */
+import type { ImageMetadata } from 'astro';
+
 export const PORTRAIT_QUALITY = 80;
 export const GALLERY_QUALITY = 65;
+
+/**
+ * One image in a gallery.
+ *
+ * `src` is an imported asset rather than a path in `public/`, so Astro can
+ * emit responsive AVIF/WebP sources with intrinsic dimensions at build time.
+ * That is what makes the gallery indexable and cheap to load.
+ */
+export interface GalleryImage {
+	src: ImageMetadata;
+	alt: string;
+	caption: string;
+}
 
 /**
  * A 24x24 WebP of the portrait, inlined as a data URI.

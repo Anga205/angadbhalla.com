@@ -36,6 +36,8 @@ interface Props {
 	detailBase?: string;
 	/** Render entries as LinkedIn-style role rows (position, org, team). */
 	roleMode?: boolean;
+	/** Keyword-rich intro paragraph rendered under the heading. */
+	intro?: string;
 }
 
 const {
@@ -46,6 +48,7 @@ const {
 	sectionId = 'achievements',
 	detailBase = '/achievements',
 	roleMode = false,
+	intro,
 } = Astro.props;
 
 const LINK_ICONS: Record<LinkIcon, typeof Linkedin> = {
@@ -76,6 +79,12 @@ const menuCards = groups
 	<Window title={windowTitle} width="wide">
 		<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">{prompt}</p>
 		<h1 class="mb-8 text-[1.35rem] font-normal">{heading}</h1>
+
+		{
+			intro && (
+				<p class="intro mb-6 max-w-[68ch] text-[#a5a3a9]">{intro}</p>
+			)
+		}
 
 		{
 			groups.map((group) => (

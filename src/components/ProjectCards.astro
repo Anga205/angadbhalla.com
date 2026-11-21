@@ -12,6 +12,13 @@ import { PROJECTS } from '../data/projects';
 import LinkMenu, { type MenuLink } from './LinkMenu.astro';
 import ProjectCard from './ProjectCard.astro';
 import Window from './Window.astro';
+
+interface Props {
+	/** Keyword-rich intro paragraph rendered under the heading. */
+	intro?: string;
+}
+
+const { intro } = Astro.props;
 ---
 
 <section
@@ -25,6 +32,16 @@ import Window from './Window.astro';
 	<Window title="anga@portfolio — projects" width="wide" clip={false}>
 		<p class="prompt mb-3 text-[0.75rem] text-[#26a269]">$ ls ~/portfolio/projects</p>
 		<h1 class="mb-8 text-[1.35rem] font-normal">projects</h1>
+
+		{
+			intro && (
+				<p class="intro mb-6 max-w-[68ch] text-[#a5a3a9]">{intro}</p>
+			)
+		}
+
+		<h2 class="mb-4 text-[0.75rem] font-normal tracking-[0.06em] text-[#26a269] uppercase">
+			selected projects
+		</h2>
 
 		<ul class="grid m-0 grid-cols-1 list-none gap-3 p-0">
 			{PROJECTS.map((project) => <ProjectCard project={project} />)}

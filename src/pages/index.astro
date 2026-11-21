@@ -24,6 +24,19 @@ const ICONS: Record<ContactIcon, typeof Mail> = {
 const description =
 	'Angad Bhalla — computer science student at PES University, Bengaluru. Systems software, small binaries, and boring infrastructure.';
 
+const keywords = [
+	'Angad Bhalla',
+	'systems programming',
+	'Go',
+	'Rust',
+	'self-hosted',
+	'operating systems',
+	'competitive programming',
+	'PES University',
+	'Bengaluru',
+	'software engineer',
+];
+
 const schema: JsonLd[] = [
 	profilePageSchema({ path: '/', name: 'Angad Bhalla', description }),
 ];
@@ -34,6 +47,7 @@ const schema: JsonLd[] = [
 	{description}
 	path="/"
 	type="profile"
+	{keywords}
 	{schema}
 >
 	<PortfolioMenu minimized />
@@ -50,6 +64,11 @@ const schema: JsonLd[] = [
 					<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
 						I'm a <span id="age">21</span> year old software engineer currently pursuing a degree in
 						Computer Science &amp; Engineering at PES University, Bangalore (2023-2027).
+					</p>
+					<p class="mb-3 max-w-[52ch] text-[#a5a3a9]">
+						I work on systems programming in Go, Rust, and C: self-hosted infrastructure,
+						sandboxed code execution, and small operating systems. I also compete in
+						competitive programming, and I'm based in Bengaluru.
 					</p>
 					<p class="mb-0 max-w-[52ch] text-[#a5a3a9]">
 						I like playing Minecraft with my friends, watching Marvel &amp; DC, and I'm also a

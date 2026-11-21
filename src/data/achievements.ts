@@ -8,8 +8,6 @@
  * Galleries are declared per entry with `images`. Entries without images
  * simply render no gallery.
  */
-import type { ImageMetadata } from 'astro';
-
 import alcoding1 from '../assets/achievements/alcoding-club-head/alcoding1.jpg';
 import alcoding2 from '../assets/achievements/alcoding-club-head/alcoding2.jpg';
 import iamproCertificate from '../assets/achievements/ieee-cs-iampro-2025/certificate.png';
@@ -116,6 +114,13 @@ export interface Achievement {
 	pageMenu?: boolean;
 	/** Human-readable date, e.g. "March 2026". */
 	date: string;
+	/** ISO date for schema.org, e.g. "2026-03". Falls back to `year`. */
+	dateISO?: string;
+	/**
+	 * Organisation that granted a medal. Only meaningful on `medal` entries;
+	 * used to emit an `Award` node on the achievements index.
+	 */
+	awardedBy?: string;
 	/** Sort key and card meta. */
 	year: string;
 	summary: string;
@@ -150,16 +155,14 @@ export interface Achievement {
 	detail: AchievementDetail;
 }
 
-export interface GalleryImage {
-	/**
-	 * Imported image asset. Astro processes it at build time, so the gallery
-	 * gets responsive AVIF/WebP sources and intrinsic dimensions instead of a
-	 * raw file copied out of `public/`.
-	 */
-	src: ImageMetadata;
-	alt: string;
-	caption: string;
-}
+/**
+ * One image in a gallery. The shape is shared with the AngaDrive report, so it
+ * lives in `lib/images`; it is imported for local use and re-exported so
+ * existing imports from this module keep working.
+ */
+import type { GalleryImage } from '../lib/images';
+
+export type { GalleryImage };
 
 /**
  * Images for one achievement. Galleries are declared explicitly in the data,
@@ -177,6 +180,8 @@ export const ACHIEVEMENTS: Achievement[] = [
 		result: 'first place',
 		medal: 'gold',
 		date: 'March 2026',
+		dateISO: '2026-03',
+		awardedBy: 'EncodeAI, PES University',
 		year: '2026',
 		summary: 'an intercollegiate coding contest.',
 		description:
@@ -216,6 +221,8 @@ export const ACHIEVEMENTS: Achievement[] = [
 		result: 'first place',
 		medal: 'gold',
 		date: 'March 2026',
+		dateISO: '2026-03',
+		awardedBy: 'Team ARCH, PES University',
 		year: '2026',
 		summary: 'A state-level research hackathon hosted by Team Arch.',
 		description:
@@ -303,6 +310,8 @@ export const ACHIEVEMENTS: Achievement[] = [
 		result: 'first place',
 		medal: 'gold',
 		date: 'February 2025',
+		dateISO: '2025-02',
+		awardedBy: 'IEEE PES Student Branch',
 		year: '2025',
 		summary: 'an ASL interpreter on a Raspberry Pi.',
 		description: 'Hack-for-Humanity themed 24 hour hackathon',
@@ -343,6 +352,8 @@ export const ACHIEVEMENTS: Achievement[] = [
 		result: 'second place',
 		medal: 'silver',
 		date: 'October 2025',
+		dateISO: '2025-10',
+		awardedBy: 'ARCH, Department of AI & ML, PES University',
 		year: '2025',
 		summary: '24 hour Halloween-themed hackathon hosted by the Department of AI/ML.',
 		description:

@@ -4,29 +4,77 @@ import PortfolioMenu from '../components/PortfolioMenu.astro';
 import Pager from '../components/Pager.astro';
 import AchievementCards from '../components/AchievementCards.astro';
 import { ACHIEVEMENT_INDEX, hasDetailPage } from '../data/achievements';
-import { collectionPageSchema, type JsonLd } from '../lib/seo';
+import {
+	awardSchema,
+	collectionPageSchema,
+	galleryImageObjects,
+	type JsonLd,
+} from '../lib/seo';
 
 const description =
 	'Hackathon results, contest milestones, research, community work, and open source contributions by Angad Bhalla.';
+
+const keywords = [
+	'Angad Bhalla',
+	'hackathons',
+	'competitive programming',
+	'IEEE Kalpana',
+	'Algomania',
+	'Tensor hackathon',
+	'GraphRAG',
+	'open source',
+	'Docker',
+	'LeetCode',
+	'PES University',
+	'Bengaluru',
+];
+
+// Only entries with a real detail route get a `url`; the rest are name-only so
+// the ItemList never advertises a fragment or a 404.
+const items = ACHIEVEMENT_INDEX.map((achievement) => ({
+	name: achievement.title,
+	path: hasDetailPage(achievement)
+		? (achievement.href ?? `/achievements/${achievement.slug}`)
+		: undefined,
+}));
+
+const awards = ACHIEVEMENT_INDEX.filter(
+	(achievement) => achievement.medal && achievement.awardedBy,
+).map((achievement) =>
+	awardSchema({
+		name: `${achievement.title} — ${achievement.result}`,
+		description: achievement.description,
+		awardedBy: achievement.awardedBy!,
+		date: achievement.dateISO ?? achievement.year,
+		url: hasDetailPage(achievement) ? `/achievements/${achievement.slug}` : undefined,
+	}),
+);
 
 const schema: JsonLd[] = [
 	collectionPageSchema({
 		path: '/achievements',
 		name: 'Achievements',
 		description,
-		items: ACHIEVEMENT_INDEX.map((achievement) => ({
-			name: achievement.title,
-			path: hasDetailPage(achievement)
-				? `/achievements/${achievement.slug}`
-				: '/achievements',
-		})),
+		items,
 	}),
+	...awards,
+	...galleryImageObjects(
+		ACHIEVEMENT_INDEX.flatMap((achievement) => achievement.images ?? []),
+	),
 ];
 ---
 
-<Base title="Angad Bhalla — Achievements" {description} path="/achievements" {schema}>
+<Base
+	title="Angad Bhalla — Achievements"
+	{description}
+	path="/achievements"
+	{keywords}
+	{schema}
+>
 	<PortfolioMenu minimized />
 	<Pager active="achievements">
-		<AchievementCards />
+		<AchievementCards
+			intro="Hackathon wins, competitive programming milestones, research, community work, and merged open source contributions — from IEEE Kalpana and Algomania to a Docker pull request."
+		/>
 	</Pager>
 </Base>

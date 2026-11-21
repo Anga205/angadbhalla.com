@@ -9,12 +9,31 @@ import { collectionPageSchema, softwareSourceCodeSchema, type JsonLd } from '../
 const description =
 	'Software Angad Bhalla has built: a self-hosted file host, a sandboxed code execution API, a bare-bones operating system, and more.';
 
+const keywords = [
+	'Angad Bhalla',
+	'systems programming',
+	'Go',
+	'Rust',
+	'self-hosted',
+	'file hosting',
+	'code execution sandbox',
+	'seccomp',
+	'operating system',
+	'open source',
+	'Bengaluru',
+];
+
+// Only AngaDriveV3 has a long-form route; the rest are name-only so the
+// ItemList never advertises a fragment URL.
 const schema: JsonLd[] = [
 	collectionPageSchema({
 		path: '/projects',
 		name: 'Projects',
 		description,
-		items: PROJECTS.map((project) => ({ name: project.name, path: `/projects#${project.id}` })),
+		items: PROJECTS.map((project) => ({
+			name: project.name,
+			path: project.detail,
+		})),
 	}),
 	...PROJECTS.map((project) =>
 		softwareSourceCodeSchema({
@@ -30,9 +49,9 @@ const schema: JsonLd[] = [
 ];
 ---
 
-<Base title="Angad Bhalla — Projects" {description} path="/projects" {schema}>
+<Base title="Angad Bhalla — Projects" {description} path="/projects" {keywords} {schema}>
 	<PortfolioMenu minimized />
 	<Pager active="projects">
-		<ProjectCards />
+		<ProjectCards intro="Systems software built from scratch: a self-hosted file host in Go, a seccomp sandbox for untrusted code, a bare-bones operating system, and a Rust competitive programming tracker." />
 	</Pager>
 </Base>

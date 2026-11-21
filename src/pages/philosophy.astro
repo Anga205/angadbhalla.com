@@ -8,6 +8,17 @@ import { creativeWorkSchema, type JsonLd } from '../lib/seo';
 const description =
 	'How Angad Bhalla thinks about building software: craft, mistakes, and the goofy projects.';
 
+const keywords = [
+	'Angad Bhalla',
+	'software engineering',
+	'engineering craft',
+	'systems programming',
+	'Go',
+	'Rust',
+	'philosophy',
+	'engineering culture',
+];
+
 const schema: JsonLd[] = [
 	creativeWorkSchema({
 		path: '/philosophy',
@@ -24,6 +35,7 @@ const schema: JsonLd[] = [
 	{description}
 	path="/philosophy"
 	type="article"
+	{keywords}
 	{schema}
 >
 	<PortfolioMenu minimized />

@@ -12,6 +12,11 @@
  * than quoting a build of the repository verbatim. Function and file names
  * follow the ones the project's own modules use.
  */
+import type { GalleryImage } from '../lib/images';
+
+import benchmarks from '../assets/angadrive/benchmarks.png';
+import dashboard from '../assets/angadrive/dashboard.png';
+import github from '../assets/angadrive/github.jpeg';
 
 /** Page-level metadata. Consumed by the route's frontmatter. */
 export const ANGADRIVE_META = {
@@ -38,6 +43,32 @@ export const ANGADRIVE_META = {
 	/** ISO date the report was last revised. */
 	updated: '2026-11-17',
 } as const;
+
+/**
+ * Screenshots for the report's gallery.
+ *
+ * The alt text is written to stand on its own: it describes the layout and
+ * quotes the numbers the images show, so a crawler or a screen reader gets the
+ * same evidence a sighted reader does. Captions are the short label shown
+ * under the lightbox.
+ */
+export const ANGADRIVE_GALLERY: GalleryImage[] = [
+	{
+		src: dashboard,
+		alt: 'Dark-mode Drive V3 dashboard showing caching, file previews, and ultra-secure feature cards, a site activity line chart peaking near 1,600 on Oct 29, RAM usage at 0.44 GB of 8.00 GB, CPU usage at 2.0%, counters for 172 users and 4,136 files hosted, a space-used chart climbing from 112.0 GB to about 114.3 GB, and a blue geometric wireframe butterfly illustration.',
+		caption: 'the Drive V3 dashboard: live metrics, activity, and storage',
+	},
+	{
+		src: benchmarks,
+		alt: 'Dark infographic titled AngaDrive Benchmarks with three horizontal bar charts comparing AngaDrive in blue against Google Drive, MediaFire, and Dropbox in grey. Time to first byte: AngaDrive 0.098s, Google Drive 0.452s, Dropbox 0.958s, MediaFire 0.991s. Large 1 GB uploads: AngaDrive 1m 28s, Google Drive 1m 39s, MediaFire 1m 47s, Dropbox 5m 29s. Ten 100 MB files: AngaDrive 1m 23s, Google Drive 1m 57s, MediaFire 3m 10s, Dropbox 5m 33s.',
+		caption: 'benchmarks against Google Drive, Dropbox, and MediaFire',
+	},
+	{
+		src: github,
+		alt: 'GitHub repository preview card for Anga205/AngaDriveV3 on a white background with a blue bottom border. The description reads: the codebase for AngaDrive, a remote file storage web application, built mostly to optimize speed, performance and user experience. Stats show 3 contributors, 17 issues, 11 stars, and 1 fork, with a dark profile photo of the developer in the top right and the GitHub logo in the bottom right.',
+		caption: 'the repository: Go, SolidJS, and the integration suite',
+	},
+];
 
 /**
  * Snippets, keyed by id.

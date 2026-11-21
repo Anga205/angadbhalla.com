@@ -32,6 +32,14 @@
   status = 200
   force = false
 
+# The sitemap integration emits `/sitemap-index.xml`. `/sitemap.xml` is the
+# path people and tools guess, so send it to the real index rather than a 404.
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/sitemap-index.xml"
+  status = 301
+  force = true
+
 # ---------------------------------------------------------------------------
 # Headers
 # ---------------------------------------------------------------------------
